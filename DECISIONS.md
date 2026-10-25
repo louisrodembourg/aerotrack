@@ -30,7 +30,8 @@ and may `pip install` behind the lockfile's back.
 and runs `docker/Dockerfile.cuda` (base `nvidia/cuda:*-base`, since torch wheels bundle
 CUDA/cuDNN). `--no-docker` runs the same steps on the host, for Kaggle where custom images
 are impossible. The image has no `.git`: the commit is passed as a build arg and recorded
-in each run.
+in each run. The base image comes from `nvcr.io` (NVIDIA's registry) rather than Docker
+Hub: anonymous pulls, and no Docker Hub rate limit on shared GPU hosts.
 
 ## Data
 
@@ -93,7 +94,10 @@ patched copy.
 
 **VisDrone-MOT evaluated classes: pedestrian, car, van, truck, bus.** These are the
 toolkit's five classes (README and `evaluateTrackA.m`). Other classes are kept out of the
-benchmarks and counted in `stats.json`.
+benchmarks and counted in `stats.json`. Measured on val: 18 tracks change class over
+their lifetime (e.g. car ↔ van). Each such track is split between two per-class
+benchmarks. Ids cannot collide, since the benchmarks are separate, but the split costs
+those tracks some IDF1 in a per-class evaluation. The count is reported in `stats.json`.
 
 **UAVDT formats, read from the toolkit code (no README shipped).**
 - `_gt_whole.txt` (category in column 9) is the DET ground truth.
