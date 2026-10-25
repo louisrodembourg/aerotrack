@@ -198,3 +198,12 @@ independent split.
 (pedestrian + people -> person, van dropped like the van ground truth). The gain from
 fine-tuning is then measured on the classes the COCO model can name, next to the
 10-class VisDrone score.
+
+**Kaggle session measured (probe, 3 epochs, n and s in parallel, 2 workers each).**
+Setup 2.3 min (uv sync 1.5, VisDrone-DET download + conversion 0.75). Training pass
+~120 s/epoch for n and ~133 s for s; ~160 s/epoch with validation. The session is
+CPU-bound: 4 vCPUs, load average 5.5, median GPU utilisation 31 % (n) and 70 % (s). The
+100-epoch references therefore take ~4.5 h each, in parallel in one session.
+*Not done:* `cache: ram` would remove JPEG decoding from the CPU budget, but Ultralytics
+warns it breaks deterministic training (`data/base.py`), and runs already fit in one
+session. To revisit if the week 4 sweeps are throughput-limited.

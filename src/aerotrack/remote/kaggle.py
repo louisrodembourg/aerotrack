@@ -176,7 +176,16 @@ def merge_output(output: Path, slug: str, runs_dir: Path = RUNS_DIR) -> list[str
 
 def pull(slug: str) -> list[str]:
     with tempfile.TemporaryDirectory(prefix="aerotrack-pull-") as tmp:
-        kaggle("kernels", "output", kernel_ref(slug), "-p", tmp)
+        # Seen once right after a kernel completed: the first download failed, the retry
+        # worked. Output files can lag the COMPLETE status.
+        for attempt in range(3):
+            try:
+                kaggle("kernels", "output", kernel_ref(slug), "-p", tmp)
+                break
+            except subprocess.CalledProcessError:
+                if attempt == 2:
+                    raise
+                time.sleep(60)
         out = Path(tmp)
         # The CLI also saves the kernel's console log next to its output files.
         for log in out.glob("*.log"):
