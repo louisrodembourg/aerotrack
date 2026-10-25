@@ -17,6 +17,8 @@ make test          # offline tests; `uv run pytest --run-network` adds network t
 make lint
 uv run aerotrack --help
 scripts/remote_train.sh configs/train/<cfg>.yaml [--set key=value]   # CUDA box
+uv run aerotrack kaggle push <cfg> [<cfg2>] --slug <slug> [--suffix probe] [--dry-run]
+uv run aerotrack kaggle status|pull <slug>                           # Kaggle 2 x T4
 ```
 
 ## Rules
@@ -41,6 +43,8 @@ scripts/remote_train.sh configs/train/<cfg>.yaml [--set key=value]   # CUDA box
   training, dropped on both sides at evaluation.
 - **When unsure about a format, an API or a licence, read the source or the docs, then
   record it** in DECISIONS.md. Don't guess.
+- **Fine-tuned models are reported on VisDrone-DET test-dev**, never on val: val selects
+  the checkpoint. Val numbers from training are monitoring only.
 - **Tests never write to `data/`**: an autouse fixture redirects paths to tmp and fails if
   `data/processed` changed. Synthetic data generators live in `tests/fixtures/` only.
 
@@ -55,6 +59,7 @@ src/aerotrack/
   train.py    Ultralytics training with masked dataset + tracked run
   experiments.py, runtime/ (device, env fingerprint, git, seed), ultra.py
 docker/       Dockerfile.cuda
+  remote/     Kaggle launcher (kernel template + push/status/pull)
 scripts/      remote_train.sh
 reports/      generated reports (committed); viz/ is git-ignored (dataset images)
 ```

@@ -1,0 +1,194 @@
+{
+  "name": "baseline-testdev",
+  "config": {
+    "name": "baseline-testdev",
+    "seed": 0,
+    "device": "auto",
+    "dataset": {
+      "gt": "visdrone_det/gt/test-dev.json",
+      "class_map": "visdrone_to_coco",
+      "limit": null
+    },
+    "models": [
+      {
+        "weights": "yolo26n.pt"
+      },
+      {
+        "weights": "yolo26s.pt"
+      }
+    ],
+    "detection": {
+      "imgsz": 640,
+      "conf": 0.001,
+      "iou": 0.7,
+      "max_det": 500
+    },
+    "latency": {
+      "enabled": false
+    },
+    "_source": "configs/eval/baseline_testdev.yaml"
+  },
+  "budget_fps": 25,
+  "results": [
+    {
+      "model": "yolo26n",
+      "weights": "yolo26n.pt",
+      "run_id": "20261025-181334-baseline-testdev-yolo26n-39283d",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "visdrone_det/gt/test-dev.json",
+        "class_map": "visdrone_to_coco",
+        "limit": null,
+        "n_images": 1610
+      },
+      "accuracy": {
+        "mAP50-95": 0.040530263827131874,
+        "mAP50": 0.07572675471433857,
+        "mAP75": 0.03751867405931867,
+        "AP_small": 0.012622117233207384,
+        "AP_medium": 0.08382411077420407,
+        "AP_large": 0.2406144763332264,
+        "AR500": 0.10130214421481029,
+        "max_det": 500,
+        "n_images": 1610,
+        "n_gt": 67375,
+        "n_dets": 431266,
+        "per_class": {
+          "person": {
+            "AP": 0.0370869140297776,
+            "AP50": 0.08443055881771429,
+            "n_gt": 26773
+          },
+          "bicycle": {
+            "AP": 0.003024726863797169,
+            "AP50": 0.006721812252852823,
+            "n_gt": 1290
+          },
+          "car": {
+            "AP": 0.14357297727592297,
+            "AP50": 0.25974691485930324,
+            "n_gt": 27930
+          },
+          "truck": {
+            "AP": 0.026542251901569624,
+            "AP50": 0.050489619960064985,
+            "n_gt": 2647
+          },
+          "bus": {
+            "AP": 0.02672505323523469,
+            "AP50": 0.03665571521884565,
+            "n_gt": 2939
+          },
+          "motorcycle": {
+            "AP": 0.006229659656489225,
+            "AP50": 0.01631590717725044,
+            "n_gt": 5796
+          }
+        },
+        "class_map": "visdrone_to_coco",
+        "model_class_to_target": {
+          "person": "person",
+          "bicycle": "bicycle",
+          "car": "car",
+          "motorcycle": "motorcycle",
+          "bus": "bus",
+          "truck": "truck"
+        },
+        "excluded_classes": {
+          "van": "van: no COCO class; COCO annotators label vans as car or truck inconsistently",
+          "tricycle": "tricycle: no COCO class",
+          "awning-tricycle": "awning-tricycle: no COCO class"
+        },
+        "imgsz": 640,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false
+        }
+      },
+      "latency": []
+    },
+    {
+      "model": "yolo26s",
+      "weights": "yolo26s.pt",
+      "run_id": "20261025-181538-baseline-testdev-yolo26s-083bf8",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "visdrone_det/gt/test-dev.json",
+        "class_map": "visdrone_to_coco",
+        "limit": null,
+        "n_images": 1610
+      },
+      "accuracy": {
+        "mAP50-95": 0.0791136110332573,
+        "mAP50": 0.13750788058569205,
+        "mAP75": 0.07826501374014436,
+        "AP_small": 0.026678749483281448,
+        "AP_medium": 0.13706726817170659,
+        "AP_large": 0.36273459279478754,
+        "AR500": 0.15808094140429407,
+        "max_det": 500,
+        "n_images": 1610,
+        "n_gt": 67375,
+        "n_dets": 437136,
+        "per_class": {
+          "person": {
+            "AP": 0.05607239906723326,
+            "AP50": 0.12951985858310033,
+            "n_gt": 26773
+          },
+          "bicycle": {
+            "AP": 0.01527118083903059,
+            "AP50": 0.030574055824408253,
+            "n_gt": 1290
+          },
+          "car": {
+            "AP": 0.24328229220748962,
+            "AP50": 0.40979881178379424,
+            "n_gt": 27930
+          },
+          "truck": {
+            "AP": 0.0703534077027557,
+            "AP50": 0.11371830853824183,
+            "n_gt": 2647
+          },
+          "bus": {
+            "AP": 0.07408941526331017,
+            "AP50": 0.10266210519698522,
+            "n_gt": 2939
+          },
+          "motorcycle": {
+            "AP": 0.01561297111972456,
+            "AP50": 0.03877414358762238,
+            "n_gt": 5796
+          }
+        },
+        "class_map": "visdrone_to_coco",
+        "model_class_to_target": {
+          "person": "person",
+          "bicycle": "bicycle",
+          "car": "car",
+          "motorcycle": "motorcycle",
+          "bus": "bus",
+          "truck": "truck"
+        },
+        "excluded_classes": {
+          "van": "van: no COCO class; COCO annotators label vans as car or truck inconsistently",
+          "tricycle": "tricycle: no COCO class",
+          "awning-tricycle": "awning-tricycle: no COCO class"
+        },
+        "imgsz": 640,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false
+        }
+      },
+      "latency": []
+    }
+  ]
+}

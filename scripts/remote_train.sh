@@ -3,7 +3,7 @@
 #
 #   git clone <repo> && cd aerotrack
 #   export WANDB_API_KEY=...            # results land in W&B; without it, runs stay offline
-#   scripts/remote_train.sh configs/train/visdrone_yolo26s.yaml [--set train.epochs=50 ...]
+#   scripts/remote_train.sh configs/train/visdrone_yolo26s_640.yaml [--set train.epochs=50 ...]
 #
 # Modes:
 #   default      Docker (needs docker + NVIDIA container toolkit, standard on GPU rentals)

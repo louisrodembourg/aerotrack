@@ -149,3 +149,52 @@ pre + inference + post only, and every report says so.
   itself; SAHI tile merging will still need NMS.
 - YOLO11 keeps explicit NMS and has a more mature TensorRT INT8 track record.
 - The n vs s choice is made in week 3, with the baseline numbers.
+
+## Remote training (week 3)
+
+**Kaggle, driven by the Kaggle CLI from the Mac.** Free, a fixed weekly GPU quota
+(reported around 30 h by third-party sources; Kaggle's own pages could not be read
+without a browser, so the figure is to be checked in the account), sessions of several
+hours. The P100 is retired (`kaggle kernels push --help`, CLI 2.2.5): the free GPU is
+2 × T4. *Rejected:* Colab (quota varies with demand, idle sessions are cut), paid
+rentals (not needed until the measured throughput says so).
+
+**The code travels inside the kernel script.** `push` embeds a base64 `git archive` of
+HEAD (~75 KB) in the kernel. *Rejected:* a Kaggle dataset holding the code (one more
+versioned object, and a race between dataset processing and the kernel start); cloning
+from GitHub (needs a published repository or a token in Kaggle). Uncommitted changes are
+refused, so the commit recorded in the run is exactly the code that ran.
+
+**One job per T4, no DDP.** Ultralytics DDP re-imports the trainer class in a subprocess
+from its module path (`generate_ddp_file`). Our trainer is built at run time to swap in
+the masked dataset, and the tracked-run callbacks live in the parent process: both would
+be lost. Two different runs in parallel (e.g. n and s) use the same session time instead.
+The kernel samples GPU and CPU load every 30 s to show whether 2 jobs on Kaggle's vCPUs
+are dataloader-bound.
+
+**Kaggle CLI through `uvx`, pinned, not in the lockfile.** It only launches jobs from the
+local machine; the training environment never needs it.
+
+**Pulled runs are relocated, and the relocation is recorded.** Paths written on Kaggle
+(`/kaggle/working/runs/...`) are rewritten to the local `runs/` and the run gets a
+`relocated` field. Existing local runs are never overwritten.
+
+## Evaluation protocol for fine-tuned models (week 3)
+
+**Val selects, test-dev reports.** Ultralytics keeps `best.pt` by val fitness, so val
+accuracy of a fine-tuned model is biased upwards. Reported numbers come from VisDrone-DET
+test-dev (1610 images, labels public), which no choice ever looks at. The zero-shot
+baseline is re-run on test-dev (`configs/eval/baseline_testdev.yaml`) so the comparison is
+on the same images. *Rejected:* carving a held-out part out of train: its 6471 images share only 208
+file-name prefixes, and a random split would put frames of one video on both sides.
+
+The first field of a VisDrone-DET file name looks like a source-video id (the README does
+not document it). Measured on those prefixes: test-dev shares none with train or val; val
+shares 24 with train, covering 28 of its 548 images. Test-dev is therefore also the more
+independent split.
+
+**Fine-tuned vs zero-shot on identical classes.** A VisDrone fine-tune is also scored with
+`visdrone_to_coco`: its predictions go through the same map as the ground truth
+(pedestrian + people -> person, van dropped like the van ground truth). The gain from
+fine-tuning is then measured on the classes the COCO model can name, next to the
+10-class VisDrone score.

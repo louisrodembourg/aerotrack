@@ -56,6 +56,16 @@ row names its run id. Methodology: [DECISIONS.md](DECISIONS.md).
 | yolo11s | torch | Apple M3 Pro GPU (MPS) | torch 2.14.1 | 1.1 | 11.8 | 1.5 | 14.6 | 16.3 | 68.6 | yes |
 | yolo11s | onnxruntime | Apple M3 Pro | ORT 1.31.0 | 1.8 | 62.5 | 1.4 | 65.9 | 68.5 | 15.2 | no |
 
+#### baseline-testdev ([full report](reports/baseline-testdev/results.md))
+
+| Model | Class map | imgsz | mAP50-95 | mAP50 | AP_small | AP_medium | AP_large | Images | Run |
+|---|---|---|---|---|---|---|---|---|---|
+| yolo26n | visdrone_to_coco | 640 | 4.1 | 7.6 | 1.3 | 8.4 | 24.1 | 1610 | `20261025-181334-baseline-testdev-yolo26n-39283d` |
+| yolo26s | visdrone_to_coco | 640 | 7.9 | 13.8 | 2.7 | 13.7 | 36.3 | 1610 | `20261025-181538-baseline-testdev-yolo26s-083bf8` |
+
+| Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|
+
 <!-- results:end -->
 
 ## Reproduce
@@ -72,17 +82,30 @@ make data         # everything: + VisDrone-MOT, UAVDT, visualisations, TrackEval
 make test
 ```
 
-Training on a remote CUDA machine (Docker + NVIDIA container toolkit, or `--no-docker`
-on Kaggle):
+Training runs on a remote NVIDIA GPU. Two ways, same tracked run at the end
+(`runs/<id>/run.json`: config, commit, seed, device, environment, metrics, weights):
+
+**Kaggle (free 2 × T4), driven from your machine.** Needs a Kaggle account with a
+verified phone number and an API token in `~/.kaggle/kaggle.json`.
+
+```bash
+uv run aerotrack kaggle push configs/train/visdrone_yolo26n_640.yaml \
+    configs/train/visdrone_yolo26s_640.yaml --slug aerotrack-w3-ref   # one job per T4
+uv run aerotrack kaggle status aerotrack-w3-ref
+uv run aerotrack kaggle pull aerotrack-w3-ref                         # merge runs into runs/
+```
+
+The kernel carries the committed code (uncommitted changes are refused), installs the
+same locked environment, downloads and converts the data, and trains. For live W&B
+logging, add a `WANDB_API_KEY` secret to the kernel once in Kaggle's editor; otherwise
+the runs come back offline and `wandb sync` uploads them.
+
+**Any CUDA box with Docker** (or `--no-docker` on the host):
 
 ```bash
 export WANDB_API_KEY=...        # optional: without it, W&B runs stay offline
-scripts/remote_train.sh configs/train/visdrone_yolo26s.yaml
+scripts/remote_train.sh configs/train/visdrone_yolo26s_640.yaml
 ```
-
-The script builds `docker/Dockerfile.cuda` and downloads and converts the data itself,
-then trains and evaluates. The run lands in W&B and in `runs/<id>/run.json` (config,
-commit, seed, device, environment, metrics, weights).
 
 ## Data
 
