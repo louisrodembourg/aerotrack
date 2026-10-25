@@ -88,6 +88,39 @@ def evaluate(
     run_evaluation(load_config(config, overrides or []))
 
 
+kaggle_app = typer.Typer(no_args_is_help=True, help="Train on Kaggle's free GPUs (push, status, pull).")
+app.add_typer(kaggle_app, name="kaggle")
+
+
+@kaggle_app.command("push")
+def kaggle_push(
+    configs: Annotated[list[Path], typer.Argument(help="1 or 2 configs/train/*.yaml, one per GPU")],
+    slug: Annotated[str, typer.Option(help="Kaggle kernel slug (one kernel per experiment)")],
+    overrides: SetOpt = None,
+    suffix: Annotated[str | None, typer.Option(help="Appended to each run name")] = None,
+    dry_run: Annotated[bool, typer.Option(help="Write the kernel locally, do not upload")] = False,
+) -> None:
+    """Upload HEAD and run the training configs on a Kaggle GPU session."""
+    from aerotrack.remote import kaggle  # noqa: PLC0415
+
+    kaggle.push(configs, overrides or [], suffix, slug, dry_run=dry_run)
+
+
+@kaggle_app.command("status")
+def kaggle_status(slug: str) -> None:
+    from aerotrack.remote import kaggle  # noqa: PLC0415
+
+    typer.echo(kaggle.status(slug))
+
+
+@kaggle_app.command("pull")
+def kaggle_pull(slug: str) -> None:
+    """Download the kernel's output and merge its run records into runs/."""
+    from aerotrack.remote import kaggle  # noqa: PLC0415
+
+    kaggle.pull(slug)
+
+
 @app.command("readme-table")
 def readme_table(
     readme: Path = Path("README.md"),

@@ -29,12 +29,24 @@ AREAS = ("all", "small", "medium", "large")
 def prediction_class_map(model_names: dict[int, str], cmap: ClassMap) -> dict[int, int]:
     """Model class id -> COCO category id of the evaluation, matched BY NAME. Classes of the
     model with no counterpart (e.g. COCO `boat`) are dropped; the mapping actually used is
-    written into the report, so it can be checked."""
+    written into the report, so it can be checked.
+
+    A model trained on the map's SOURCE vocabulary (e.g. a VisDrone fine-tune scored with
+    `visdrone_to_coco`) is routed through the same map as the ground truth: its
+    `pedestrian` and `people` both become `person`, its `van` is dropped like the van
+    ground truth. Fine-tuned and zero-shot COCO models are then scored on identical classes."""
     cat_ids = {name: i + 1 for i, name in enumerate(cmap.targets)}
-    mapping = {int(k): cat_ids[v] for k, v in model_names.items() if v in cat_ids}
+    source_ids = {name: sid for sid, name in cmap.vocabulary.items()}
+
+    def target(name: str) -> str | None:
+        if name in cat_ids:
+            return name
+        return cmap.mapping.get(source_ids.get(name, -1))
+
+    mapping = {int(k): cat_ids[t] for k, v in model_names.items() if (t := target(v))}
     if not mapping:
         raise ValueError(f"no model class matches the targets of {cmap.name!r}: {cmap.targets}")
-    missing = set(cat_ids) - {model_names[k] for k in mapping}
+    missing = {n for n, i in cat_ids.items() if i not in mapping.values()}
     if missing:
         raise ValueError(f"targets {missing} of {cmap.name!r} have no model class")
     return mapping

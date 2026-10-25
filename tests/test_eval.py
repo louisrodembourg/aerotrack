@@ -92,6 +92,18 @@ def test_prediction_mapping_is_by_name():
         prediction_class_map({0: "person"}, cm)  # targets without a model class
 
 
+def test_source_vocabulary_model_goes_through_the_ground_truth_map():
+    # A VisDrone fine-tune scored on the COCO-mappable classes, like the zero-shot baseline.
+    cm = get_class_map("visdrone_to_coco")
+    visdrone_names = dict(enumerate(get_class_map("visdrone").targets))
+    mapping = prediction_class_map(visdrone_names, cm)
+    cat = {n: cm.targets.index(n) + 1 for n in cm.targets}
+    by_name = {visdrone_names[k]: v for k, v in mapping.items()}
+    assert by_name["pedestrian"] == by_name["people"] == cat["person"]
+    assert by_name["motor"] == cat["motorcycle"]
+    assert {"van", "tricycle", "awning-tricycle"}.isdisjoint(by_name)
+
+
 # -- latency ----------------------------------------------------------------------------
 def test_latency_total_is_per_iteration():
     samples = [{"preprocess": 1, "inference": 10, "postprocess": 1}] * 9 + \

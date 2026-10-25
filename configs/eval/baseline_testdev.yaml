@@ -1,0 +1,21 @@
+# Zero-shot COCO detectors on VisDrone-DET test-dev: the reference that fine-tuned models
+# are compared against. Fine-tuned models select their checkpoint on val, so val is no
+# longer a fair place to compare; test-dev is never used for any choice (DECISIONS.md).
+# Latency is architecture-bound and already measured in `baseline`: not repeated here.
+name: baseline-testdev
+seed: 0
+device: auto
+dataset:
+  gt: visdrone_det/gt/test-dev.json
+  class_map: visdrone_to_coco
+  limit: null            # all 1610 test-dev images
+models:
+  - {weights: yolo26n.pt}
+  - {weights: yolo26s.pt}
+detection:
+  imgsz: 640
+  conf: 0.001
+  iou: 0.7
+  max_det: 500
+latency:
+  enabled: false
