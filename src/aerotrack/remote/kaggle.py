@@ -45,9 +45,8 @@ def username() -> str:
         return json.loads(cred.read_text())["username"]
     # Newer API tokens (~/.kaggle/access_token) do not store the username; the CLI resolves it.
     view = subprocess.run([*KAGGLE_CLI, "config", "view"], text=True, capture_output=True).stdout
-    if m := re.search(r"^- username: (\S+)$", view, re.MULTILINE):
-        if m.group(1) != "None":
-            return m.group(1)
+    if (m := re.search(r"^- username: (\S+)$", view, re.MULTILINE)) and m.group(1) != "None":
+        return m.group(1)
     raise SystemExit("Kaggle credentials not found: create an API token on kaggle.com "
                      "(Settings -> API -> Create New Token) and save it under ~/.kaggle/")
 
