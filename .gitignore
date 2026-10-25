@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Datasets (raw + processed, ~18 GB)
+/data/
+
+# Model weights and exports
+/weights/
+*.pt
+*.onnx
+*.engine
+
+# Experiment outputs
+/runs/
+
+# Generated visualizations
+/reports/viz/
+
+# Ultralytics local settings
+.ultralytics/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# W&B offline runs
+wandb/

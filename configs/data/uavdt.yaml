@@ -1,0 +1,42 @@
+name: uavdt
+# Official links from https://sites.google.com/view/grli-uavdt (Google Drive).
+sources:
+  - filename: UAV-benchmark-M.zip
+    gdrive_id: 1m8KA6oPIRK_Iwt9TYFquC87vBc_8wRVc
+    official_page: https://sites.google.com/view/grli-uavdt
+    sha256: e82675c938e4e6bd65b4533dba2fb6a028e3e60bd3577cc2f3031504bd585b08
+  - filename: UAV-benchmark-MOTD_v1.0.zip   # DET/MOT toolkit, holds the ground truth
+    gdrive_id: 19498uJd7T9w4quwnQEy62nibt3uyT9pq
+    official_page: https://sites.google.com/view/grli-uavdt
+    sha256: 1e565da8c2a035bf1e56b1322de76c74b73702ea3b0f918f45debf69c2b26799
+  - filename: M_attr.zip                    # sequence attributes + train/test split
+    gdrive_id: 1qjipvuk3XE3qU3udluQRRcYuiKzhMXB1
+    official_page: https://sites.google.com/view/grli-uavdt
+    sha256: ac6f85e355db3f4808cd64148b1f3c33933906ebd47c63939bb7eba6974824d1
+splits:
+  train: {expected_sequences: 30}
+  test: {expected_sequences: 20}
+# Test sequence lengths hard-coded in the toolkit (utils/CalculateDetectionPR_overall.m):
+# a frame-count mismatch means a truncated extraction.
+expected_test_lengths:
+  M0203: 1007
+  M0205: 646
+  M0208: 265
+  M0209: 1576
+  M0403: 514
+  M0601: 372
+  M0602: 480
+  M0606: 1374
+  M0701: 1308
+  M0801: 298
+  M0802: 1101
+  M1001: 1859
+  M1004: 269
+  M1007: 659
+  M1009: 604
+  M1101: 864
+  M1301: 1182
+  M1302: 719
+  M1303: 445
+  M1401: 1050
+class_map: uavdt

@@ -1,0 +1,22 @@
+name: visdrone_det
+# Ultralytics mirrors the official archives on GitHub releases, which is far more reliable
+# than the official Google Drive links (quota errors). Mirror integrity is checked by
+# sha256 and by the image counts below, which must match the VisDrone-Dataset README.
+sources:
+  - filename: VisDrone2019-DET-train.zip
+    url: https://github.com/ultralytics/assets/releases/download/v0.0.0/VisDrone2019-DET-train.zip
+    official_page: https://github.com/VisDrone/VisDrone-Dataset
+    sha256: 86a77eba93137bfc16e4993860de9245b0675c0dba0d3ab98fb458699e256f84
+  - filename: VisDrone2019-DET-val.zip
+    url: https://github.com/ultralytics/assets/releases/download/v0.0.0/VisDrone2019-DET-val.zip
+    official_page: https://github.com/VisDrone/VisDrone-Dataset
+    sha256: abeea063037e5d20398837deb11084e652402a34ddf4f207bdf541a6f2a35ef9
+  - filename: VisDrone2019-DET-test-dev.zip
+    url: https://github.com/ultralytics/assets/releases/download/v0.0.0/VisDrone2019-DET-test-dev.zip
+    official_page: https://github.com/VisDrone/VisDrone-Dataset
+    sha256: b28a94b06dfd9e36ce77ff8155fb82b9d2c030f198a76105933bd56c6ea6a68d
+splits:
+  train: {dir: VisDrone2019-DET-train, expected_images: 6471}
+  val: {dir: VisDrone2019-DET-val, expected_images: 548}
+  test-dev: {dir: VisDrone2019-DET-test-dev, expected_images: 1610}
+class_map: visdrone

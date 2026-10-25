@@ -1,0 +1,80 @@
+# Class vocabularies and the explicit maps between them.
+#
+# Every source id must appear in exactly one of `mapping`, `excluded` or `ignore`
+# (enforced by aerotrack.data.classes and a unit test), so no class is ever dropped
+# without a written reason.
+#
+#   mapping   source id -> target class name (evaluated)
+#   excluded  source id -> reason. Objects become ignore regions at evaluation time:
+#             a detection on them is neither a TP nor an FP (see DECISIONS.md).
+#   ignore    source ids that are ignore regions by construction in the dataset.
+
+vocabularies:
+  # VisDrone2019 DET and MOT annotation category ids (VisDrone-Dataset README).
+  visdrone:
+    0: ignored-regions
+    1: pedestrian
+    2: people
+    3: bicycle
+    4: car
+    5: van
+    6: truck
+    7: tricycle
+    8: awning-tricycle
+    9: bus
+    10: motor
+    11: others
+  # UAVDT-Benchmark-M object_category column (UAVDT README in the DET/MOT toolkit).
+  uavdt:
+    1: car
+    2: truck
+    3: bus
+
+maps:
+  # Models fine-tuned on VisDrone-DET: the 10 official evaluation classes.
+  visdrone:
+    source: visdrone
+    mapping: {1: pedestrian, 2: people, 3: bicycle, 4: car, 5: van, 6: truck,
+              7: tricycle, 8: awning-tricycle, 9: bus, 10: motor}
+    excluded: {}
+    ignore: [0, 11]
+
+  # Zero-shot COCO baseline: only VisDrone classes with an unambiguous COCO counterpart.
+  visdrone_to_coco:
+    source: visdrone
+    mapping: {1: person, 2: person, 3: bicycle, 4: car, 6: truck, 9: bus, 10: motorcycle}
+    excluded:
+      5: "van: no COCO class; COCO annotators label vans as car or truck inconsistently"
+      7: "tricycle: no COCO class"
+      8: "awning-tricycle: no COCO class"
+    ignore: [0, 11]
+
+  # The five classes the official VisDrone-MOT toolkit evaluates (evalMOT in
+  # VisDrone2018-MOT-toolkit). One TrackEval benchmark is written per class.
+  visdrone_mot:
+    source: visdrone
+    mapping: {1: pedestrian, 4: car, 5: van, 6: truck, 9: bus}
+    excluded:
+      2: "people: not evaluated by the official VisDrone-MOT toolkit"
+      3: "bicycle: not evaluated by the official VisDrone-MOT toolkit"
+      7: "tricycle: not evaluated by the official VisDrone-MOT toolkit"
+      8: "awning-tricycle: not evaluated by the official VisDrone-MOT toolkit"
+      10: "motor: not evaluated by the official VisDrone-MOT toolkit"
+    ignore: [0, 11]
+
+  # UAVDT ground truth in UAVDT's own vocabulary.
+  uavdt:
+    source: uavdt
+    mapping: {1: car, 2: truck, 3: bus}
+    excluded: {}
+    ignore: []
+
+  # UAVDT ground truth expressed in VisDrone class names, for VisDrone -> UAVDT transfer
+  # (week 11). VisDrone `van` predictions must then be merged into `car`, since UAVDT
+  # has no van class; that merge is applied on the prediction side and is documented
+  # in DECISIONS.md. To be re-checked on the UAVDT visualisations.
+  uavdt_to_visdrone:
+    source: uavdt
+    mapping: {1: car, 2: truck, 3: bus}
+    excluded: {}
+    ignore: []

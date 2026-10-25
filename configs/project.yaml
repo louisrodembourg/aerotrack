@@ -1,0 +1,6 @@
+# Reference constraint: every variant is judged against this budget.
+# End-to-end pipeline (preprocess -> detection -> NMS -> tracking), batch 1, on the target.
+# Until the tracker exists (week 6) the measured pipeline stops after postprocessing,
+# and reports say so.
+budget_fps: 25
+target_device: undecided   # decided end of week 6: jetson-orin-nano | cloud-gpu
