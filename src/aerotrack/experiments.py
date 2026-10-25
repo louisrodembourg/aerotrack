@@ -149,3 +149,20 @@ def start_run(
         run.save()
         if wb is not None:
             wb.finish(exit_code=0 if record["status"] == "finished" else 1)
+
+
+def find_train_run(ref: str) -> dict:
+    """Finished training run by id, or by name when exactly one finished run carries it.
+    Two runs with the same name are an error rather than "take the latest": an evaluation
+    config must say which training it scores."""
+    records = [json.loads(p.read_text()) for p in sorted(RUNS_DIR.glob("*/run.json"))]
+    finished = [r for r in records if r.get("job_type") == "train" and r.get("status") == "finished"]
+    if match := [r for r in finished if r["id"] == ref]:
+        return match[0]
+    match = [r for r in finished if r["name"] == ref]
+    if len(match) == 1:
+        return match[0]
+    if not match:
+        raise LookupError(f"no finished training run with id or name {ref!r} in {RUNS_DIR}")
+    raise LookupError(f"{len(match)} finished training runs named {ref!r}; use a run id: "
+                      + ", ".join(r["id"] for r in match))

@@ -149,6 +149,21 @@ def test_run_record_is_complete(tmp_path):
     assert {"torch", "onnxruntime", "tensorrt", "jetson_power_mode"} <= set(rec["env"])
 
 
+def test_train_run_lookup_refuses_ambiguous_names():
+    from aerotrack.experiments import find_train_run, start_run
+
+    ids = []
+    for _ in range(2):
+        with start_run("ref", "train", {}, seed=0, device="cpu") as run:
+            run.summary({"weights": f"{run.id}/best.pt"})
+        ids.append(run.id)
+    with pytest.raises(LookupError, match="2 finished training runs"):
+        find_train_run("ref")
+    assert find_train_run(ids[1])["summary"]["weights"] == f"{ids[1]}/best.pt"
+    with pytest.raises(LookupError, match="no finished"):
+        find_train_run("missing")
+
+
 @pytest.mark.network
 def test_detector_matches_ultralytics_predict():
     """Our pipeline vs Ultralytics' own predict on a stock image: same letterbox family and

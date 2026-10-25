@@ -15,7 +15,7 @@ from aerotrack.data.gt import SplitGT
 from aerotrack.eval.detection import evaluate_detection
 from aerotrack.eval.latency import benchmark
 from aerotrack.eval.report import render_markdown
-from aerotrack.experiments import start_run
+from aerotrack.experiments import find_train_run, start_run
 from aerotrack.inference import Detector
 from aerotrack.paths import CONFIGS_DIR, PROCESSED_DIR, REPO_ROOT, from_data_relative
 from aerotrack.runtime import environment_info, resolve_device, seed_everything
@@ -38,13 +38,21 @@ def _progress(label: str):
 def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float) -> dict:
     det_cfg, lat_cfg = cfg["detection"], cfg.get("latency", {})
     device = resolve_device(cfg.get("device", "auto"))
+    if "run" in model:
+        # A fine-tuned model is named by the training run that produced it, so the report
+        # links accuracy and latency back to that run's config and commit.
+        train = find_train_run(model["run"])
+        model = {**model, "weights": train["summary"]["weights"], "train_run": train["id"]}
+        name = model.get("name", train["name"])
+    else:
+        name = model.get("name", Path(model["weights"]).stem)
     weights = model["weights"]
-    name = model.get("name", Path(weights).stem)
     cmap = get_class_map(cfg["dataset"]["class_map"])
 
     with start_run(f"{cfg['name']}-{name}", "evaluate", {**cfg, "model": model},
                    seed=cfg.get("seed"), device=device, tags=(cfg["name"],)) as run:
         result = {"model": name, "weights": str(weights), "run_id": run.id,
+                  "train_run": model.get("train_run"),
                   "wandb_url": run.record.get("wandb", {}).get("url"),
                   "dataset": {**cfg["dataset"], "n_images": len(gt.images)}}
 

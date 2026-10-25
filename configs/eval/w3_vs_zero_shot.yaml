@@ -1,0 +1,23 @@
+# What fine-tuning buys: zero-shot COCO models and their VisDrone fine-tunes, on test-dev,
+# scored on the SAME classes (visdrone_to_coco; a fine-tune's predictions go through the
+# same map as the ground truth, see DECISIONS.md). Same architectures, so latency is in
+# w3-reference and baseline.
+name: w3-vs-zero-shot
+seed: 0
+device: auto
+dataset:
+  gt: visdrone_det/gt/test-dev.json
+  class_map: visdrone_to_coco
+  limit: null
+models:
+  - {weights: yolo26n.pt, name: yolo26n-coco}
+  - {run: visdrone-yolo26n-640}
+  - {weights: yolo26s.pt, name: yolo26s-coco}
+  - {run: visdrone-yolo26s-640}
+detection:
+  imgsz: 640
+  conf: 0.001
+  iou: 0.7
+  max_det: 500
+latency:
+  enabled: false
