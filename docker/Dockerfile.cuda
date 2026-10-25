@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # CUDA training image. Built for linux/amd64; the host only needs an NVIDIA driver >= 525
 # and the NVIDIA container toolkit (torch cu126 wheels bundle CUDA and cuDNN themselves,
 # so a `base` CUDA image is enough).
@@ -24,14 +25,16 @@ ENV UV_LINK_MODE=copy \
 
 WORKDIR /app
 
-# Dependencies first: this layer only rebuilds when the lockfile changes.
+# Dependencies first: this layer only rebuilds when the lockfile changes. The uv cache is a
+# BuildKit cache mount, not part of any layer: torch + NVIDIA wheels are ~5 GB, and keeping
+# them twice (cache + venv) overflowed Docker Desktop's VM disk.
 COPY pyproject.toml uv.lock .python-version README.md ./
-RUN uv sync --frozen --no-dev --no-install-project
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-install-project
 
 COPY src ./src
 COPY configs ./configs
 COPY scripts ./scripts
-RUN uv sync --frozen --no-dev
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev
 
 # The image has no .git: the commit is baked in so every run still records it.
 ARG GIT_COMMIT=unknown
