@@ -1,5 +1,4 @@
-PHONY_W3 := w3-eval
-.PHONY: $(PHONY_W3) setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
+.PHONY: w3-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
 
 RUN := uv run
 CLI := $(RUN) aerotrack
