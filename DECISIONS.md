@@ -94,8 +94,8 @@ patched copy.
 
 **VisDrone-MOT evaluated classes: pedestrian, car, van, truck, bus.** These are the
 toolkit's five classes (README and `evaluateTrackA.m`). Other classes are kept out of the
-benchmarks and counted in `stats.json`. Measured on val: 18 tracks change class over
-their lifetime (e.g. car ↔ van). Each such track is split between two per-class
+benchmarks and counted in `stats.json`. Measured: 18 tracks on val and 229 on train change
+class over their lifetime (e.g. car ↔ van). Each such track is split between two per-class
 benchmarks. Ids cannot collide, since the benchmarks are separate, but the split costs
 those tracks some IDF1 in a per-class evaluation. The count is reported in `stats.json`.
 

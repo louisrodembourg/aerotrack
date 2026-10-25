@@ -8,7 +8,7 @@ sources:
   - filename: VisDrone2019-MOT-train.zip
     gdrive_id: 1-qX2d-P1Xr64ke6nTdlm33om1VxCUTSh
     official_page: https://github.com/VisDrone/VisDrone-Dataset
-    sha256: null
+    sha256: 566d08fb53fff4e539f386f5a408ccf17854fd53814dc756bdede2de1dbb4014
 splits:
   # Sequence counts from the VisDrone-Dataset README (56 train, 7 val).
   val: {dir: VisDrone2019-MOT-val, expected_sequences: 7}
