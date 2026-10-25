@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # CUDA training image. Built for linux/amd64; the host only needs an NVIDIA driver >= 525
 # and the NVIDIA container toolkit (torch cu126 wheels bundle CUDA and cuDNN themselves,
 # so a `base` CUDA image is enough).
