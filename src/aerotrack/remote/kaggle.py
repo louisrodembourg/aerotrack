@@ -43,8 +43,13 @@ def username() -> str:
     cred = Path(os.environ.get("KAGGLE_CONFIG_DIR", Path.home() / ".kaggle")) / "kaggle.json"
     if cred.exists():
         return json.loads(cred.read_text())["username"]
+    # Newer API tokens (~/.kaggle/access_token) do not store the username; the CLI resolves it.
+    view = subprocess.run([*KAGGLE_CLI, "config", "view"], text=True, capture_output=True).stdout
+    if m := re.search(r"^- username: (\S+)$", view, re.MULTILINE):
+        if m.group(1) != "None":
+            return m.group(1)
     raise SystemExit("Kaggle credentials not found: create an API token on kaggle.com "
-                     "(Settings -> API -> Create New Token) and save it as ~/.kaggle/kaggle.json")
+                     "(Settings -> API -> Create New Token) and save it under ~/.kaggle/")
 
 
 def _git(*args: str) -> str:
