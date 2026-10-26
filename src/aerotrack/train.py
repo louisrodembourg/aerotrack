@@ -157,6 +157,11 @@ def run_training(cfg: dict) -> dict:
             "wall_seconds": wall,
             "train_images": n_train,
             "epochs": tr["epochs"],
+            # Ultralytics halves the batch on a first-epoch CUDA OOM: record what actually
+            # ran. Gradients accumulate to the nominal batch (nbs=64) either way.
+            "batch_effective": model.trainer.batch_size,
+            "accumulate": model.trainer.accumulate,
+            "nominal_batch": model.trainer.args.nbs,
             "train_seconds_per_epoch": timing["train_seconds"],
             "train_images_per_second_last_epoch": throughput,
             "extrapolated_full_epoch_minutes": full_train / throughput / 60,
