@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -199,3 +201,29 @@ def test_latency_refused_on_a_throttled_mac(monkeypatch):
     harness.check_power({})
     monkeypatch.setattr(harness, "environment_info", env(None))  # not a Mac
     harness.check_power({})
+
+
+def test_onnx_cache_is_keyed_by_weights_content(tmp_path, monkeypatch):
+    # Two fine-tunes are both called best.pt: they must not share an ONNX export.
+    from aerotrack import inference
+
+    class FakeModel:
+        def __init__(self, path):
+            self.path = path
+
+        def export(self, **kw):
+            out = tmp_path / "export.onnx"
+            out.write_bytes(self.path.read_bytes())
+            return str(out)
+
+    monkeypatch.setattr(inference, "WEIGHTS_DIR", tmp_path / "w")
+    monkeypatch.setattr(inference, "load_yolo", lambda p: FakeModel(Path(p)))
+    paths = []
+    for run, content in (("n", b"nano"), ("s", b"small")):
+        best = tmp_path / run / "best.pt"
+        best.parent.mkdir()
+        best.write_bytes(content)
+        paths.append(inference.export_onnx(best, 640, 500))
+    assert paths[0] != paths[1]
+    assert paths[1].read_bytes() == b"small"
+    assert inference.export_onnx(tmp_path / "s" / "best.pt", 640, 500) == paths[1]

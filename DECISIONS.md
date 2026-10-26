@@ -225,3 +225,10 @@ against 7.7 ms in the `baseline` report. Since then:
 The baseline's power state was not recorded, so all Mac latency is re-measured in one
 session under these rules. *Rejected:* detecting throttling from the timings themselves
 (no reference to compare against on a new model).
+
+**The ONNX export cache is keyed by the checkpoint's content.** It was keyed by file name,
+and every fine-tune is `best.pt`: the first week 3 latency table timed, on ONNX Runtime,
+the export of the 3-epoch YOLO26n probe for both 100-epoch references (YOLO26s showed
+21.5 ms against 62.2 ms for the same architecture zero-shot, which exposed it). The key is
+now `<stem>_<sha256[:12]>_<imgsz>_md<max_det>`. Release checkpoints were never affected
+(unique names), so `baseline` stands; `w3-reference` was re-measured.

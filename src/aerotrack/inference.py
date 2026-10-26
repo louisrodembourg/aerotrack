@@ -14,6 +14,7 @@ can differ slightly from ours; ours is the deployment-faithful one.
 
 from __future__ import annotations
 
+import hashlib
 import time
 from pathlib import Path
 
@@ -28,9 +29,16 @@ STAGES = ("preprocess", "inference", "postprocess")
 
 
 def export_onnx(weights: str | Path, imgsz: int, max_det: int) -> Path:
-    """Static-shape batch-1 ONNX export, cached per (model, imgsz, max_det)."""
-    stem = Path(weights).stem
-    dest = WEIGHTS_DIR / "onnx" / f"{stem}_{imgsz}_md{max_det}.onnx"
+    """Static-shape batch-1 ONNX export, cached per (weights CONTENT, imgsz, max_det).
+
+    Keyed by a hash of the checkpoint, not its name: every fine-tune is called `best.pt`,
+    and a name-keyed cache once timed a 3-epoch YOLO26n export in place of a 100-epoch
+    YOLO26s (DECISIONS.md)."""
+    weights = resolve_weights(weights)
+    if not Path(weights).exists():
+        load_yolo(weights)  # a bare release name: download it before hashing
+    digest = hashlib.sha256(Path(weights).read_bytes()).hexdigest()[:12]
+    dest = WEIGHTS_DIR / "onnx" / f"{Path(weights).stem}_{digest}_{imgsz}_md{max_det}.onnx"
     if dest.exists():
         return dest
     model = load_yolo(weights)
