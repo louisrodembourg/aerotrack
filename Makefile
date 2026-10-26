@@ -2,6 +2,9 @@
 
 RUN := uv run
 CLI := $(RUN) aerotrack
+# Latency runs keep a Mac awake: idle sleep throttled a whole night of measurements once.
+KEEP_AWAKE := $(if $(filter Darwin,$(shell uname -s)),caffeinate -i,)
+EVAL := $(KEEP_AWAKE) $(CLI) evaluate
 
 help:  ## list targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-14s %s\n", $$1, $$2}'
@@ -42,12 +45,12 @@ smoke:  ## ~1 min: short training + evaluation on 100 images, on the local devic
 	$(CLI) train configs/train/smoke.yaml
 
 baseline:  ## COCO-pretrained YOLO on VisDrone-DET val, inference only
-	$(CLI) evaluate configs/eval/baseline.yaml
+	$(EVAL) configs/eval/baseline.yaml
 	$(CLI) readme-table
 
 w3-eval:  ## week 3: fine-tuned references on test-dev (pull them from Kaggle first), then README
-	$(CLI) evaluate configs/eval/w3_reference.yaml
-	$(CLI) evaluate configs/eval/w3_vs_zero_shot.yaml
+	$(EVAL) configs/eval/w3_reference.yaml
+	$(EVAL) configs/eval/w3_vs_zero_shot.yaml
 	$(CLI) readme-table
 
 readme:  ## regenerate README results from tracked reports

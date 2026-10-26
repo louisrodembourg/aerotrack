@@ -179,3 +179,23 @@ def test_detector_matches_ultralytics_predict():
     ref = load_yolo("yolo26n.pt").predict(img, conf=0.5, device="cpu", imgsz=640, verbose=False)[0]
     assert len(ours) == len(ref.boxes)
     assert sorted(ours[:, 5].astype(int)) == sorted(ref.boxes.cls.int().tolist())
+
+
+def test_latency_refused_on_a_throttled_mac(monkeypatch):
+    from aerotrack.eval import harness
+
+    def env(power):
+        return lambda *a, **k: {"macos_power": power}
+
+    monkeypatch.setattr(harness, "environment_info", env({"source": "battery", "low_power_mode": False}))
+    with pytest.raises(SystemExit, match="throttled"):
+        harness.check_power({"enabled": True})
+    harness.check_power({"enabled": True, "allow_throttled": True})
+    harness.check_power({"enabled": False})
+    monkeypatch.setattr(harness, "environment_info", env({"source": "ac", "low_power_mode": True}))
+    with pytest.raises(SystemExit):
+        harness.check_power({})
+    monkeypatch.setattr(harness, "environment_info", env({"source": "ac", "low_power_mode": False}))
+    harness.check_power({})
+    monkeypatch.setattr(harness, "environment_info", env(None))  # not a Mac
+    harness.check_power({})

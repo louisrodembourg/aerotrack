@@ -42,6 +42,19 @@ def _jetson_power_mode() -> str | None:
     return _run(["nvpmodel", "-q"])
 
 
+def _macos_power() -> dict | None:
+    """Power source and Low Power Mode on macOS: both can throttle the M-series CPU and
+    GPU, so they belong to the latency context like the Jetson power mode."""
+    if platform.system() != "Darwin" or not shutil.which("pmset"):
+        return None
+    batt = _run(["pmset", "-g", "batt"]) or ""
+    settings = _run(["pmset", "-g"]) or ""
+    low = next((line.split()[-1] for line in settings.splitlines()
+                if line.strip().startswith("lowpowermode")), None)
+    source = "ac" if "AC Power" in batt else "battery" if "Battery Power" in batt else None
+    return {"source": source, "low_power_mode": low == "1" if low is not None else None}
+
+
 def _tensorrt_version() -> str | None:
     try:
         import tensorrt  # noqa: PLC0415  # only present on the deployment target
@@ -71,6 +84,7 @@ def environment_info(device: str | None = None) -> dict:
         "onnxruntime": _version("onnxruntime") or _version("onnxruntime-gpu"),
         "tensorrt": _tensorrt_version(),
         "jetson_power_mode": _jetson_power_mode(),
+        "macos_power": _macos_power(),
     }
     if device is not None:
         info["device"] = device

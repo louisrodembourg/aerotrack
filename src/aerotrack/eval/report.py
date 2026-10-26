@@ -43,13 +43,27 @@ def accuracy_table(results: list[dict]) -> str:
     return "\n".join(rows)
 
 
+def _device(env: dict) -> str:
+    """Device name plus the power state when it is known: on a Mac, battery or Low Power
+    Mode; on a Jetson, the nvpmodel mode. Older records without it print the name only."""
+    name = env["device_name"]
+    if mac := env.get("macos_power"):
+        state = "AC" if mac.get("source") == "ac" else "battery"
+        if mac.get("low_power_mode"):
+            state += ", Low Power Mode"
+        name += f" [{state}]"
+    if jetson := env.get("jetson_power_mode"):
+        name += f" [{jetson.splitlines()[0]}]"
+    return name
+
+
 def latency_table(results: list[dict], budget: float) -> str:
     rows = ["| Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |",
             "|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in results:
         for lat in r["latency"]:
             rows.append(
-                f"| {r['model']} | {lat['runtime']['backend']} | {lat['env']['device_name']} | "
+                f"| {r['model']} | {lat['runtime']['backend']} | {_device(lat['env'])} | "
                 f"{_versions(lat)} | {_ms(lat['preprocess']['median_ms'])} | "
                 f"{_ms(lat['inference']['median_ms'])} | {_ms(lat['postprocess']['median_ms'])} | "
                 f"{_ms(lat['total']['median_ms'])} | {_ms(lat['total']['p95_ms'])} | "

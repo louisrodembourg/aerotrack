@@ -96,7 +96,21 @@ def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float) -> di
         return result
 
 
+def check_power(lat_cfg: dict) -> None:
+    """Refuse to time a throttled Mac. On battery with Low Power Mode, YOLO26n on MPS
+    measured 20.5 ms against 7.7 ms plugged in (DECISIONS.md): such a number would be
+    published as the device's latency. Checked before the accuracy pass, which is long."""
+    if not lat_cfg.get("enabled", True) or lat_cfg.get("allow_throttled", False):
+        return
+    power = environment_info().get("macos_power")
+    if power and (power["source"] != "ac" or power["low_power_mode"]):
+        raise SystemExit(f"latency on a throttled Mac ({power}): plug in the charger and turn "
+                         "Low Power Mode off, or set latency.allow_throttled=true to measure "
+                         "that state on purpose (it is recorded in every latency row)")
+
+
 def run_evaluation(cfg: dict) -> Path:
+    check_power(cfg.get("latency", {}))
     seed_everything(cfg.get("seed", 0))
     ds = cfg["dataset"]
     gt = SplitGT.load(PROCESSED_DIR / ds["gt"]).subset(ds.get("limit"), seed=cfg.get("seed", 0))

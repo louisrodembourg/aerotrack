@@ -207,3 +207,21 @@ CPU-bound: 4 vCPUs, load average 5.5, median GPU utilisation 31 % (n) and 70 % (
 *Not done:* `cache: ram` would remove JPEG decoding from the CPU budget, but Ultralytics
 warns it breaks deterministic training (`data/base.py`), and runs already fit in one
 session. To revisit if the week 4 sweeps are throughput-limited.
+
+## Latency on the Mac (week 3)
+
+**A throttled Mac is refused, and the power state is recorded.** The first week 3
+evaluation ran overnight: the Mac slept and woke 217 times (`pmset -g log`), on battery
+with Low Power Mode on. Its latency rows were wrong (YOLO26s faster than YOLO26n on
+ONNX Runtime) and were discarded; accuracy does not depend on timing and was kept.
+Measured in that state the next morning: YOLO26n zero-shot on MPS, 20.5 ms median
+against 7.7 ms in the `baseline` report. Since then:
+- every latency record carries `macos_power` (source, Low Power Mode), shown next to the
+  device in reports, like the Jetson power mode;
+- `aerotrack evaluate` refuses to time a Mac on battery or in Low Power Mode, before the
+  accuracy pass, unless `latency.allow_throttled=true` (to measure that state on purpose);
+- `make` wraps evaluations in `caffeinate -i`.
+
+The baseline's power state was not recorded, so all Mac latency is re-measured in one
+session under these rules. *Rejected:* detecting throttling from the timings themselves
+(no reference to compare against on a new model).
