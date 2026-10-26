@@ -17,14 +17,14 @@ in this repository states its device, its runtime versions and, on Jetson, its p
 
 ## Status
 
-Week 1–2: foundations and zero-shot baseline. The dataset converters, the evaluation
-harness (accuracy + latency through a single pipeline), the local smoke test and the
-remote training setup are in place. Fine-tuning starts at week 3.
+Week 3: reference fine-tunes. YOLO26n and YOLO26s were fine-tuned at 640 on VisDrone-DET
+(100 epochs, on Kaggle's free T4s) and evaluated on test-dev, against the zero-shot COCO
+baseline on the same classes. Next: the n vs s choice and the resolution / P2 head sweeps.
 
 | Weeks | Stage |
 |---|---|
-| 1–2 | foundations + baseline ← *here* |
-| 3–5 | fine-tuning on VisDrone-DET: resolution, P2 head, SAHI, hybrid keyframe mode, copy-paste augmentation → reference detector frozen |
+| 1–2 | foundations + baseline |
+| 3–5 ← *here* | fine-tuning on VisDrone-DET: resolution, P2 head, SAHI, hybrid keyframe mode, copy-paste augmentation → reference detector frozen |
 | 6–7 | ByteTrack / BoT-SORT on VisDrone-MOT (TrackEval: HOTA, MOTA, IDF1, IDSW), Kalman filter from scratch, hardware decision |
 | 8–10 | ONNX → TensorRT FP16 → INT8 PTQ → INT8 QAT, C++ runtime |
 | 11 | robustness: VisDrone → UAVDT transfer by attribute, synthetic degradations |
@@ -40,21 +40,21 @@ row names its run id. Methodology: [DECISIONS.md](DECISIONS.md).
 
 | Model | Class map | imgsz | mAP50-95 | mAP50 | AP_small | AP_medium | AP_large | Images | Run |
 |---|---|---|---|---|---|---|---|---|---|
-| yolo26n | visdrone_to_coco | 640 | 9.3 | 16.2 | 2.8 | 14.8 | 47.5 | 548 | `20261025-161554-baseline-yolo26n-f5afe9` |
-| yolo26s | visdrone_to_coco | 640 | 14.3 | 23.8 | 5.4 | 21.8 | 60.7 | 548 | `20261025-161652-baseline-yolo26s-7f456d` |
-| yolo11n | visdrone_to_coco | 640 | 8.7 | 15.1 | 2.7 | 13.6 | 47.4 | 548 | `20261025-161759-baseline-yolo11n-22a497` |
-| yolo11s | visdrone_to_coco | 640 | 13.4 | 22.4 | 4.7 | 21.3 | 58.1 | 548 | `20261025-161854-baseline-yolo11s-c5a572` |
+| yolo26n | visdrone_to_coco | 640 | 9.3 | 16.2 | 2.8 | 14.8 | 47.5 | 548 | `20261026-122239-baseline-yolo26n-6c1c21` |
+| yolo26s | visdrone_to_coco | 640 | 14.3 | 23.8 | 5.4 | 21.8 | 60.7 | 548 | `20261026-122333-baseline-yolo26s-fdf2b2` |
+| yolo11n | visdrone_to_coco | 640 | 8.7 | 15.1 | 2.7 | 13.6 | 47.4 | 548 | `20261026-122437-baseline-yolo11n-6dd85e` |
+| yolo11s | visdrone_to_coco | 640 | 13.4 | 22.4 | 4.7 | 21.3 | 58.1 | 548 | `20261026-122531-baseline-yolo11s-ce018b` |
 
 | Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
 |---|---|---|---|---|---|---|---|---|---|---|
-| yolo26n | torch | Apple M3 Pro GPU (MPS) | torch 2.14.1 | 1.0 | 5.5 | 1.1 | 7.7 | 8.6 | 129.3 | yes |
-| yolo26n | onnxruntime | Apple M3 Pro | ORT 1.31.0 | 1.7 | 19.1 | 0.9 | 21.9 | 22.8 | 45.7 | yes |
-| yolo26s | torch | Apple M3 Pro GPU (MPS) | torch 2.14.1 | 1.1 | 12.0 | 1.9 | 15.2 | 16.4 | 65.9 | yes |
-| yolo26s | onnxruntime | Apple M3 Pro | ORT 1.31.0 | 2.0 | 59.7 | 1.4 | 63.2 | 65.7 | 15.8 | no |
-| yolo11n | torch | Apple M3 Pro GPU (MPS) | torch 2.14.1 | 0.9 | 5.5 | 1.2 | 7.8 | 9.4 | 128.0 | yes |
-| yolo11n | onnxruntime | Apple M3 Pro | ORT 1.31.0 | 1.7 | 23.2 | 1.0 | 26.5 | 28.1 | 37.7 | yes |
-| yolo11s | torch | Apple M3 Pro GPU (MPS) | torch 2.14.1 | 1.1 | 11.8 | 1.5 | 14.6 | 16.3 | 68.6 | yes |
-| yolo11s | onnxruntime | Apple M3 Pro | ORT 1.31.0 | 1.8 | 62.5 | 1.4 | 65.9 | 68.5 | 15.2 | no |
+| yolo26n | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 0.9 | 5.3 | 1.0 | 7.6 | 9.3 | 131.4 | yes |
+| yolo26n | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.5 | 18.9 | 0.9 | 21.4 | 22.8 | 46.8 | yes |
+| yolo26s | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.1 | 11.9 | 1.4 | 14.4 | 15.6 | 69.5 | yes |
+| yolo26s | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.6 | 59.1 | 1.3 | 62.2 | 66.4 | 16.1 | no |
+| yolo11n | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 0.9 | 5.4 | 1.1 | 7.6 | 9.0 | 132.2 | yes |
+| yolo11n | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 2.0 | 23.0 | 1.0 | 26.4 | 31.2 | 37.9 | yes |
+| yolo11s | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.8 | 11.7 | 1.3 | 14.7 | 15.8 | 68.1 | yes |
+| yolo11s | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 2.7 | 61.8 | 1.3 | 65.6 | 67.3 | 15.2 | no |
 
 #### baseline-testdev ([full report](reports/baseline-testdev/results.md))
 
@@ -62,6 +62,32 @@ row names its run id. Methodology: [DECISIONS.md](DECISIONS.md).
 |---|---|---|---|---|---|---|---|---|---|
 | yolo26n | visdrone_to_coco | 640 | 4.1 | 7.6 | 1.3 | 8.4 | 24.1 | 1610 | `20261025-181334-baseline-testdev-yolo26n-39283d` |
 | yolo26s | visdrone_to_coco | 640 | 7.9 | 13.8 | 2.7 | 13.7 | 36.3 | 1610 | `20261025-181538-baseline-testdev-yolo26s-083bf8` |
+
+| Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|
+
+#### w3-reference ([full report](reports/w3-reference/results.md))
+
+| Model | Class map | imgsz | mAP50-95 | mAP50 | AP_small | AP_medium | AP_large | Images | Run |
+|---|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | visdrone | 640 | 14.2 | 25.5 | 6.4 | 21.3 | 33.7 | 1610 | `20261026-123237-w3-reference-visdrone-yolo26n-640-028952` |
+| visdrone-yolo26s-640 | visdrone | 640 | 17.8 | 31.0 | 9.0 | 26.9 | 38.1 | 1610 | `20261026-123505-w3-reference-visdrone-yolo26s-640-47ce4e` |
+
+| Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.0 | 6.0 | 1.4 | 8.4 | 10.3 | 119.2 | yes |
+| visdrone-yolo26n-640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.5 | 18.9 | 1.7 | 22.4 | 24.8 | 44.7 | yes |
+| visdrone-yolo26s-640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.2 | 11.9 | 1.6 | 14.7 | 17.0 | 67.8 | yes |
+| visdrone-yolo26s-640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.4 | 59.8 | 1.8 | 63.1 | 66.4 | 15.8 | no |
+
+#### w3-vs-zero-shot ([full report](reports/w3-vs-zero-shot/results.md))
+
+| Model | Class map | imgsz | mAP50-95 | mAP50 | AP_small | AP_medium | AP_large | Images | Run |
+|---|---|---|---|---|---|---|---|---|---|
+| yolo26n-coco | visdrone_to_coco | 640 | 4.1 | 7.6 | 1.3 | 8.4 | 24.1 | 1610 | `20261026-075557-w3-vs-zero-shot-yolo26n-coco-1df4c2` |
+| visdrone-yolo26n-640 | visdrone_to_coco | 640 | 19.1 | 34.1 | 8.8 | 28.1 | 41.2 | 1610 | `20261026-080420-w3-vs-zero-shot-visdrone-yolo26n-640-eb9bc6` |
+| yolo26s-coco | visdrone_to_coco | 640 | 7.9 | 13.8 | 2.7 | 13.7 | 36.3 | 1610 | `20261026-083827-w3-vs-zero-shot-yolo26s-coco-445337` |
+| visdrone-yolo26s-640 | visdrone_to_coco | 640 | 23.3 | 40.4 | 11.8 | 34.1 | 43.4 | 1610 | `20261026-100208-w3-vs-zero-shot-visdrone-yolo26s-640-34a24d` |
 
 | Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
 |---|---|---|---|---|---|---|---|---|---|---|

@@ -8,10 +8,10 @@ dataset's official rule. Latency in ms, batch 1, images pre-decoded in memory.
 
 | Model | Class map | imgsz | mAP50-95 | mAP50 | AP_small | AP_medium | AP_large | Images | Run |
 |---|---|---|---|---|---|---|---|---|---|
-| yolo26n | visdrone_to_coco | 640 | 9.3 | 16.2 | 2.8 | 14.8 | 47.5 | 548 | `20261025-161554-baseline-yolo26n-f5afe9` |
-| yolo26s | visdrone_to_coco | 640 | 14.3 | 23.8 | 5.4 | 21.8 | 60.7 | 548 | `20261025-161652-baseline-yolo26s-7f456d` |
-| yolo11n | visdrone_to_coco | 640 | 8.7 | 15.1 | 2.7 | 13.6 | 47.4 | 548 | `20261025-161759-baseline-yolo11n-22a497` |
-| yolo11s | visdrone_to_coco | 640 | 13.4 | 22.4 | 4.7 | 21.3 | 58.1 | 548 | `20261025-161854-baseline-yolo11s-c5a572` |
+| yolo26n | visdrone_to_coco | 640 | 9.3 | 16.2 | 2.8 | 14.8 | 47.5 | 548 | `20261026-122239-baseline-yolo26n-6c1c21` |
+| yolo26s | visdrone_to_coco | 640 | 14.3 | 23.8 | 5.4 | 21.8 | 60.7 | 548 | `20261026-122333-baseline-yolo26s-fdf2b2` |
+| yolo11n | visdrone_to_coco | 640 | 8.7 | 15.1 | 2.7 | 13.6 | 47.4 | 548 | `20261026-122437-baseline-yolo11n-6dd85e` |
+| yolo11s | visdrone_to_coco | 640 | 13.4 | 22.4 | 4.7 | 21.3 | 58.1 | 548 | `20261026-122531-baseline-yolo11s-ce018b` |
 
 Per-class AP50-95:
 
@@ -36,11 +36,11 @@ Budget: 25 FPS end-to-end. **Tracking is not yet part of the measured pipeline**
 
 | Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
 |---|---|---|---|---|---|---|---|---|---|---|
-| yolo26n | torch | Apple M3 Pro GPU (MPS) | torch 2.14.1 | 1.0 | 5.5 | 1.1 | 7.7 | 8.6 | 129.3 | yes |
-| yolo26n | onnxruntime | Apple M3 Pro | ORT 1.31.0 | 1.7 | 19.1 | 0.9 | 21.9 | 22.8 | 45.7 | yes |
-| yolo26s | torch | Apple M3 Pro GPU (MPS) | torch 2.14.1 | 1.1 | 12.0 | 1.9 | 15.2 | 16.4 | 65.9 | yes |
-| yolo26s | onnxruntime | Apple M3 Pro | ORT 1.31.0 | 2.0 | 59.7 | 1.4 | 63.2 | 65.7 | 15.8 | no |
-| yolo11n | torch | Apple M3 Pro GPU (MPS) | torch 2.14.1 | 0.9 | 5.5 | 1.2 | 7.8 | 9.4 | 128.0 | yes |
-| yolo11n | onnxruntime | Apple M3 Pro | ORT 1.31.0 | 1.7 | 23.2 | 1.0 | 26.5 | 28.1 | 37.7 | yes |
-| yolo11s | torch | Apple M3 Pro GPU (MPS) | torch 2.14.1 | 1.1 | 11.8 | 1.5 | 14.6 | 16.3 | 68.6 | yes |
-| yolo11s | onnxruntime | Apple M3 Pro | ORT 1.31.0 | 1.8 | 62.5 | 1.4 | 65.9 | 68.5 | 15.2 | no |
+| yolo26n | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 0.9 | 5.3 | 1.0 | 7.6 | 9.3 | 131.4 | yes |
+| yolo26n | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.5 | 18.9 | 0.9 | 21.4 | 22.8 | 46.8 | yes |
+| yolo26s | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.1 | 11.9 | 1.4 | 14.4 | 15.6 | 69.5 | yes |
+| yolo26s | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.6 | 59.1 | 1.3 | 62.2 | 66.4 | 16.1 | no |
+| yolo11n | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 0.9 | 5.4 | 1.1 | 7.6 | 9.0 | 132.2 | yes |
+| yolo11n | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 2.0 | 23.0 | 1.0 | 26.4 | 31.2 | 37.9 | yes |
+| yolo11s | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.8 | 11.7 | 1.3 | 14.7 | 15.8 | 68.1 | yes |
+| yolo11s | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 2.7 | 61.8 | 1.3 | 65.6 | 67.3 | 15.2 | no |
