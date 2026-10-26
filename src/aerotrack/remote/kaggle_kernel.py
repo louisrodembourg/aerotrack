@@ -21,6 +21,7 @@ import base64
 import io
 import json
 import os
+import signal
 import subprocess
 import sys
 import tarfile
@@ -37,6 +38,11 @@ ROOT = Path("/tmp/aerotrack")
 REPO = ROOT / "repo"
 OUT = Path("/kaggle/working")
 LOGS = OUT / "logs"
+# Kaggle stops a GPU session at 12 h (reported, not found in Kaggle's own pages), and
+# whether a killed session keeps its output is unknown. Jobs still running at this point
+# are interrupted instead: their run is saved as "failed", with last.pt / best.pt intact.
+DEADLINE_S = 11.25 * 3600
+STARTED = time.monotonic()
 
 
 def sh(cmd: list[str], **kw) -> None:
@@ -121,12 +127,26 @@ def main() -> int:
             stdout=log, stderr=subprocess.STDOUT)))
 
     status = []
-    for job, log, p in procs:
-        code = p.wait()
-        log.close()
-        status.append({**job, "exit_code": code, "log": log.name})
-        print(f"--- {job['config']} exit {code}; last lines:", flush=True)
-        print("".join(Path(log.name).read_text().splitlines(keepends=True)[-15:]), flush=True)
+    pending = list(procs)
+    timed_out = set()
+    while pending:
+        for item in list(pending):
+            job, log, p = item
+            if p.poll() is None:
+                continue
+            pending.remove(item)
+            log.close()
+            status.append({**job, "exit_code": p.returncode, "log": log.name,
+                           "interrupted_at_deadline": job["name"] in timed_out})
+            print(f"--- {job['config']} exit {p.returncode}; last lines:", flush=True)
+            print("".join(Path(log.name).read_text().splitlines(keepends=True)[-15:]), flush=True)
+        if pending and time.monotonic() - STARTED > DEADLINE_S:
+            for job, _, p in pending:
+                if job["name"] not in timed_out:
+                    print(f"deadline: interrupting {job['name']}", flush=True)
+                    p.send_signal(signal.SIGINT)
+                    timed_out.add(job["name"])
+        time.sleep(10)
     stop.set()
     (OUT / "jobs.json").write_text(json.dumps(
         {"commit": GIT_COMMIT, "dirty": GIT_DIRTY, "jobs": status}, indent=2))

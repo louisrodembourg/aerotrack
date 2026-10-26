@@ -232,3 +232,18 @@ the export of the 3-epoch YOLO26n probe for both 100-epoch references (YOLO26s s
 21.5 ms against 62.2 ms for the same architecture zero-shot, which exposed it). The key is
 now `<stem>_<sha256[:12]>_<imgsz>_md<max_det>`. Release checkpoints were never affected
 (unique names), so `baseline` stands; `w3-reference` was re-measured.
+
+## Resolution sweep (week 4)
+
+**YOLO26n at 640 / 960 / 1280, 100 epochs each, nominal batch 64.** Probe on Kaggle T4
+(3 epochs, both jobs in parallel): 960 at batch 16 peaks at 12.2 GB, ~240 s/epoch with
+validation (~7 h); 1280 at batch 8 peaks at 14.2 GB of 16, ~310-370 s/epoch (~9-10 h).
+Batch differs between resolutions to fit memory; gradient accumulation keeps the
+optimizer's nominal batch at 64 (`nbs`), so the schedule is the same. *Rejected:*
+fewer epochs at high resolution (would confound resolution with training length).
+
+**Session deadline in the kernel.** Kaggle's GPU session limit is reported as 12 h
+(secondary sources; Kaggle's own page needs a browser), and it is unknown whether a
+killed session keeps its output. The kernel interrupts jobs still running at 11 h 15
+(SIGINT, which `uv run` forwards; checked). Ultralytics does not catch it, so the run is
+recorded as `failed` with its checkpoints intact, never as a finished 100-epoch run.
