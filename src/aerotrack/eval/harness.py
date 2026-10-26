@@ -36,7 +36,10 @@ def _progress(label: str):
 
 
 def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float) -> dict:
-    det_cfg, lat_cfg = cfg["detection"], cfg.get("latency", {})
+    lat_cfg = cfg.get("latency", {})
+    # A model may override detection keys, e.g. a resolution sweep scores each model at
+    # the input size it was trained at; the value used is recorded in its accuracy row.
+    det_cfg = {**cfg["detection"], **{k: model[k] for k in cfg["detection"] if k in model}}
     device = resolve_device(cfg.get("device", "auto"))
     if "run" in model:
         # A fine-tuned model is named by the training run that produced it, so the report

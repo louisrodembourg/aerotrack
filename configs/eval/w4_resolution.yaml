@@ -1,0 +1,26 @@
+# Week 4: what input resolution buys YOLO26n, and what it costs. Each model is trained and
+# scored at the same size (configs/train/visdrone_yolo26n_{640,960,1280}.yaml); test-dev,
+# 10 VisDrone classes, latency on this machine.
+name: w4-resolution
+seed: 0
+device: auto
+dataset:
+  gt: visdrone_det/gt/test-dev.json
+  class_map: visdrone
+  limit: null
+models:
+  - {run: visdrone-yolo26n-640, imgsz: 640}
+  - {run: visdrone-yolo26n-960, imgsz: 960}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280}
+detection:
+  imgsz: 640
+  conf: 0.001
+  iou: 0.7
+  max_det: 500
+latency:
+  enabled: true
+  backends: [torch, onnxruntime]
+  conf: 0.25
+  n_images: 50
+  warmup: 20
+  iters: 200

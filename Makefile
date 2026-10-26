@@ -1,4 +1,4 @@
-.PHONY: w3-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
+.PHONY: w3-eval w4-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
 
 RUN := uv run
 CLI := $(RUN) aerotrack
@@ -51,6 +51,10 @@ baseline:  ## COCO-pretrained YOLO on VisDrone-DET val, inference only
 w3-eval:  ## week 3: fine-tuned references on test-dev (pull them from Kaggle first), then README
 	$(EVAL) configs/eval/w3_reference.yaml
 	$(EVAL) configs/eval/w3_vs_zero_shot.yaml
+	$(CLI) readme-table
+
+w4-eval:  ## week 4: YOLO26n resolution sweep on test-dev (pull from Kaggle first), then README
+	$(EVAL) configs/eval/w4_resolution.yaml
 	$(CLI) readme-table
 
 readme:  ## regenerate README results from tracked reports
