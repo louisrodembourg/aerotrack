@@ -247,3 +247,11 @@ fewer epochs at high resolution (would confound resolution with training length)
 killed session keeps its output. The kernel interrupts jobs still running at 11 h 15
 (SIGINT, which `uv run` forwards; checked). Ultralytics does not catch it, so the run is
 recorded as `failed` with its checkpoints intact, never as a finished 100-epoch run.
+
+**Measured.** Both runs finished 100 epochs without hitting the deadline: 960 in 7.8 h,
+1280 in 11.1 h (9 minutes under the 11 h 15 cut-off, so 1280 is the largest YOLO26n
+resolution one T4 session can train at this schedule). On test-dev, mAP50-95 goes
+14.2 → 19.0 → 22.5 and AP_small 6.4 → 10.2 → 12.9 (`reports/w4-resolution/`). CPU
+inference time scales with pixel count (×2.2 at 960, ×4.2 at 1280), so on the Mac only
+640 holds 25 FPS on ONNX Runtime CPU; on MPS all three do, 1280 with little margin
+(p95 25.2 ms, before tracking).

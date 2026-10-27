@@ -17,9 +17,10 @@ in this repository states its device, its runtime versions and, on Jetson, its p
 
 ## Status
 
-Week 3: reference fine-tunes. YOLO26n and YOLO26s were fine-tuned at 640 on VisDrone-DET
-(100 epochs, on Kaggle's free T4s) and evaluated on test-dev, against the zero-shot COCO
-baseline on the same classes. Next: the n vs s choice and the resolution / P2 head sweeps.
+Week 4: resolution sweep. YOLO26n was chosen as the primary axis (it alone keeps margin
+under the budget on CPU) and fine-tuned at 640, 960 and 1280 on VisDrone-DET (100 epochs,
+on Kaggle's free T4s), evaluated on test-dev with latency on the Mac. Next: P2 head,
+SAHI, hybrid keyframe mode and copy-paste augmentation.
 
 | Weeks | Stage |
 |---|---|
@@ -91,6 +92,23 @@ row names its run id. Methodology: [DECISIONS.md](DECISIONS.md).
 
 | Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
 |---|---|---|---|---|---|---|---|---|---|---|
+
+#### w4-resolution ([full report](reports/w4-resolution/results.md))
+
+| Model | Class map | imgsz | mAP50-95 | mAP50 | AP_small | AP_medium | AP_large | Images | Run |
+|---|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | visdrone | 640 | 14.2 | 25.5 | 6.4 | 21.3 | 33.7 | 1610 | `20261027-210740-w4-resolution-visdrone-yolo26n-640-a49658` |
+| visdrone-yolo26n-960 | visdrone | 960 | 19.0 | 33.1 | 10.2 | 27.9 | 38.7 | 1610 | `20261027-211003-w4-resolution-visdrone-yolo26n-960-84f637` |
+| visdrone-yolo26n-1280 | visdrone | 1280 | 22.5 | 38.9 | 12.9 | 32.6 | 42.8 | 1610 | `20261027-211247-w4-resolution-visdrone-yolo26n-1280-d04a2c` |
+
+| Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.1 | 6.3 | 1.5 | 8.8 | 12.1 | 113.1 | yes |
+| visdrone-yolo26n-640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.6 | 18.6 | 1.3 | 21.9 | 28.2 | 45.7 | yes |
+| visdrone-yolo26n-960 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 2.0 | 9.7 | 1.6 | 13.3 | 15.4 | 75.1 | yes |
+| visdrone-yolo26n-960 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 3.6 | 41.7 | 2.4 | 47.7 | 50.8 | 21.0 | no |
+| visdrone-yolo26n-1280 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 3.2 | 16.5 | 2.1 | 22.0 | 25.2 | 45.4 | yes |
+| visdrone-yolo26n-1280 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 6.5 | 78.7 | 2.6 | 87.9 | 91.9 | 11.4 | no |
 
 <!-- results:end -->
 
