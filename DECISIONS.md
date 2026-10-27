@@ -255,3 +255,19 @@ resolution one T4 session can train at this schedule). On test-dev, mAP50-95 goe
 inference time scales with pixel count (×2.2 at 960, ×4.2 at 1280), so on the Mac only
 640 holds 25 FPS on ONNX Runtime CPU; on MPS all three do, 1280 with little margin
 (p95 25.2 ms, before tracking).
+
+## P2 head (week 4)
+
+**Ultralytics' `yolo26n-p2.yaml`, initialised from `yolo26n.pt`.** It adds a stride-4
+detection level fed by the backbone's P2 features: VisDrone's median object is a few tens
+of pixels, below what stride 8 resolves well, and resolution alone doubled AP_small. It
+costs 9.6 GFLOPs against 6.2 for YOLO26n at 640 (Ultralytics `info()`, unfused). `model.load()` transfers the
+tensors whose name and shape match (360 of 902: the backbone and part of the neck; the
+head's layer indices shift, so the rest starts random). *Rejected:* `yolov8-p2.yaml`
+(a different backbone, so the comparison would not isolate the head); training from
+scratch (would confound the head with pre-training).
+
+**Trained at 640 and 960, same schedule as the resolution sweep**, so each P2 run has a
+plain counterpart at the same resolution. 960 runs at batch 8 (the P2 maps are 4x the P3
+maps), nominal batch 64 as before. 1280 is left out: the plain model already needed 11.1 h
+of the 11.25 h session there.

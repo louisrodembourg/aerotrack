@@ -22,7 +22,7 @@ from aerotrack.experiments import start_run
 from aerotrack.inference import Detector
 from aerotrack.paths import PROCESSED_DIR, RUNS_DIR
 from aerotrack.runtime import resolve_device, seed_everything
-from aerotrack.ultra import configure, load_yolo
+from aerotrack.ultra import configure, load_yolo, resolve_weights
 
 
 def ignore_path(image_path: str) -> Path:
@@ -118,6 +118,10 @@ def run_training(cfg: dict) -> dict:
 
     with start_run(cfg["name"], "train", cfg, seed=seed, device=device, tags=("train",)) as run:
         model = load_yolo(cfg["model"])
+        if cfg.get("pretrained"):
+            # An architecture built from .yaml starts random: transfer every tensor of the
+            # release weights whose name and shape match (backbone, most of the neck).
+            model.load(resolve_weights(cfg["pretrained"]))
         timing = {"train_seconds": []}
 
         def on_train_epoch_start(trainer):

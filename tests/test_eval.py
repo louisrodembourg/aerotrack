@@ -227,3 +227,9 @@ def test_onnx_cache_is_keyed_by_weights_content(tmp_path, monkeypatch):
     assert paths[0] != paths[1]
     assert paths[1].read_bytes() == b"small"
     assert inference.export_onnx(tmp_path / "s" / "best.pt", 640, 500) == paths[1]
+
+
+def test_resolve_weights_keeps_architectures_bare():
+    from aerotrack import ultra
+    assert ultra.resolve_weights("yolo26n-p2.yaml") == "yolo26n-p2.yaml"
+    assert Path(ultra.resolve_weights("yolo26n.pt")) == ultra.WEIGHTS_DIR / "yolo26n.pt"

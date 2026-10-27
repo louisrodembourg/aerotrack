@@ -38,8 +38,8 @@ def resolve_weights(weights: str | Path) -> str:
     """A bare release name (`yolo26n.pt`) is downloaded once into WEIGHTS_DIR instead of
     the current working directory, where Ultralytics would drop it by default."""
     p = Path(weights)
-    if p.exists() or p.parent != Path("."):
-        return str(p)
+    if p.exists() or p.parent != Path(".") or p.suffix == ".yaml":
+        return str(p)  # a bare .yaml is an architecture Ultralytics ships, not a download
     WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
     return str(WEIGHTS_DIR / p.name)
 

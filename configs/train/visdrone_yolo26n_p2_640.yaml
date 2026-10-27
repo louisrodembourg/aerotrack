@@ -1,0 +1,29 @@
+# Week 4 P2 head: YOLO26n with a stride-4 detection level for small objects, at 640;
+# otherwise identical to visdrone_yolo26n_640.yaml. With the 960 variant on Kaggle:
+#   uv run aerotrack kaggle push configs/train/visdrone_yolo26n_p2_640.yaml \
+#       configs/train/visdrone_yolo26n_p2_960.yaml --slug aerotrack-w4-p2
+name: visdrone-yolo26n-p2-640
+seed: 0
+device: auto
+model: yolo26n-p2.yaml
+pretrained: yolo26n.pt     # backbone + matching neck tensors; the P2 branch starts random
+data:
+  dataset: visdrone_det
+train:
+  epochs: 100
+  imgsz: 640
+  batch: 16
+  workers: 2             # 2 jobs share a Kaggle session's vCPUs; see logs/utilisation.csv
+  deterministic: true
+  cos_lr: true
+  close_mosaic: 10
+evaluate:
+  # Monitoring only: best.pt is selected on val, so val numbers are optimistic. Reported
+  # results come from `aerotrack evaluate` on test-dev (DECISIONS.md).
+  class_map: visdrone
+  split: val
+  limit: null
+  imgsz: 640
+  conf: 0.001
+  iou: 0.7
+  max_det: 500
