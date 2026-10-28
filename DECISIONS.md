@@ -347,9 +347,26 @@ extracted from the same source videos: MOT val sequences 0000137, 0000182, 00003
 0000339 have 6 to 18 frames in DET train each, 0000086 and 0000117 have frames in DET val;
 only 0000268 is unseen (file-name prefixes, checked October 2026). Val therefore serves to
 tune the tracker; test-dev (official link, added to `configs/data/visdrone_mot.yaml`)
-reports. A first pass on val (n at 640, not published) measured ByteTrack at 2.2 ms per
+reports. Test-dev is not clean either: 5 of its 17 sequences come from videos with frames
+in DET train (0000201, 0000297 twice) or DET val (0000249 twice). The headline scores use
+the 12 others, found by `eval.tracking.seen_by_detector` from the file names rather than a
+hand-made list; scores over all 17 are reported alongside, for comparison with published
+results. *Rejected:* reporting all 17 only (inflated by memorised scenes); retraining the
+detector without those videos (the detection results of weeks 3-5 would no longer apply
+to the tracked model). A first pass on val (n at 640, not published) measured ByteTrack at 2.2 ms per
 frame on the M3 Pro CPU.
 
 **End-to-end latency includes the tracker.** Frames of one sequence are decoded
 beforehand and run in order through detector + tracker update; the tracker restarts when
 the frame list wraps so it never sees a jump in time.
+
+**Measured (`reports/w6-bytetrack/`, MOT test-dev, 12 unseen sequences).** Tracking
+quality follows detection quality: HOTA 36.5 (n 640), 37.4 (P2 640), 41.7 (960), 42.1
+(1280), the same order as test-dev mAP. The tracker costs 1.3-1.6 ms per frame, so the
+end-to-end budget is decided by the detector: on MPS all four hold 25 FPS, on CPU only the
+640 models. Over all 17 sequences, 1280 scores 43.5 against 42.1 on the unseen ones, the
+direction expected from the leaked videos. MOTA is near zero or negative (-9.8 to 8.4):
+with the reference thresholds (new tracks from score 0.25) false positives outweigh the
+matches MOTA credits; HOTA and IDF1 are less sensitive to them. These thresholds are
+Ultralytics' defaults, not tuned for VisDrone; tuning them on MOT val is the next step,
+and the test-dev numbers above stay as the untuned reference.

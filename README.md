@@ -21,13 +21,15 @@ Week 4: resolution sweep. YOLO26n was chosen as the primary axis (it alone keeps
 under the budget on CPU) and fine-tuned at 640, 960 and 1280 on VisDrone-DET (100 epochs,
 on Kaggle's free T4s), evaluated on test-dev with latency on the Mac; a P2 (stride-4) head
 was then compared at 640 and 960. Week 5: tiled (SAHI-style) inference, measured against
-training at the higher resolution. Next: hybrid keyframe mode and copy-paste augmentation.
+training at the higher resolution. Week 6: ByteTrack with a from-scratch Kalman filter,
+end to end on VisDrone-MOT test-dev. Next: tracker tuning on MOT val, the hybrid keyframe
+mode, copy-paste augmentation (needs Kaggle quota).
 
 | Weeks | Stage |
 |---|---|
 | 1–2 | foundations + baseline |
-| 3–5 ← *here* | fine-tuning on VisDrone-DET: resolution, P2 head, SAHI, hybrid keyframe mode, copy-paste augmentation → reference detector frozen |
-| 6–7 | ByteTrack / BoT-SORT on VisDrone-MOT (TrackEval: HOTA, MOTA, IDF1, IDSW), Kalman filter from scratch, hardware decision |
+| 3–5 | fine-tuning on VisDrone-DET: resolution, P2 head, SAHI, hybrid keyframe mode, copy-paste augmentation → reference detector frozen |
+| 6–7 ← *here* | ByteTrack / BoT-SORT on VisDrone-MOT (TrackEval: HOTA, MOTA, IDF1, IDSW), Kalman filter from scratch, hardware decision |
 | 8–10 | ONNX → TensorRT FP16 → INT8 PTQ → INT8 QAT, C++ runtime |
 | 11 | robustness: VisDrone → UAVDT transfer by attribute, synthetic degradations |
 | 12 | write-up, demo |
@@ -39,9 +41,9 @@ row names its run id. Methodology: [DECISIONS.md](DECISIONS.md).
 
 ### Findings so far
 
-All on VisDrone-DET test-dev (1610 images never used for training or checkpoint
-selection), mAP50-95 in %; latency on an Apple M3 Pro on AC power, detection only
-(tracking not yet in the pipeline).
+Detection on VisDrone-DET test-dev (1610 images never used for training or checkpoint
+selection), mAP50-95 in %; latency on an Apple M3 Pro on AC power, detection only unless
+stated.
 
 - **Fine-tuning is the first-order gain.** On the six classes COCO can name, YOLO26n goes
   from 4.1 zero-shot to 19.1 fine-tuned, YOLO26s from 7.9 to 23.3
@@ -61,6 +63,12 @@ selection), mAP50-95 in %; latency on an Apple M3 Pro on AC power, detection onl
   more.** Cutting each frame into 2x2 tiles plus the whole frame lifts the 640 model from
   14.2 to 18.1 mAP (27.9 ms on MPS); the model trained at 1280 reaches 22.5 in a single
   pass for 23.5 ms ([w5-sahi](reports/w5-sahi/results.md)).
+- **Tracking follows detection, and costs little.** ByteTrack (Kalman filter written from
+  scratch, checked against Ultralytics' implementation) on VisDrone-MOT test-dev, scored on
+  the 12 sequences whose videos the detector never saw: HOTA 36.5 behind the 640 model,
+  42.1 behind the 1280 one. The tracker takes ~1.5 ms per frame; end to end, n at 640
+  runs at 98 FPS on MPS and 43 FPS on CPU. Thresholds are still the untuned defaults
+  ([w6-bytetrack](reports/w6-bytetrack/results.md)).
 
 <!-- results:start -->
 #### baseline ([full report](reports/baseline/results.md))
@@ -176,6 +184,28 @@ selection), mAP50-95 in %; latency on an Apple M3 Pro on AC power, detection onl
 | visdrone-yolo26n-1280 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 3.8 | 17.2 | 2.4 | 23.5 | 26.4 | 42.6 | yes |
 | visdrone-yolo26n-1280 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 7.1 | 82.2 | 2.4 | 91.9 | 104.2 | 10.9 | no |
 
+#### w6-bytetrack ([full report](reports/w6-bytetrack/results.md))
+
+HOTA, MOTA, IDF1, IDSW on the 12 sequences unseen by the detector:
+
+| Model | Tracker | imgsz | HOTA | MOTA | IDF1 | IDSW | HOTA, all 17 seq. | Run |
+|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | bytetrack | 640 | 36.5 | -5.6 | 40.9 | 3790 | 35.1 | `20261028-213022-w6-bytetrack-visdrone-yolo26n-640-45f93a` |
+| visdrone-yolo26n-p2-640 | bytetrack | 640 | 37.4 | -9.8 | 41.9 | 3630 | 36.3 | `20261028-213421-w6-bytetrack-visdrone-yolo26n-p2-640-9f824f` |
+| visdrone-yolo26n-960 | bytetrack | 960 | 41.7 | 8.4 | 47.0 | 3585 | 41.3 | `20261028-213852-w6-bytetrack-visdrone-yolo26n-960-16a9a0` |
+| visdrone-yolo26n-1280 | bytetrack | 1280 | 42.1 | 7.6 | 48.2 | 3438 | 43.5 | `20261028-214340-w6-bytetrack-visdrone-yolo26n-1280-315ce6` |
+
+| Model | Backend | Device | Versions | Pre | Infer | Post | Track | Total median | Total p95 | FPS (median) | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.1 | 6.6 | 1.2 | 1.3 | 10.2 | 16.5 | 98.1 | yes |
+| visdrone-yolo26n-640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.6 | 18.6 | 1.2 | 1.5 | 23.0 | 29.0 | 43.4 | yes |
+| visdrone-yolo26n-p2-640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.1 | 7.3 | 1.5 | 1.4 | 11.4 | 17.0 | 88.0 | yes |
+| visdrone-yolo26n-p2-640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.6 | 27.3 | 1.5 | 1.5 | 31.9 | 38.2 | 31.4 | yes |
+| visdrone-yolo26n-960 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 2.0 | 9.7 | 1.4 | 1.4 | 14.7 | 21.0 | 68.1 | yes |
+| visdrone-yolo26n-960 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 3.5 | 41.5 | 1.4 | 1.5 | 48.6 | 54.3 | 20.6 | no |
+| visdrone-yolo26n-1280 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 3.5 | 16.3 | 2.0 | 1.5 | 23.3 | 29.3 | 43.0 | yes |
+| visdrone-yolo26n-1280 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 6.2 | 78.2 | 1.6 | 1.6 | 87.9 | 94.6 | 11.4 | no |
+
 <!-- results:end -->
 
 ## Reproduce
@@ -192,6 +222,7 @@ make w3-eval      # each week's evaluation on test-dev (after pulling its runs),
 make w4-eval
 make w4-p2-eval
 make w5-sahi-eval
+make w6-track-eval
 make data         # everything: + VisDrone-MOT, UAVDT, visualisations, TrackEval checks
 make test
 ```

@@ -1,0 +1,1327 @@
+{
+  "name": "w6-bytetrack",
+  "kind": "tracking",
+  "config": {
+    "name": "w6-bytetrack",
+    "seed": 0,
+    "device": "auto",
+    "dataset": {
+      "mot": "visdrone_mot",
+      "split": "test-dev"
+    },
+    "models": [
+      {
+        "run": "visdrone-yolo26n-640",
+        "imgsz": 640
+      },
+      {
+        "run": "visdrone-yolo26n-p2-640",
+        "imgsz": 640
+      },
+      {
+        "run": "visdrone-yolo26n-960",
+        "imgsz": 960
+      },
+      {
+        "run": "visdrone-yolo26n-1280",
+        "imgsz": 1280
+      }
+    ],
+    "detection": {
+      "imgsz": 640,
+      "conf": 0.1,
+      "iou": 0.7,
+      "max_det": 500
+    },
+    "tracker": {
+      "type": "bytetrack",
+      "high": 0.25,
+      "low": 0.1,
+      "new": 0.25,
+      "buffer": 30,
+      "match": 0.8
+    },
+    "latency": {
+      "enabled": true,
+      "backends": [
+        "torch",
+        "onnxruntime"
+      ],
+      "n_frames": 100,
+      "warmup": 20,
+      "iters": 200
+    },
+    "_source": "configs/eval/w6_bytetrack.yaml"
+  },
+  "budget_fps": 25,
+  "results": [
+    {
+      "model": "visdrone-yolo26n-640",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261025-192839-visdrone-yolo26n-640-540b95/weights/best.pt",
+      "run_id": "20261028-213022-w6-bytetrack-visdrone-yolo26n-640-45f93a",
+      "train_run": "20261025-192839-visdrone-yolo26n-640-540b95",
+      "accuracy": {
+        "HOTA": 0.3646367286722528,
+        "MOTA": -0.05645996656745551,
+        "IDF1": 0.4090925282096146,
+        "IDSW": 3790,
+        "per_class": {
+          "bus": {
+            "HOTA": 0.3521976471960529,
+            "MOTA": -1.1927710843373494,
+            "IDF1": 0.35625704622322435,
+            "IDSW": 5
+          },
+          "car": {
+            "HOTA": 0.49616310300859795,
+            "MOTA": 0.48623928671305666,
+            "IDF1": 0.6009174675360688,
+            "IDSW": 1076
+          },
+          "pedestrian": {
+            "HOTA": 0.2353779453680248,
+            "MOTA": 0.08018210017741377,
+            "IDF1": 0.27217959872393155,
+            "IDSW": 2423
+          },
+          "truck": {
+            "HOTA": 0.34515682655633423,
+            "MOTA": 0.16237878488026913,
+            "IDF1": 0.39768072769828183,
+            "IDSW": 138
+          },
+          "van": {
+            "HOTA": 0.3942881212322538,
+            "MOTA": 0.18167107972933216,
+            "IDF1": 0.41842780086656645,
+            "IDSW": 148
+          }
+        },
+        "all_sequences": {
+          "HOTA": 0.3508557829600988,
+          "MOTA": 0.1455423487359559,
+          "IDF1": 0.4031669743952186,
+          "IDSW": 5375,
+          "per_class": {
+            "bus": {
+              "HOTA": 0.3510809469639017,
+              "MOTA": -0.09932885906040269,
+              "IDF1": 0.38905445678677864,
+              "IDSW": 33
+            },
+            "car": {
+              "HOTA": 0.4610495456744368,
+              "MOTA": 0.3733922057976579,
+              "IDF1": 0.5560419950904022,
+              "IDSW": 2033
+            },
+            "pedestrian": {
+              "HOTA": 0.24650753783500412,
+              "MOTA": 0.052478609523078694,
+              "IDF1": 0.2884834046239645,
+              "IDSW": 2895
+            },
+            "truck": {
+              "HOTA": 0.3564585675796195,
+              "MOTA": 0.25007333528894105,
+              "IDF1": 0.4169070512820513,
+              "IDSW": 196
+            },
+            "van": {
+              "HOTA": 0.3391823167475315,
+              "MOTA": 0.15109645213050454,
+              "IDF1": 0.36534796419289634,
+              "IDSW": 218
+            }
+          }
+        },
+        "sequences": {
+          "all": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000201_00000_v",
+            "uav0000249_00001_v",
+            "uav0000249_02688_v",
+            "uav0000297_00000_v",
+            "uav0000297_02761_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ],
+          "unseen": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ]
+        },
+        "classes": [
+          "bus",
+          "car",
+          "pedestrian",
+          "truck",
+          "van"
+        ],
+        "split": "data/processed/visdrone_mot/test-dev",
+        "imgsz": 640,
+        "conf": 0.1,
+        "tracker": {
+          "type": "bytetrack",
+          "high": 0.25,
+          "low": 0.1,
+          "new": 0.25,
+          "buffer": 30,
+          "match": 0.8
+        },
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false
+        }
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 1.107500516809523,
+            "p95_ms": 1.3337392490939235,
+            "mean_ms": 1.1206714760919567,
+            "std_ms": 0.10368062401235131,
+            "min_ms": 0.7882080099079758,
+            "max_ms": 1.3870839902665466
+          },
+          "inference": {
+            "median_ms": 6.566395997651853,
+            "p95_ms": 7.6035582897020495,
+            "mean_ms": 6.4501603836833965,
+            "std_ms": 0.7797922512743474,
+            "min_ms": 5.060416006017476,
+            "max_ms": 9.99662498361431
+          },
+          "postprocess": {
+            "median_ms": 1.2433749943738803,
+            "p95_ms": 3.589635119715239,
+            "mean_ms": 1.5921244100900367,
+            "std_ms": 0.9388539612635601,
+            "min_ms": 0.9647920087445527,
+            "max_ms": 6.040207983460277
+          },
+          "tracking": {
+            "median_ms": 1.2970414973096922,
+            "p95_ms": 4.4958979400689705,
+            "mean_ms": 1.6973639196658041,
+            "std_ms": 1.1556891667712217,
+            "min_ms": 0.6046250055078417,
+            "max_ms": 6.106709013693035
+          },
+          "total": {
+            "median_ms": 10.19352101138793,
+            "p95_ms": 16.509290509566195,
+            "mean_ms": 10.860320189531194,
+            "std_ms": 2.4820717435662316,
+            "min_ms": 8.170000015525147,
+            "max_ms": 20.240957994246855
+          },
+          "fps_median": 98.10152928343668,
+          "fps_p95": 60.571954889312586,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 640,
+          "conf": 0.1,
+          "sequence": "uav0000009_03358_v",
+          "n_distinct_frames": 100,
+          "runtime": {
+            "backend": "torch",
+            "device": "mps",
+            "half": false
+          },
+          "peak_process_rss_mb": 1134.875,
+          "device_memory_mb": 98.8125,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "mps",
+            "device_name": "Apple M3 Pro GPU (MPS)"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess",
+            "tracking"
+          ],
+          "tracking_included": true,
+          "budget_fps": 25,
+          "meets_budget_median": true
+        },
+        {
+          "preprocess": {
+            "median_ms": 1.6177920042537153,
+            "p95_ms": 1.847537212597672,
+            "mean_ms": 1.6262585294316523,
+            "std_ms": 0.12013401305477842,
+            "min_ms": 1.316042005782947,
+            "max_ms": 2.0364999945741147
+          },
+          "inference": {
+            "median_ms": 18.628124991664663,
+            "p95_ms": 18.834382986824494,
+            "mean_ms": 18.665693115326576,
+            "std_ms": 0.11852549334654701,
+            "min_ms": 18.540125020081177,
+            "max_ms": 19.464999990304932
+          },
+          "postprocess": {
+            "median_ms": 1.2480000004870817,
+            "p95_ms": 3.8340395884006275,
+            "mean_ms": 1.6298303891380783,
+            "std_ms": 1.0340126310509166,
+            "min_ms": 0.9727080177981406,
+            "max_ms": 6.6335419833194464
+          },
+          "tracking": {
+            "median_ms": 1.474604505347088,
+            "p95_ms": 5.002209795929957,
+            "mean_ms": 1.9103064385126345,
+            "std_ms": 1.2581130368274434,
+            "min_ms": 0.7124159892555326,
+            "max_ms": 6.3765840022824705
+          },
+          "total": {
+            "median_ms": 23.047541501000524,
+            "p95_ms": 29.04151249676943,
+            "mean_ms": 23.83208847240894,
+            "std_ms": 2.2475444450671676,
+            "min_ms": 21.916292957030237,
+            "max_ms": 33.04604202276096
+          },
+          "fps_median": 43.3885757383966,
+          "fps_p95": 34.43346830201216,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 640,
+          "conf": 0.1,
+          "sequence": "uav0000009_03358_v",
+          "n_distinct_frames": 100,
+          "runtime": {
+            "backend": "onnxruntime",
+            "device": "cpu",
+            "half": false,
+            "onnx": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/weights/onnx/best_e7c4c905d5e7_640_md500.onnx",
+            "providers": [
+              "CPUExecutionProvider"
+            ],
+            "intra_op_num_threads": "default"
+          },
+          "peak_process_rss_mb": 1227.234375,
+          "device_memory_mb": null,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "cpu",
+            "device_name": "Apple M3 Pro"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess",
+            "tracking"
+          ],
+          "tracking_included": true,
+          "budget_fps": 25,
+          "meets_budget_median": true
+        }
+      ]
+    },
+    {
+      "model": "visdrone-yolo26n-p2-640",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261027-222023-visdrone-yolo26n-p2-640-2de32c/weights/best.pt",
+      "run_id": "20261028-213421-w6-bytetrack-visdrone-yolo26n-p2-640-9f824f",
+      "train_run": "20261027-222023-visdrone-yolo26n-p2-640-2de32c",
+      "accuracy": {
+        "HOTA": 0.3735962565454364,
+        "MOTA": -0.09789015805226171,
+        "IDF1": 0.4185882335696733,
+        "IDSW": 3630,
+        "per_class": {
+          "bus": {
+            "HOTA": 0.35638918362711397,
+            "MOTA": -1.21285140562249,
+            "IDF1": 0.36996735582154516,
+            "IDSW": 20
+          },
+          "car": {
+            "HOTA": 0.508684872154921,
+            "MOTA": 0.509549425060455,
+            "IDF1": 0.6224282125480968,
+            "IDSW": 960
+          },
+          "pedestrian": {
+            "HOTA": 0.2581220650503006,
+            "MOTA": 0.05639303288291807,
+            "IDF1": 0.2959660891194483,
+            "IDSW": 2400
+          },
+          "truck": {
+            "HOTA": 0.3422151143046497,
+            "MOTA": 0.06154759548782901,
+            "IDF1": 0.3753468672411275,
+            "IDSW": 129
+          },
+          "van": {
+            "HOTA": 0.4025700475901969,
+            "MOTA": 0.0959105619299794,
+            "IDF1": 0.4292326431181486,
+            "IDSW": 121
+          }
+        },
+        "all_sequences": {
+          "HOTA": 0.363319564560485,
+          "MOTA": 0.09875691614637469,
+          "IDF1": 0.4153636051117101,
+          "IDSW": 4940,
+          "per_class": {
+            "bus": {
+              "HOTA": 0.3752463855793166,
+              "MOTA": -0.18859060402684563,
+              "IDF1": 0.4223475140953357,
+              "IDSW": 55
+            },
+            "car": {
+              "HOTA": 0.47461755443286685,
+              "MOTA": 0.4003192854472522,
+              "IDF1": 0.5817572928390871,
+              "IDSW": 1743
+            },
+            "pedestrian": {
+              "HOTA": 0.2654314930200212,
+              "MOTA": 0.02863254421977516,
+              "IDF1": 0.3088047897408928,
+              "IDSW": 2733
+            },
+            "truck": {
+              "HOTA": 0.3477930543625202,
+              "MOTA": 0.17497799941331768,
+              "IDF1": 0.3911279818391575,
+              "IDSW": 211
+            },
+            "van": {
+              "HOTA": 0.35350933540769996,
+              "MOTA": 0.07844535567837405,
+              "IDF1": 0.3727804470440777,
+              "IDSW": 198
+            }
+          }
+        },
+        "sequences": {
+          "all": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000201_00000_v",
+            "uav0000249_00001_v",
+            "uav0000249_02688_v",
+            "uav0000297_00000_v",
+            "uav0000297_02761_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ],
+          "unseen": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ]
+        },
+        "classes": [
+          "bus",
+          "car",
+          "pedestrian",
+          "truck",
+          "van"
+        ],
+        "split": "data/processed/visdrone_mot/test-dev",
+        "imgsz": 640,
+        "conf": 0.1,
+        "tracker": {
+          "type": "bytetrack",
+          "high": 0.25,
+          "low": 0.1,
+          "new": 0.25,
+          "buffer": 30,
+          "match": 0.8
+        },
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false
+        }
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 1.107603995478712,
+            "p95_ms": 1.248481564107351,
+            "mean_ms": 1.1311766442668159,
+            "std_ms": 0.15391743747446668,
+            "min_ms": 0.7503329834435135,
+            "max_ms": 2.124416991136968
+          },
+          "inference": {
+            "median_ms": 7.325437487452291,
+            "p95_ms": 7.915123239217792,
+            "mean_ms": 7.400556091452017,
+            "std_ms": 0.23786562819923654,
+            "min_ms": 7.224583008792251,
+            "max_ms": 8.8177919969894
+          },
+          "postprocess": {
+            "median_ms": 1.4900415117153898,
+            "p95_ms": 4.392795552848838,
+            "mean_ms": 1.932766634708969,
+            "std_ms": 1.2283574205910885,
+            "min_ms": 1.0177079821005464,
+            "max_ms": 8.343958004843444
+          },
+          "tracking": {
+            "median_ms": 1.3835204881615937,
+            "p95_ms": 4.24738155270461,
+            "mean_ms": 1.710523110232316,
+            "std_ms": 1.0926204892660412,
+            "min_ms": 0.5929159815423191,
+            "max_ms": 6.183707999298349
+          },
+          "total": {
+            "median_ms": 11.368687497451901,
+            "p95_ms": 17.02778157778084,
+            "mean_ms": 12.175022480660118,
+            "std_ms": 2.4173156755647343,
+            "min_ms": 10.138041019672528,
+            "max_ms": 24.003875005291775
+          },
+          "fps_median": 87.96090139905183,
+          "fps_p95": 58.727556225226486,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 640,
+          "conf": 0.1,
+          "sequence": "uav0000009_03358_v",
+          "n_distinct_frames": 100,
+          "runtime": {
+            "backend": "torch",
+            "device": "mps",
+            "half": false
+          },
+          "peak_process_rss_mb": 1338.703125,
+          "device_memory_mb": 178.84375,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "mps",
+            "device_name": "Apple M3 Pro GPU (MPS)"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess",
+            "tracking"
+          ],
+          "tracking_included": true,
+          "budget_fps": 25,
+          "meets_budget_median": true
+        },
+        {
+          "preprocess": {
+            "median_ms": 1.6150625015143305,
+            "p95_ms": 1.9876896010828204,
+            "mean_ms": 1.5436068900453392,
+            "std_ms": 0.4081656968247042,
+            "min_ms": 0.9164169896394014,
+            "max_ms": 2.996208000695333
+          },
+          "inference": {
+            "median_ms": 27.291687511024065,
+            "p95_ms": 27.531734746298753,
+            "mean_ms": 27.362309793243185,
+            "std_ms": 0.4733980461086251,
+            "min_ms": 27.152791997650638,
+            "max_ms": 33.5813749989029
+          },
+          "postprocess": {
+            "median_ms": 1.4743749925401062,
+            "p95_ms": 4.371225606882942,
+            "mean_ms": 1.9099970764364116,
+            "std_ms": 1.2586840554071157,
+            "min_ms": 0.99066601251252,
+            "max_ms": 8.541874994989485
+          },
+          "tracking": {
+            "median_ms": 1.4996454992797226,
+            "p95_ms": 4.81786009913776,
+            "mean_ms": 1.8662660534027964,
+            "std_ms": 1.200396800189755,
+            "min_ms": 0.6467500061262399,
+            "max_ms": 6.608625000808388
+          },
+          "total": {
+            "median_ms": 31.879021000349894,
+            "p95_ms": 38.16629644279601,
+            "mean_ms": 32.68217981312773,
+            "std_ms": 2.451695441553341,
+            "min_ms": 29.93058299762197,
+            "max_ms": 43.950957973720506
+          },
+          "fps_median": 31.368591902148573,
+          "fps_p95": 26.201127518327826,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 640,
+          "conf": 0.1,
+          "sequence": "uav0000009_03358_v",
+          "n_distinct_frames": 100,
+          "runtime": {
+            "backend": "onnxruntime",
+            "device": "cpu",
+            "half": false,
+            "onnx": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/weights/onnx/best_fbbfe154b1ba_640_md500.onnx",
+            "providers": [
+              "CPUExecutionProvider"
+            ],
+            "intra_op_num_threads": "default"
+          },
+          "peak_process_rss_mb": 1438.15625,
+          "device_memory_mb": null,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "cpu",
+            "device_name": "Apple M3 Pro"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess",
+            "tracking"
+          ],
+          "tracking_included": true,
+          "budget_fps": 25,
+          "meets_budget_median": true
+        }
+      ]
+    },
+    {
+      "model": "visdrone-yolo26n-960",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261026-121848-visdrone-yolo26n-960-6c7687/weights/best.pt",
+      "run_id": "20261028-213852-w6-bytetrack-visdrone-yolo26n-960-16a9a0",
+      "train_run": "20261026-121848-visdrone-yolo26n-960-6c7687",
+      "accuracy": {
+        "HOTA": 0.4171169058274165,
+        "MOTA": 0.08384220837489402,
+        "IDF1": 0.4700737469428854,
+        "IDSW": 3585,
+        "per_class": {
+          "bus": {
+            "HOTA": 0.45014174028068143,
+            "MOTA": -0.6506024096385542,
+            "IDF1": 0.45979899497487436,
+            "IDSW": 7
+          },
+          "car": {
+            "HOTA": 0.5184209959853824,
+            "MOTA": 0.532941815131027,
+            "IDF1": 0.6314273101140826,
+            "IDSW": 957
+          },
+          "pedestrian": {
+            "HOTA": 0.29023478793624446,
+            "MOTA": 0.13930886734135972,
+            "IDF1": 0.34093776032369394,
+            "IDSW": 2334
+          },
+          "truck": {
+            "HOTA": 0.39996642164885565,
+            "MOTA": 0.1642588561250742,
+            "IDF1": 0.4439731702505425,
+            "IDSW": 120
+          },
+          "van": {
+            "HOTA": 0.42682058328591854,
+            "MOTA": 0.2333039129155634,
+            "IDF1": 0.4742314990512334,
+            "IDSW": 167
+          }
+        },
+        "all_sequences": {
+          "HOTA": 0.4131721777384875,
+          "MOTA": 0.2656504354125194,
+          "IDF1": 0.48796085064361094,
+          "IDSW": 4888,
+          "per_class": {
+            "bus": {
+              "HOTA": 0.48504457081493296,
+              "MOTA": 0.30268456375838926,
+              "IDF1": 0.5851035224522722,
+              "IDSW": 22
+            },
+            "car": {
+              "HOTA": 0.4978367339759164,
+              "MOTA": 0.4512230855503127,
+              "IDF1": 0.6132683791775012,
+              "IDSW": 1692
+            },
+            "pedestrian": {
+              "HOTA": 0.2938138404409056,
+              "MOTA": 0.09404136131680926,
+              "IDF1": 0.3491872070906132,
+              "IDSW": 2700
+            },
+            "truck": {
+              "HOTA": 0.40168733875212076,
+              "MOTA": 0.2692138457025521,
+              "IDF1": 0.4541640366836223,
+              "IDSW": 208
+            },
+            "van": {
+              "HOTA": 0.387478404708562,
+              "MOTA": 0.2110893207345338,
+              "IDF1": 0.4380811078140455,
+              "IDSW": 266
+            }
+          }
+        },
+        "sequences": {
+          "all": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000201_00000_v",
+            "uav0000249_00001_v",
+            "uav0000249_02688_v",
+            "uav0000297_00000_v",
+            "uav0000297_02761_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ],
+          "unseen": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ]
+        },
+        "classes": [
+          "bus",
+          "car",
+          "pedestrian",
+          "truck",
+          "van"
+        ],
+        "split": "data/processed/visdrone_mot/test-dev",
+        "imgsz": 960,
+        "conf": 0.1,
+        "tracker": {
+          "type": "bytetrack",
+          "high": 0.25,
+          "low": 0.1,
+          "new": 0.25,
+          "buffer": 30,
+          "match": 0.8
+        },
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false
+        }
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 2.0431875018402934,
+            "p95_ms": 2.8086791659006844,
+            "mean_ms": 2.1898999853874557,
+            "std_ms": 0.3726216014534512,
+            "min_ms": 1.5944999759085476,
+            "max_ms": 2.9935000056866556
+          },
+          "inference": {
+            "median_ms": 9.679916489403695,
+            "p95_ms": 9.840933339728508,
+            "mean_ms": 9.691687304584775,
+            "std_ms": 0.0687339828046201,
+            "min_ms": 9.516291000181809,
+            "max_ms": 9.993624989874661
+          },
+          "postprocess": {
+            "median_ms": 1.4422500098589808,
+            "p95_ms": 4.299585384433157,
+            "mean_ms": 1.8954500003019348,
+            "std_ms": 1.2105227028655317,
+            "min_ms": 1.132625009631738,
+            "max_ms": 8.414999989327043
+          },
+          "tracking": {
+            "median_ms": 1.4020000089658424,
+            "p95_ms": 4.674960470583754,
+            "mean_ms": 1.8226402311120182,
+            "std_ms": 1.240740971623248,
+            "min_ms": 0.5830000154674053,
+            "max_ms": 7.041332981316373
+          },
+          "total": {
+            "median_ms": 14.677063009003177,
+            "p95_ms": 20.967347928672094,
+            "mean_ms": 15.599677521386184,
+            "std_ms": 2.4478532835803066,
+            "min_ms": 13.342584017664194,
+            "max_ms": 27.392207994125783
+          },
+          "fps_median": 68.13352231209895,
+          "fps_p95": 47.69320389979011,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 960,
+          "conf": 0.1,
+          "sequence": "uav0000009_03358_v",
+          "n_distinct_frames": 100,
+          "runtime": {
+            "backend": "torch",
+            "device": "mps",
+            "half": false
+          },
+          "peak_process_rss_mb": 1547.96875,
+          "device_memory_mb": 178.953125,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "mps",
+            "device_name": "Apple M3 Pro GPU (MPS)"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess",
+            "tracking"
+          ],
+          "tracking_included": true,
+          "budget_fps": 25,
+          "meets_budget_median": true
+        },
+        {
+          "preprocess": {
+            "median_ms": 3.4861460007959977,
+            "p95_ms": 4.343922609405126,
+            "mean_ms": 3.4079941795789637,
+            "std_ms": 0.6800030753933598,
+            "min_ms": 2.4283750099129975,
+            "max_ms": 4.741624987218529
+          },
+          "inference": {
+            "median_ms": 41.530500500812195,
+            "p95_ms": 42.30848298029741,
+            "mean_ms": 41.60367563512409,
+            "std_ms": 0.3652833640515538,
+            "min_ms": 41.26154197729193,
+            "max_ms": 44.2532500019297
+          },
+          "postprocess": {
+            "median_ms": 1.4042710099602118,
+            "p95_ms": 4.3380767456255835,
+            "mean_ms": 2.0373370955348946,
+            "std_ms": 1.260899923204807,
+            "min_ms": 1.0599580127745867,
+            "max_ms": 8.657250000396743
+          },
+          "tracking": {
+            "median_ms": 1.514875009888783,
+            "p95_ms": 4.953886834846343,
+            "mean_ms": 1.9450556198717095,
+            "std_ms": 1.2753095958023326,
+            "min_ms": 0.6524999917019159,
+            "max_ms": 7.184916001278907
+          },
+          "total": {
+            "median_ms": 48.58791598235257,
+            "p95_ms": 54.34955329546938,
+            "mean_ms": 48.99406253010966,
+            "std_ms": 2.5253327139511956,
+            "min_ms": 45.648833009181544,
+            "max_ms": 60.901832999661565
+          },
+          "fps_median": 20.581249057136063,
+          "fps_p95": 18.39941525486946,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 960,
+          "conf": 0.1,
+          "sequence": "uav0000009_03358_v",
+          "n_distinct_frames": 100,
+          "runtime": {
+            "backend": "onnxruntime",
+            "device": "cpu",
+            "half": false,
+            "onnx": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/weights/onnx/best_50a82a75bd3a_960_md500.onnx",
+            "providers": [
+              "CPUExecutionProvider"
+            ],
+            "intra_op_num_threads": "default"
+          },
+          "peak_process_rss_mb": 1641.015625,
+          "device_memory_mb": null,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "cpu",
+            "device_name": "Apple M3 Pro"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess",
+            "tracking"
+          ],
+          "tracking_included": true,
+          "budget_fps": 25,
+          "meets_budget_median": false
+        }
+      ]
+    },
+    {
+      "model": "visdrone-yolo26n-1280",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261026-121849-visdrone-yolo26n-1280-88e380/weights/best.pt",
+      "run_id": "20261028-214340-w6-bytetrack-visdrone-yolo26n-1280-315ce6",
+      "train_run": "20261026-121849-visdrone-yolo26n-1280-88e380",
+      "accuracy": {
+        "HOTA": 0.42149125285207856,
+        "MOTA": 0.07582758836569974,
+        "IDF1": 0.48203556280706783,
+        "IDSW": 3438,
+        "per_class": {
+          "bus": {
+            "HOTA": 0.43271696723012687,
+            "MOTA": -0.5783132530120482,
+            "IDF1": 0.4567741935483871,
+            "IDSW": 18
+          },
+          "car": {
+            "HOTA": 0.5304319237993353,
+            "MOTA": 0.5422198095050091,
+            "IDF1": 0.6487158115700439,
+            "IDSW": 848
+          },
+          "pedestrian": {
+            "HOTA": 0.3134543547160836,
+            "MOTA": 0.14640541837292598,
+            "IDF1": 0.37203260518120607,
+            "IDSW": 2215
+          },
+          "truck": {
+            "HOTA": 0.39510121280792326,
+            "MOTA": 0.05185038590936077,
+            "IDF1": 0.43848173363591864,
+            "IDSW": 115
+          },
+          "van": {
+            "HOTA": 0.43575180570692373,
+            "MOTA": 0.21697558105325096,
+            "IDF1": 0.4941734700997837,
+            "IDSW": 242
+          }
+        },
+        "all_sequences": {
+          "HOTA": 0.4348923077096214,
+          "MOTA": 0.25911557697815724,
+          "IDF1": 0.5225214662070214,
+          "IDSW": 4555,
+          "per_class": {
+            "bus": {
+              "HOTA": 0.5358695622486185,
+              "MOTA": 0.3610738255033557,
+              "IDF1": 0.6664864864864865,
+              "IDSW": 32
+            },
+            "car": {
+              "HOTA": 0.5136696608714686,
+              "MOTA": 0.45896272645522423,
+              "IDF1": 0.6370594323691235,
+              "IDSW": 1423
+            },
+            "pedestrian": {
+              "HOTA": 0.3169438716975081,
+              "MOTA": 0.0793749760196447,
+              "IDF1": 0.3790911449646021,
+              "IDSW": 2561
+            },
+            "truck": {
+              "HOTA": 0.41393778890045013,
+              "MOTA": 0.20049867996479906,
+              "IDF1": 0.4749462769041853,
+              "IDSW": 193
+            },
+            "van": {
+              "HOTA": 0.39404065483006184,
+              "MOTA": 0.19566767694776252,
+              "IDF1": 0.45502399031070945,
+              "IDSW": 346
+            }
+          }
+        },
+        "sequences": {
+          "all": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000201_00000_v",
+            "uav0000249_00001_v",
+            "uav0000249_02688_v",
+            "uav0000297_00000_v",
+            "uav0000297_02761_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ],
+          "unseen": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ]
+        },
+        "classes": [
+          "bus",
+          "car",
+          "pedestrian",
+          "truck",
+          "van"
+        ],
+        "split": "data/processed/visdrone_mot/test-dev",
+        "imgsz": 1280,
+        "conf": 0.1,
+        "tracker": {
+          "type": "bytetrack",
+          "high": 0.25,
+          "low": 0.1,
+          "new": 0.25,
+          "buffer": 30,
+          "match": 0.8
+        },
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false
+        }
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 3.5048749996349216,
+            "p95_ms": 4.053537853178568,
+            "mean_ms": 3.5051612604002003,
+            "std_ms": 0.33237100600173725,
+            "min_ms": 2.82100000185892,
+            "max_ms": 4.35450000804849
+          },
+          "inference": {
+            "median_ms": 16.312250489136204,
+            "p95_ms": 16.51258334168233,
+            "mean_ms": 16.33050436823396,
+            "std_ms": 0.10487189229603382,
+            "min_ms": 16.091208992293105,
+            "max_ms": 16.73825000762008
+          },
+          "postprocess": {
+            "median_ms": 1.9592914904933423,
+            "p95_ms": 4.74402086547343,
+            "mean_ms": 2.3241479256830644,
+            "std_ms": 1.2353504702975333,
+            "min_ms": 1.3184580020606518,
+            "max_ms": 9.96395800029859
+          },
+          "tracking": {
+            "median_ms": 1.5059169963933527,
+            "p95_ms": 5.178614889155142,
+            "mean_ms": 1.9513404039025772,
+            "std_ms": 1.3488675218837403,
+            "min_ms": 0.6940840103197843,
+            "max_ms": 8.07583300047554
+          },
+          "total": {
+            "median_ms": 23.276061998330988,
+            "p95_ms": 29.265922895865515,
+            "mean_ms": 24.111153958219802,
+            "std_ms": 2.605877114748464,
+            "min_ms": 21.701832010876387,
+            "max_ms": 38.20516599807888
+          },
+          "fps_median": 42.96259393327381,
+          "fps_p95": 34.16943328793069,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 1280,
+          "conf": 0.1,
+          "sequence": "uav0000009_03358_v",
+          "n_distinct_frames": 100,
+          "runtime": {
+            "backend": "torch",
+            "device": "mps",
+            "half": false
+          },
+          "peak_process_rss_mb": 1641.015625,
+          "device_memory_mb": 1203.0,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "mps",
+            "device_name": "Apple M3 Pro GPU (MPS)"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess",
+            "tracking"
+          ],
+          "tracking_included": true,
+          "budget_fps": 25,
+          "meets_budget_median": true
+        },
+        {
+          "preprocess": {
+            "median_ms": 6.24087500909809,
+            "p95_ms": 7.219081882794853,
+            "mean_ms": 6.377823718939908,
+            "std_ms": 0.47797449822456983,
+            "min_ms": 5.623042001388967,
+            "max_ms": 7.996500004082918
+          },
+          "inference": {
+            "median_ms": 78.18597900040913,
+            "p95_ms": 79.28677884192437,
+            "mean_ms": 78.44916044618003,
+            "std_ms": 1.4136002609474956,
+            "min_ms": 77.93279201723635,
+            "max_ms": 93.38925001793541
+          },
+          "postprocess": {
+            "median_ms": 1.6397704894188792,
+            "p95_ms": 4.543706256663425,
+            "mean_ms": 2.1829672691819724,
+            "std_ms": 1.2978148428024499,
+            "min_ms": 1.1751659912988544,
+            "max_ms": 9.40862501738593
+          },
+          "tracking": {
+            "median_ms": 1.620375012862496,
+            "p95_ms": 4.9577723038964905,
+            "mean_ms": 2.0350931100256275,
+            "std_ms": 1.2947990454263811,
+            "min_ms": 0.7443340145982802,
+            "max_ms": 7.846708002034575
+          },
+          "total": {
+            "median_ms": 87.9341874824604,
+            "p95_ms": 94.57314340543233,
+            "mean_ms": 89.04504454432754,
+            "std_ms": 2.9689066014780185,
+            "min_ms": 86.07208402827382,
+            "max_ms": 103.18587502115406
+          },
+          "fps_median": 11.372141241419474,
+          "fps_p95": 10.573826395016066,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 1280,
+          "conf": 0.1,
+          "sequence": "uav0000009_03358_v",
+          "n_distinct_frames": 100,
+          "runtime": {
+            "backend": "onnxruntime",
+            "device": "cpu",
+            "half": false,
+            "onnx": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/weights/onnx/best_5904a8e2e5b0_1280_md500.onnx",
+            "providers": [
+              "CPUExecutionProvider"
+            ],
+            "intra_op_num_threads": "default"
+          },
+          "peak_process_rss_mb": 1646.625,
+          "device_memory_mb": null,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "cpu",
+            "device_name": "Apple M3 Pro"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess",
+            "tracking"
+          ],
+          "tracking_included": true,
+          "budget_fps": 25,
+          "meets_budget_median": false
+        }
+      ]
+    }
+  ]
+}

@@ -21,6 +21,7 @@ from aerotrack.eval.tracking import (
     benchmark_classes,
     read_frames,
     run_trackeval,
+    seen_by_detector,
     sequences,
     timed_tracking,
     track_sequence,
@@ -75,19 +76,27 @@ def evaluate_tracking_model(model: dict, cfg: dict, split_dir: Path, budget: flo
                 rows = track_sequence(read_frames(seq["frames"]), detector, make_tracker(), keep)
                 write_tracks(rows, seq, split_dir / "ignore" / f"{seq['name']}.txt", class_ids,
                              tmp)
-            per_class = {}
-            for cls in classes:
-                per_class[cls] = run_trackeval(split_dir, cls, tmp, cls)
+            # Scored twice: every sequence (comparable with published numbers), and only
+            # the sequences whose source video the detector never saw (the headline).
+            unseen = [s["name"] for s in seqs if not seen_by_detector(s["name"])]
+            seqmap = tmp / "seqmap-unseen.txt"
+            seqmap.write_text("name\n" + "\n".join(unseen) + "\n")
+            scores = {}
+            for subset, sm in (("all", None), ("unseen", seqmap)):
+                per_class = {cls: run_trackeval(split_dir, cls, tmp, cls, sm) for cls in classes}
+                mean = {m: float(np.mean([v[m] for v in per_class.values()]))
+                        for m in ("HOTA", "MOTA", "IDF1")}
+                mean["IDSW"] = int(sum(v["IDSW"] for v in per_class.values()))
+                scores[subset] = {**mean, "per_class": per_class}
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
-        mean = {m: float(np.mean([v[m] for v in per_class.values()]))
-                for m in ("HOTA", "MOTA", "IDF1")}
-        mean["IDSW"] = int(sum(v["IDSW"] for v in per_class.values()))
-        acc = {**mean, "per_class": per_class, "classes": classes,
+        acc = {**scores["unseen"], "all_sequences": scores["all"],
+               "sequences": {"all": [s["name"] for s in seqs], "unseen": unseen},
+               "classes": classes,
                "split": str(split_dir.relative_to(REPO_ROOT)) if split_dir.is_relative_to(REPO_ROOT)
                else str(split_dir), "imgsz": det_cfg["imgsz"], "conf": det_cfg["conf"],
                "tracker": trk_cfg, "runtime": detector.runtime}
-        run.log({k: v for k, v in mean.items()})
+        run.log({k: v for k, v in scores["unseen"].items() if k != "per_class"})
         result = {"model": name, "weights": str(weights), "run_id": run.id,
                   "train_run": train["id"], "accuracy": acc, "latency": []}
 

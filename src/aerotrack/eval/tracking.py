@@ -44,7 +44,8 @@ def _import_trackeval():
     return trackeval
 
 
-def run_trackeval(split_dir: Path, cls: str, trackers_dir: Path, tracker: str) -> dict:
+def run_trackeval(split_dir: Path, cls: str, trackers_dir: Path, tracker: str,
+                  seqmap: Path | None = None) -> dict:
     """HOTA / CLEAR / Identity for one class benchmark. Tracker files must live in
     <trackers_dir>/<tracker>/data/<seq>.txt (frame,id,x,y,w,h,conf,-1,-1,-1) and must
     already be filtered with the dataset's ignore rule."""
@@ -56,7 +57,7 @@ def run_trackeval(split_dir: Path, cls: str, trackers_dir: Path, tracker: str) -
                 "TIME_PROGRESS": False, "DISPLAY_LESS_PROGRESS": True}
     ds_cfg = {**trackeval.datasets.MotChallenge2DBox.get_default_dataset_config(),
               "GT_FOLDER": str(split_dir / cls), "TRACKERS_FOLDER": str(trackers_dir),
-              "TRACKERS_TO_EVAL": [tracker], "SEQMAP_FILE": str(split_dir / "seqmap.txt"),
+              "TRACKERS_TO_EVAL": [tracker], "SEQMAP_FILE": str(seqmap or split_dir / "seqmap.txt"),
               "SKIP_SPLIT_FOL": True, "BENCHMARK": "aerotrack", "CLASSES_TO_EVAL": ["pedestrian"],
               "OUTPUT_FOLDER": str(trackers_dir / "_out")}
     quiet = {"PRINT_CONFIG": False}
@@ -91,11 +92,24 @@ def gt_self_check(dataset: str, split: str, root: Path | None = None) -> dict[st
     return out
 
 
-def sequences(split_dir: Path) -> list[dict]:
-    """name, frame paths, size of each sequence of a split (from any class's seqinfo)."""
+def seen_by_detector(seq_name: str, det_root: Path = PROCESSED_DIR / "visdrone_det",
+                     splits: tuple[str, ...] = ("train", "val")) -> list[str]:
+    """DET images taken from the same source video as a MOT sequence, in the splits a
+    detector is trained or selected on. VisDrone names both after the video:
+    uav0000201_00000_v (MOT) and 0000201_00412_d_0000045.jpg (DET)."""
+    video = f"{int(seq_name.removeprefix('uav').split('_')[0]):07d}_"
+    return [f"{sp}/{p.name}" for sp in splits
+            for p in sorted((det_root / "images" / sp).glob(f"{video}*"))]
+
+
+def sequences(split_dir: Path, names: list[str] | None = None) -> list[dict]:
+    """name, frame paths, size of each sequence of a split (from any class's seqinfo),
+    restricted to `names` when given."""
     cls = benchmark_classes(split_dir)[0]
     out = []
     for name in (split_dir / "seqmap.txt").read_text().split()[1:]:
+        if names is not None and name not in names:
+            continue
         ini = split_dir / cls / name / "seqinfo.ini"
         info = configparser.ConfigParser()
         info.read(ini)

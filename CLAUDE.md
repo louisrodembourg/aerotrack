@@ -19,7 +19,7 @@ uv run aerotrack --help
 scripts/remote_train.sh configs/train/<cfg>.yaml [--set key=value]   # CUDA box
 uv run aerotrack kaggle push <cfg> [<cfg2>] --slug <slug> [--suffix probe] [--dry-run]
 uv run aerotrack kaggle push <cfg> --slug <slug> --resume <run-id>   # continue an interrupted run
-make w3-eval | w4-eval | w4-p2-eval | w5-sahi-eval   # evaluate a week's pulled runs on test-dev, then README
+make w3-eval | w4-eval | w4-p2-eval | w5-sahi-eval | w6-track-eval   # evaluate a week's pulled runs on test-dev, then README
 uv run aerotrack kaggle status|pull <slug>                           # Kaggle 2 x T4
 ```
 
@@ -57,7 +57,8 @@ configs/      project.yaml (budget), data/ (sources, class maps), train/, eval/
 src/aerotrack/
   data/       download, per-dataset converters, ignore rule, class maps, visualisation
   inference.py  Detector (torch | onnxruntime)
-  eval/       detection (COCO), latency, tracking (TrackEval), harness, report
+  eval/       detection (COCO), latency, tracking (TrackEval), harness, track_harness, report
+  track/      Kalman filter (from scratch), ByteTrack
   train.py    Ultralytics training with masked dataset + tracked run
   experiments.py, runtime/ (device, env fingerprint, git, seed), ultra.py
 docker/       Dockerfile.cuda

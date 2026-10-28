@@ -111,3 +111,16 @@ def test_write_tracks_drops_ignored_regions_per_frame(tmp_path):
     assert [ln.split(",")[:2] for ln in car] == [["1", "2"], ["2", "1"]]
     assert car[0].split(",")[2:6] == ["200.00", "200.00", "40.00", "40.00"]  # x, y, w, h
     assert len((tmp_path / "out" / "van" / "data" / "seq.txt").read_text().splitlines()) == 1
+
+
+def test_seen_by_detector_matches_the_source_video(tmp_path):
+    from aerotrack.eval.tracking import seen_by_detector
+
+    for split, name in (("train", "0000201_00412_d_0000045.jpg"),
+                        ("test-dev", "0000073_00600_d_0000001.jpg")):
+        (tmp_path / "images" / split).mkdir(parents=True)
+        (tmp_path / "images" / split / name).touch()
+    (tmp_path / "images" / "val").mkdir()
+    assert seen_by_detector("uav0000201_00000_v", tmp_path) == ["train/0000201_00412_d_0000045.jpg"]
+    assert seen_by_detector("uav0000073_00600_v", tmp_path) == []  # DET test-dev: never trained on
+    assert seen_by_detector("uav0000020_00000_v", tmp_path) == []  # 0000020_ is not 0000201_
