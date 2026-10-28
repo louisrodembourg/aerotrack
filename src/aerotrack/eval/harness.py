@@ -21,6 +21,10 @@ from aerotrack.paths import CONFIGS_DIR, PROCESSED_DIR, REPO_ROOT, from_data_rel
 from aerotrack.runtime import environment_info, resolve_device, seed_everything
 
 
+# Tiled-inference settings (inference.Detector), set per model or for the whole config.
+TILING = ("tiles", "tile_overlap", "tile_full", "merge_ios")
+
+
 def project_config() -> dict:
     return yaml.safe_load((CONFIGS_DIR / "project.yaml").read_text())
 
@@ -39,7 +43,9 @@ def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float) -> di
     lat_cfg = cfg.get("latency", {})
     # A model may override detection keys, e.g. a resolution sweep scores each model at
     # the input size it was trained at; the value used is recorded in its accuracy row.
-    det_cfg = {**cfg["detection"], **{k: model[k] for k in cfg["detection"] if k in model}}
+    det_cfg = {**cfg["detection"],
+               **{k: model[k] for k in (*cfg["detection"], *TILING) if k in model}}
+    tiling = {k: det_cfg[k] for k in TILING if k in det_cfg}
     device = resolve_device(cfg.get("device", "auto"))
     if "run" in model:
         # A fine-tuned model is named by the training run that produced it, so the report
@@ -61,7 +67,7 @@ def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float) -> di
 
         detector = Detector(weights, backend="torch", device=device, imgsz=det_cfg["imgsz"],
                             conf=det_cfg["conf"], iou=det_cfg["iou"], max_det=det_cfg["max_det"],
-                            half=det_cfg.get("half", False))
+                            half=det_cfg.get("half", False), **tiling)
         print(f"[{name}] accuracy on {len(gt.images)} images, device={device}", flush=True)
         acc = evaluate_detection(gt, cmap, detector, detector.names, det_cfg["max_det"],
                                  _progress(name))
@@ -79,7 +85,7 @@ def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float) -> di
                 d = Detector(weights, backend=backend, device=bdev, imgsz=det_cfg["imgsz"],
                              conf=lat_cfg["conf"], iou=det_cfg["iou"], max_det=det_cfg["max_det"],
                              half=det_cfg.get("half", False) and backend == "torch",
-                             ort_threads=lat_cfg.get("ort_threads"))
+                             ort_threads=lat_cfg.get("ort_threads"), **tiling)
                 print(f"[{name}] latency backend={backend} device={bdev}", flush=True)
                 lat = benchmark(d, images, lat_cfg["warmup"], lat_cfg["iters"])
                 lat["env"] = environment_info(bdev)

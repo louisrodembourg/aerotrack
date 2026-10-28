@@ -32,12 +32,21 @@ def _versions(lat: dict) -> str:
     return ", ".join(parts)
 
 
+def _input(a: dict) -> str:
+    """Input size, plus the tile grid for tiled inference: `640 (2x2+full)`."""
+    rt = a.get("runtime") or {}
+    if not rt.get("tiles"):
+        return str(a["imgsz"])
+    rows, cols = rt["tiles"]
+    return f"{a['imgsz']} ({rows}x{cols}{'+full' if rt.get('tile_full') else ''})"
+
+
 def accuracy_table(results: list[dict]) -> str:
     rows = ["| Model | Class map | imgsz | mAP50-95 | mAP50 | AP_small | AP_medium | AP_large | Images | Run |",
             "|---|---|---|---|---|---|---|---|---|---|"]
     for r in results:
         a = r["accuracy"]
-        rows.append(f"| {r['model']} | {a['class_map']} | {a['imgsz']} | {_pct(a['mAP50-95'])} | "
+        rows.append(f"| {r['model']} | {a['class_map']} | {_input(a)} | {_pct(a['mAP50-95'])} | "
                     f"{_pct(a['mAP50'])} | {_pct(a['AP_small'])} | {_pct(a['AP_medium'])} | "
                     f"{_pct(a['AP_large'])} | {a['n_images']} | `{r['run_id']}` |")
     return "\n".join(rows)

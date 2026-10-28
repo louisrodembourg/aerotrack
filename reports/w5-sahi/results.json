@@ -1,0 +1,1149 @@
+{
+  "name": "w5-sahi",
+  "config": {
+    "name": "w5-sahi",
+    "seed": 0,
+    "device": "auto",
+    "dataset": {
+      "gt": "visdrone_det/gt/test-dev.json",
+      "class_map": "visdrone",
+      "limit": null
+    },
+    "models": [
+      {
+        "run": "visdrone-yolo26n-640",
+        "imgsz": 640
+      },
+      {
+        "run": "visdrone-yolo26n-640",
+        "name": "visdrone-yolo26n-640-tiled",
+        "imgsz": 640,
+        "tiles": [
+          2,
+          2
+        ]
+      },
+      {
+        "run": "visdrone-yolo26n-p2-640",
+        "name": "visdrone-yolo26n-p2-640-tiled",
+        "imgsz": 640,
+        "tiles": [
+          2,
+          2
+        ]
+      },
+      {
+        "run": "visdrone-yolo26n-1280",
+        "imgsz": 1280
+      }
+    ],
+    "detection": {
+      "imgsz": 640,
+      "conf": 0.001,
+      "iou": 0.7,
+      "max_det": 500,
+      "tile_overlap": 0.2,
+      "tile_full": true,
+      "merge_ios": 0.5
+    },
+    "latency": {
+      "enabled": true,
+      "backends": [
+        "torch",
+        "onnxruntime"
+      ],
+      "conf": 0.25,
+      "n_images": 50,
+      "warmup": 20,
+      "iters": 200
+    },
+    "_source": "configs/eval/w5_sahi.yaml"
+  },
+  "budget_fps": 25,
+  "results": [
+    {
+      "model": "visdrone-yolo26n-640",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261025-192839-visdrone-yolo26n-640-540b95/weights/best.pt",
+      "run_id": "20261028-180657-w5-sahi-visdrone-yolo26n-640-4d0a84",
+      "train_run": "20261025-192839-visdrone-yolo26n-640-540b95",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "visdrone_det/gt/test-dev.json",
+        "class_map": "visdrone",
+        "limit": null,
+        "n_images": 1610
+      },
+      "accuracy": {
+        "mAP50-95": 0.14164660715303595,
+        "mAP50": 0.25472405080676463,
+        "mAP75": 0.14048776945089428,
+        "AP_small": 0.06371947269494835,
+        "AP_medium": 0.21317816952984772,
+        "AP_large": 0.3372117041440879,
+        "AR500": 0.23947599282113516,
+        "max_det": 500,
+        "n_images": 1610,
+        "n_gt": 74687,
+        "n_dets": 633488,
+        "per_class": {
+          "pedestrian": {
+            "AP": 0.09211480036097422,
+            "AP50": 0.24049134767294347,
+            "n_gt": 20749
+          },
+          "people": {
+            "AP": 0.04140244928703572,
+            "AP50": 0.12157788821044155,
+            "n_gt": 6317
+          },
+          "bicycle": {
+            "AP": 0.023800616669551522,
+            "AP50": 0.05209998859550382,
+            "n_gt": 1294
+          },
+          "car": {
+            "AP": 0.40495522098172315,
+            "AP50": 0.6706667245679931,
+            "n_gt": 28029
+          },
+          "van": {
+            "AP": 0.14915178317218716,
+            "AP50": 0.22415614891895166,
+            "n_gt": 5762
+          },
+          "truck": {
+            "AP": 0.18814439153500506,
+            "AP50": 0.3000321132842962,
+            "n_gt": 2653
+          },
+          "tricycle": {
+            "AP": 0.06572023561699275,
+            "AP50": 0.13451854621733433,
+            "n_gt": 525
+          },
+          "awning-tricycle": {
+            "AP": 0.049592103886201146,
+            "AP50": 0.09509471788383024,
+            "n_gt": 594
+          },
+          "bus": {
+            "AP": 0.3037339759299995,
+            "AP50": 0.4523520939743433,
+            "n_gt": 2939
+          },
+          "motor": {
+            "AP": 0.0978504940906891,
+            "AP50": 0.2562509387420083,
+            "n_gt": 5825
+          }
+        },
+        "class_map": "visdrone",
+        "model_class_to_target": {
+          "pedestrian": "pedestrian",
+          "people": "people",
+          "bicycle": "bicycle",
+          "car": "car",
+          "van": "van",
+          "truck": "truck",
+          "tricycle": "tricycle",
+          "awning-tricycle": "awning-tricycle",
+          "bus": "bus",
+          "motor": "motor"
+        },
+        "excluded_classes": {},
+        "imgsz": 640,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false
+        }
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 1.0403544947621413,
+            "p95_ms": 1.2279660397325638,
+            "mean_ms": 0.9731879206083249,
+            "std_ms": 0.18233241136453324,
+            "min_ms": 0.705832993844524,
+            "max_ms": 1.4467500004684553
+          },
+          "inference": {
+            "median_ms": 5.68010400456842,
+            "p95_ms": 7.105221154779429,
+            "mean_ms": 5.843252080012462,
+            "std_ms": 0.7112505835715837,
+            "min_ms": 4.976416006684303,
+            "max_ms": 7.400125003186986
+          },
+          "postprocess": {
+            "median_ms": 1.2508544969023205,
+            "p95_ms": 2.9549027050961736,
+            "mean_ms": 1.440041039531934,
+            "std_ms": 0.7063700368867856,
+            "min_ms": 0.4494580061873421,
+            "max_ms": 3.766875001019798
+          },
+          "total": {
+            "median_ms": 8.298875007312745,
+            "p95_ms": 9.846700000343843,
+            "mean_ms": 8.256481040152721,
+            "std_ms": 0.9295339518554562,
+            "min_ms": 6.207917002029717,
+            "max_ms": 10.553125001024455
+          },
+          "fps_median": 120.498260200187,
+          "fps_p95": 101.55686676400016,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 640,
+          "conf": 0.25,
+          "n_distinct_images": 50,
+          "peak_process_rss_mb": 2697.9375,
+          "device_memory_mb": 98.8125,
+          "runtime": {
+            "backend": "torch",
+            "device": "mps",
+            "half": false
+          },
+          "end2end_head": false,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "mps",
+            "device_name": "Apple M3 Pro GPU (MPS)"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess"
+          ],
+          "tracking_included": false,
+          "budget_fps": 25,
+          "meets_budget_median": true
+        },
+        {
+          "preprocess": {
+            "median_ms": 1.6632710030535236,
+            "p95_ms": 2.0898604008834805,
+            "mean_ms": 1.7023339500883594,
+            "std_ms": 0.29562600795779315,
+            "min_ms": 0.9543750056764111,
+            "max_ms": 2.3899999941932037
+          },
+          "inference": {
+            "median_ms": 18.61852149158949,
+            "p95_ms": 19.223304194019875,
+            "mean_ms": 18.751629770777072,
+            "std_ms": 0.5692392445959276,
+            "min_ms": 18.517792006605305,
+            "max_ms": 24.606749997474253
+          },
+          "postprocess": {
+            "median_ms": 1.2827500031562522,
+            "p95_ms": 3.115739309578201,
+            "mean_ms": 1.4944169396039797,
+            "std_ms": 0.789062129412862,
+            "min_ms": 0.37120800698176026,
+            "max_ms": 3.842207996058278
+          },
+          "total": {
+            "median_ms": 21.743812496424653,
+            "p95_ms": 23.997198556025978,
+            "mean_ms": 21.94838066046941,
+            "std_ms": 1.0846919452049721,
+            "min_ms": 20.264082995709032,
+            "max_ms": 28.469459008192644
+          },
+          "fps_median": 45.990094890876684,
+          "fps_p95": 41.67153085245812,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 640,
+          "conf": 0.25,
+          "n_distinct_images": 50,
+          "peak_process_rss_mb": 2697.9375,
+          "device_memory_mb": null,
+          "runtime": {
+            "backend": "onnxruntime",
+            "device": "cpu",
+            "half": false,
+            "onnx": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/weights/onnx/best_e7c4c905d5e7_640_md500.onnx",
+            "providers": [
+              "CPUExecutionProvider"
+            ],
+            "intra_op_num_threads": "default"
+          },
+          "end2end_head": false,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "cpu",
+            "device_name": "Apple M3 Pro"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess"
+          ],
+          "tracking_included": false,
+          "budget_fps": 25,
+          "meets_budget_median": true
+        }
+      ]
+    },
+    {
+      "model": "visdrone-yolo26n-640-tiled",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261025-192839-visdrone-yolo26n-640-540b95/weights/best.pt",
+      "run_id": "20261028-180917-w5-sahi-visdrone-yolo26n-640-tiled-bc48bf",
+      "train_run": "20261025-192839-visdrone-yolo26n-640-540b95",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "visdrone_det/gt/test-dev.json",
+        "class_map": "visdrone",
+        "limit": null,
+        "n_images": 1610
+      },
+      "accuracy": {
+        "mAP50-95": 0.18121344595435515,
+        "mAP50": 0.3247409080934381,
+        "mAP75": 0.17879037704256034,
+        "AP_small": 0.10520048577330968,
+        "AP_medium": 0.25330844004302816,
+        "AP_large": 0.31752081042579283,
+        "AR500": 0.3058473779903378,
+        "max_det": 500,
+        "n_images": 1610,
+        "n_gt": 74687,
+        "n_dets": 633987,
+        "per_class": {
+          "pedestrian": {
+            "AP": 0.13656253313123942,
+            "AP50": 0.3551002907961461,
+            "n_gt": 20749
+          },
+          "people": {
+            "AP": 0.056328095078865714,
+            "AP50": 0.1759722101789243,
+            "n_gt": 6317
+          },
+          "bicycle": {
+            "AP": 0.040252455888763625,
+            "AP50": 0.10358936707750104,
+            "n_gt": 1294
+          },
+          "car": {
+            "AP": 0.4771069304194131,
+            "AP50": 0.7588640654587834,
+            "n_gt": 28029
+          },
+          "van": {
+            "AP": 0.2083262349414295,
+            "AP50": 0.3077148610924818,
+            "n_gt": 5762
+          },
+          "truck": {
+            "AP": 0.20517250792613598,
+            "AP50": 0.32400786529550807,
+            "n_gt": 2653
+          },
+          "tricycle": {
+            "AP": 0.1027090598252025,
+            "AP50": 0.19560860324329102,
+            "n_gt": 525
+          },
+          "awning-tricycle": {
+            "AP": 0.07710129254982129,
+            "AP50": 0.14101149836067842,
+            "n_gt": 594
+          },
+          "bus": {
+            "AP": 0.36291973801262045,
+            "AP50": 0.5232655298232041,
+            "n_gt": 2939
+          },
+          "motor": {
+            "AP": 0.1456556117700598,
+            "AP50": 0.3622747896078622,
+            "n_gt": 5825
+          }
+        },
+        "class_map": "visdrone",
+        "model_class_to_target": {
+          "pedestrian": "pedestrian",
+          "people": "people",
+          "bicycle": "bicycle",
+          "car": "car",
+          "van": "van",
+          "truck": "truck",
+          "tricycle": "tricycle",
+          "awning-tricycle": "awning-tricycle",
+          "bus": "bus",
+          "motor": "motor"
+        },
+        "excluded_classes": {},
+        "imgsz": 640,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false,
+          "tiles": [
+            2,
+            2
+          ],
+          "tile_overlap": 0.2,
+          "tile_full": true,
+          "merge_ios": 0.5,
+          "batch": 5
+        }
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 4.05831249372568,
+            "p95_ms": 4.4312899008218665,
+            "mean_ms": 4.011812730022939,
+            "std_ms": 0.31379370245037136,
+            "min_ms": 3.4221660025650635,
+            "max_ms": 4.98962499841582
+          },
+          "inference": {
+            "median_ms": 19.8778330013738,
+            "p95_ms": 19.9639768092311,
+            "mean_ms": 19.866966040426632,
+            "std_ms": 0.09769527365839721,
+            "min_ms": 19.475833003525622,
+            "max_ms": 20.60975000495091
+          },
+          "postprocess": {
+            "median_ms": 4.027500006486662,
+            "p95_ms": 9.551506246498318,
+            "mean_ms": 4.643957884327392,
+            "std_ms": 2.5315107366269287,
+            "min_ms": 1.103500006138347,
+            "max_ms": 13.774041013675742
+          },
+          "total": {
+            "median_ms": 27.90712499700021,
+            "p95_ms": 33.51789405132877,
+            "mean_ms": 28.522736654776963,
+            "std_ms": 2.6554162270631525,
+            "min_ms": 24.766500006080605,
+            "max_ms": 37.96225000405684
+          },
+          "fps_median": 35.83314297361308,
+          "fps_p95": 29.83480998145695,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 640,
+          "conf": 0.25,
+          "n_distinct_images": 50,
+          "peak_process_rss_mb": 3243.046875,
+          "device_memory_mb": 1131.921875,
+          "runtime": {
+            "backend": "torch",
+            "device": "mps",
+            "half": false,
+            "tiles": [
+              2,
+              2
+            ],
+            "tile_overlap": 0.2,
+            "tile_full": true,
+            "merge_ios": 0.5,
+            "batch": 5
+          },
+          "end2end_head": false,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "mps",
+            "device_name": "Apple M3 Pro GPU (MPS)"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess"
+          ],
+          "tracking_included": false,
+          "budget_fps": 25,
+          "meets_budget_median": true
+        },
+        {
+          "preprocess": {
+            "median_ms": 7.626542006619275,
+            "p95_ms": 8.156243744451784,
+            "mean_ms": 7.5901227545546135,
+            "std_ms": 0.38309056980664374,
+            "min_ms": 6.772332999389619,
+            "max_ms": 9.18824999826029
+          },
+          "inference": {
+            "median_ms": 82.38231299765175,
+            "p95_ms": 85.79541844301275,
+            "mean_ms": 82.792676255267,
+            "std_ms": 1.4631881357497292,
+            "min_ms": 81.90516699687578,
+            "max_ms": 95.51191600621678
+          },
+          "postprocess": {
+            "median_ms": 4.310666998208035,
+            "p95_ms": 10.466177757916736,
+            "mean_ms": 4.966571655168082,
+            "std_ms": 2.7614846734385528,
+            "min_ms": 1.1476670042611659,
+            "max_ms": 15.147666999837384
+          },
+          "total": {
+            "median_ms": 94.26208299555583,
+            "p95_ms": 101.39713093740282,
+            "mean_ms": 95.34937066498969,
+            "std_ms": 3.209560783356426,
+            "min_ms": 90.78374999808148,
+            "max_ms": 108.20308400434442
+          },
+          "fps_median": 10.608719521370507,
+          "fps_p95": 9.862211985241936,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 640,
+          "conf": 0.25,
+          "n_distinct_images": 50,
+          "peak_process_rss_mb": 3243.046875,
+          "device_memory_mb": null,
+          "runtime": {
+            "backend": "onnxruntime",
+            "device": "cpu",
+            "half": false,
+            "onnx": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/weights/onnx/best_e7c4c905d5e7_640_md500_b5.onnx",
+            "providers": [
+              "CPUExecutionProvider"
+            ],
+            "intra_op_num_threads": "default",
+            "tiles": [
+              2,
+              2
+            ],
+            "tile_overlap": 0.2,
+            "tile_full": true,
+            "merge_ios": 0.5,
+            "batch": 5
+          },
+          "end2end_head": false,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "cpu",
+            "device_name": "Apple M3 Pro"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess"
+          ],
+          "tracking_included": false,
+          "budget_fps": 25,
+          "meets_budget_median": false
+        }
+      ]
+    },
+    {
+      "model": "visdrone-yolo26n-p2-640-tiled",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261027-222023-visdrone-yolo26n-p2-640-2de32c/weights/best.pt",
+      "run_id": "20261028-181356-w5-sahi-visdrone-yolo26n-p2-640-tiled-f5be67",
+      "train_run": "20261027-222023-visdrone-yolo26n-p2-640-2de32c",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "visdrone_det/gt/test-dev.json",
+        "class_map": "visdrone",
+        "limit": null,
+        "n_images": 1610
+      },
+      "accuracy": {
+        "mAP50-95": 0.19287817581184685,
+        "mAP50": 0.34882954648274356,
+        "mAP75": 0.18874971684004782,
+        "AP_small": 0.11655514814451172,
+        "AP_medium": 0.2668347647421293,
+        "AP_large": 0.33247885915001685,
+        "AR500": 0.3260805529775655,
+        "max_det": 500,
+        "n_images": 1610,
+        "n_gt": 74687,
+        "n_dets": 608792,
+        "per_class": {
+          "pedestrian": {
+            "AP": 0.14932225535581373,
+            "AP50": 0.3887124810455025,
+            "n_gt": 20749
+          },
+          "people": {
+            "AP": 0.06778294467448785,
+            "AP50": 0.21230768813098852,
+            "n_gt": 6317
+          },
+          "bicycle": {
+            "AP": 0.05039015286447271,
+            "AP50": 0.12212796175536292,
+            "n_gt": 1294
+          },
+          "car": {
+            "AP": 0.4912379154394832,
+            "AP50": 0.7757519307993211,
+            "n_gt": 28029
+          },
+          "van": {
+            "AP": 0.2279514091330596,
+            "AP50": 0.3344431041703534,
+            "n_gt": 5762
+          },
+          "truck": {
+            "AP": 0.2148958465087123,
+            "AP50": 0.34381873758434206,
+            "n_gt": 2653
+          },
+          "tricycle": {
+            "AP": 0.11901914149098629,
+            "AP50": 0.2352323781120574,
+            "n_gt": 525
+          },
+          "awning-tricycle": {
+            "AP": 0.09019910277561392,
+            "AP50": 0.1570756458072704,
+            "n_gt": 594
+          },
+          "bus": {
+            "AP": 0.3650119025570548,
+            "AP50": 0.5332215153330201,
+            "n_gt": 2939
+          },
+          "motor": {
+            "AP": 0.15297108731878414,
+            "AP50": 0.3856040220892178,
+            "n_gt": 5825
+          }
+        },
+        "class_map": "visdrone",
+        "model_class_to_target": {
+          "pedestrian": "pedestrian",
+          "people": "people",
+          "bicycle": "bicycle",
+          "car": "car",
+          "van": "van",
+          "truck": "truck",
+          "tricycle": "tricycle",
+          "awning-tricycle": "awning-tricycle",
+          "bus": "bus",
+          "motor": "motor"
+        },
+        "excluded_classes": {},
+        "imgsz": 640,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false,
+          "tiles": [
+            2,
+            2
+          ],
+          "tile_overlap": 0.2,
+          "tile_full": true,
+          "merge_ios": 0.5,
+          "batch": 5
+        }
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 4.001250497822184,
+            "p95_ms": 4.898102107108571,
+            "mean_ms": 4.132686885641306,
+            "std_ms": 0.44599335461834655,
+            "min_ms": 3.4528749965829775,
+            "max_ms": 5.293750000419095
+          },
+          "inference": {
+            "median_ms": 31.63604200381087,
+            "p95_ms": 31.736670807003975,
+            "mean_ms": 31.624919579626294,
+            "std_ms": 0.08410887304246001,
+            "min_ms": 31.184791994746774,
+            "max_ms": 31.830874999286607
+          },
+          "postprocess": {
+            "median_ms": 4.595124992192723,
+            "p95_ms": 9.265961037453955,
+            "mean_ms": 5.05153900514415,
+            "std_ms": 2.453258958242123,
+            "min_ms": 1.7566250025993213,
+            "max_ms": 14.372165998793207
+          },
+          "total": {
+            "median_ms": 40.295020495250355,
+            "p95_ms": 45.63284229589042,
+            "mean_ms": 40.80914547041175,
+            "std_ms": 2.5736171073994467,
+            "min_ms": 37.294416993972845,
+            "max_ms": 50.00274999474641
+          },
+          "fps_median": 24.816962188116314,
+          "fps_p95": 21.91404150361367,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 640,
+          "conf": 0.25,
+          "n_distinct_images": 50,
+          "peak_process_rss_mb": 3388.46875,
+          "device_memory_mb": 1131.953125,
+          "runtime": {
+            "backend": "torch",
+            "device": "mps",
+            "half": false,
+            "tiles": [
+              2,
+              2
+            ],
+            "tile_overlap": 0.2,
+            "tile_full": true,
+            "merge_ios": 0.5,
+            "batch": 5
+          },
+          "end2end_head": false,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "mps",
+            "device_name": "Apple M3 Pro GPU (MPS)"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess"
+          ],
+          "tracking_included": false,
+          "budget_fps": 25,
+          "meets_budget_median": false
+        },
+        {
+          "preprocess": {
+            "median_ms": 7.62172899703728,
+            "p95_ms": 8.27000175631838,
+            "mean_ms": 7.557810230355244,
+            "std_ms": 0.4342630312093775,
+            "min_ms": 6.688124994980171,
+            "max_ms": 8.92987499537412
+          },
+          "inference": {
+            "median_ms": 119.97066700132564,
+            "p95_ms": 121.42959970224182,
+            "mean_ms": 120.56369871483184,
+            "std_ms": 5.505981407638671,
+            "min_ms": 119.58154200692661,
+            "max_ms": 196.28091700724326
+          },
+          "postprocess": {
+            "median_ms": 5.302083496644627,
+            "p95_ms": 11.349939302454,
+            "mean_ms": 5.859533140101121,
+            "std_ms": 2.724993021045935,
+            "min_ms": 1.9288330076960847,
+            "max_ms": 15.80558299610857
+          },
+          "total": {
+            "median_ms": 132.81718749931315,
+            "p95_ms": 140.28542499145257,
+            "mean_ms": 133.9810420852882,
+            "std_ms": 6.190240473143567,
+            "min_ms": 128.9021670090733,
+            "max_ms": 209.04737499949988
+          },
+          "fps_median": 7.5291460301790485,
+          "fps_p95": 7.128324272182437,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 640,
+          "conf": 0.25,
+          "n_distinct_images": 50,
+          "peak_process_rss_mb": 3563.296875,
+          "device_memory_mb": null,
+          "runtime": {
+            "backend": "onnxruntime",
+            "device": "cpu",
+            "half": false,
+            "onnx": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/weights/onnx/best_fbbfe154b1ba_640_md500_b5.onnx",
+            "providers": [
+              "CPUExecutionProvider"
+            ],
+            "intra_op_num_threads": "default",
+            "tiles": [
+              2,
+              2
+            ],
+            "tile_overlap": 0.2,
+            "tile_full": true,
+            "merge_ios": 0.5,
+            "batch": 5
+          },
+          "end2end_head": false,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "cpu",
+            "device_name": "Apple M3 Pro"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess"
+          ],
+          "tracking_included": false,
+          "budget_fps": 25,
+          "meets_budget_median": false
+        }
+      ]
+    },
+    {
+      "model": "visdrone-yolo26n-1280",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261026-121849-visdrone-yolo26n-1280-88e380/weights/best.pt",
+      "run_id": "20261028-182016-w5-sahi-visdrone-yolo26n-1280-e2b473",
+      "train_run": "20261026-121849-visdrone-yolo26n-1280-88e380",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "visdrone_det/gt/test-dev.json",
+        "class_map": "visdrone",
+        "limit": null,
+        "n_images": 1610
+      },
+      "accuracy": {
+        "mAP50-95": 0.2254197426222251,
+        "mAP50": 0.3894601830109333,
+        "mAP75": 0.2243337934776009,
+        "AP_small": 0.12929076834896308,
+        "AP_medium": 0.3256089791512013,
+        "AP_large": 0.42823010493951835,
+        "AR500": 0.3559460767120663,
+        "max_det": 500,
+        "n_images": 1610,
+        "n_gt": 74687,
+        "n_dets": 559368,
+        "per_class": {
+          "pedestrian": {
+            "AP": 0.17961944199465418,
+            "AP50": 0.4274096138972202,
+            "n_gt": 20749
+          },
+          "people": {
+            "AP": 0.08930056706033061,
+            "AP50": 0.2422289030593386,
+            "n_gt": 6317
+          },
+          "bicycle": {
+            "AP": 0.0701087173828501,
+            "AP50": 0.16012299023435053,
+            "n_gt": 1294
+          },
+          "car": {
+            "AP": 0.5092242549839582,
+            "AP50": 0.7903663805203929,
+            "n_gt": 28029
+          },
+          "van": {
+            "AP": 0.24643547902293544,
+            "AP50": 0.34797360291755336,
+            "n_gt": 5762
+          },
+          "truck": {
+            "AP": 0.28715310704591046,
+            "AP50": 0.4373539767381813,
+            "n_gt": 2653
+          },
+          "tricycle": {
+            "AP": 0.14415989542541813,
+            "AP50": 0.26033497469061445,
+            "n_gt": 525
+          },
+          "awning-tricycle": {
+            "AP": 0.13802021487067867,
+            "AP50": 0.22102931912312668,
+            "n_gt": 594
+          },
+          "bus": {
+            "AP": 0.4010065475199259,
+            "AP50": 0.5641872416331728,
+            "n_gt": 2939
+          },
+          "motor": {
+            "AP": 0.18916920091558947,
+            "AP50": 0.4435948272953826,
+            "n_gt": 5825
+          }
+        },
+        "class_map": "visdrone",
+        "model_class_to_target": {
+          "pedestrian": "pedestrian",
+          "people": "people",
+          "bicycle": "bicycle",
+          "car": "car",
+          "van": "van",
+          "truck": "truck",
+          "tricycle": "tricycle",
+          "awning-tricycle": "awning-tricycle",
+          "bus": "bus",
+          "motor": "motor"
+        },
+        "excluded_classes": {},
+        "imgsz": 1280,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false
+        }
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 3.8129794993437827,
+            "p95_ms": 4.431955901964101,
+            "mean_ms": 3.8500700144504663,
+            "std_ms": 0.3359466776033233,
+            "min_ms": 3.2706250058254227,
+            "max_ms": 4.938083002343774
+          },
+          "inference": {
+            "median_ms": 17.17110399476951,
+            "p95_ms": 17.600787812989438,
+            "mean_ms": 17.210894545642077,
+            "std_ms": 0.24369128544935673,
+            "min_ms": 16.603958007181063,
+            "max_ms": 18.355457999859937
+          },
+          "postprocess": {
+            "median_ms": 2.354896001634188,
+            "p95_ms": 4.946681898582028,
+            "mean_ms": 2.668678159825504,
+            "std_ms": 1.255123972376496,
+            "min_ms": 0.9472499950788915,
+            "max_ms": 7.373125001322478
+          },
+          "total": {
+            "median_ms": 23.49091650103219,
+            "p95_ms": 26.35843960524653,
+            "mean_ms": 23.729642719918047,
+            "std_ms": 1.428754630162507,
+            "min_ms": 21.357584002544172,
+            "max_ms": 29.488165993825532
+          },
+          "fps_median": 42.56964601428216,
+          "fps_p95": 37.9385128625351,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 1280,
+          "conf": 0.25,
+          "n_distinct_images": 50,
+          "peak_process_rss_mb": 3563.296875,
+          "device_memory_mb": 1140.015625,
+          "runtime": {
+            "backend": "torch",
+            "device": "mps",
+            "half": false
+          },
+          "end2end_head": false,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "mps",
+            "device_name": "Apple M3 Pro GPU (MPS)"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess"
+          ],
+          "tracking_included": false,
+          "budget_fps": 25,
+          "meets_budget_median": true
+        },
+        {
+          "preprocess": {
+            "median_ms": 7.084396005666349,
+            "p95_ms": 8.008589297969593,
+            "mean_ms": 7.127832940168446,
+            "std_ms": 0.4854535884954253,
+            "min_ms": 6.0855839983560145,
+            "max_ms": 9.096250010770746
+          },
+          "inference": {
+            "median_ms": 82.20518699818058,
+            "p95_ms": 94.06288785321522,
+            "mean_ms": 83.60015059952275,
+            "std_ms": 4.675379337906826,
+            "min_ms": 78.82275000156369,
+            "max_ms": 113.39299999235664
+          },
+          "postprocess": {
+            "median_ms": 2.445333004288841,
+            "p95_ms": 5.814666647347609,
+            "mean_ms": 2.879130420915317,
+            "std_ms": 1.5767063560677321,
+            "min_ms": 0.8960409904830158,
+            "max_ms": 11.855290998937562
+          },
+          "total": {
+            "median_ms": 91.92545800033258,
+            "p95_ms": 104.15706009735,
+            "mean_ms": 93.60711396060651,
+            "std_ms": 5.362002652195135,
+            "min_ms": 86.83962500072084,
+            "max_ms": 123.13649999850895
+          },
+          "fps_median": 10.878379305941364,
+          "fps_p95": 9.600885423084655,
+          "iterations": 200,
+          "warmup": 20,
+          "batch": 1,
+          "imgsz": 1280,
+          "conf": 0.25,
+          "n_distinct_images": 50,
+          "peak_process_rss_mb": 3563.296875,
+          "device_memory_mb": null,
+          "runtime": {
+            "backend": "onnxruntime",
+            "device": "cpu",
+            "half": false,
+            "onnx": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/weights/onnx/best_5904a8e2e5b0_1280_md500.onnx",
+            "providers": [
+              "CPUExecutionProvider"
+            ],
+            "intra_op_num_threads": "default"
+          },
+          "end2end_head": false,
+          "env": {
+            "platform": "macOS-26.5.2-arm64-arm-64bit",
+            "machine": "arm64",
+            "cpu": "Apple M3 Pro",
+            "python": "3.12.12",
+            "torch": "2.14.1",
+            "torch_cuda": null,
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": null,
+            "jetson_power_mode": null,
+            "macos_power": {
+              "source": "ac",
+              "low_power_mode": false
+            },
+            "device": "cpu",
+            "device_name": "Apple M3 Pro"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess"
+          ],
+          "tracking_included": false,
+          "budget_fps": 25,
+          "meets_budget_median": false
+        }
+      ]
+    }
+  ]
+}

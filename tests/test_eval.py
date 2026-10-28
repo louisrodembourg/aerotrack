@@ -233,3 +233,46 @@ def test_resolve_weights_keeps_architectures_bare():
     from aerotrack import ultra
     assert ultra.resolve_weights("yolo26n-p2.yaml") == "yolo26n-p2.yaml"
     assert Path(ultra.resolve_weights("yolo26n.pt")) == ultra.WEIGHTS_DIR / "yolo26n.pt"
+
+
+def test_tile_grid_covers_the_frame_with_overlap():
+    from aerotrack.inference import Detector
+
+    d = Detector.__new__(Detector)
+    d.tiles, d.tile_overlap, d.tile_full = (2, 3), 0.2, True
+    crops = d.crops(765, 1360)
+    assert len(crops) == 7 and crops[-1] == (0, 0, 1360, 765)
+    grid = crops[:-1]
+    assert min(c[0] for c in grid) == 0 and max(c[2] for c in grid) == 1360
+    assert min(c[1] for c in grid) == 0 and max(c[3] for c in grid) == 765
+    assert grid[0][2] > grid[1][0] and grid[0][3] > grid[3][1]  # neighbours overlap
+
+
+def test_merge_tiles_drops_truncated_boxes_keeps_other_classes():
+    import torch
+
+    from aerotrack.inference import merge_tiles
+
+    det = torch.tensor([
+        [100., 100., 200., 160., 0.9, 3.],  # full car, from the whole-frame pass
+        [150., 100., 200., 160., 0.6, 3.],  # its right half, cut by a tile edge: IoU 0.5, IOS 1
+        [150., 100., 200., 160., 0.5, 0.],  # same place, another class: kept
+        [400., 400., 420., 430., 0.3, 3.],  # elsewhere: kept
+    ])
+    out = merge_tiles(det, ios=0.5, max_det=10)
+    assert out[:, 4].tolist() == pytest.approx([0.9, 0.5, 0.3])
+
+
+def test_tiled_detector_runs_one_batch_and_maps_boxes_to_the_frame():
+    import cv2
+    from ultralytics.utils import ASSETS
+
+    from aerotrack.inference import Detector
+
+    img = cv2.imread(str(ASSETS / "bus.jpg"))
+    d = Detector("yolo26n.pt", device="cpu", conf=0.5, tiles=(2, 2))
+    assert d.preprocess(img).shape[0] == 5
+    det = d(img)
+    h, w = img.shape[:2]
+    assert len(det) and (det[:, [0, 2]] <= w + 1).all() and (det[:, [1, 3]] <= h + 1).all()
+    assert 0 in det[:, 5].astype(int)  # the people in bus.jpg survive the merge

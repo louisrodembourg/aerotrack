@@ -20,8 +20,8 @@ in this repository states its device, its runtime versions and, on Jetson, its p
 Week 4: resolution sweep. YOLO26n was chosen as the primary axis (it alone keeps margin
 under the budget on CPU) and fine-tuned at 640, 960 and 1280 on VisDrone-DET (100 epochs,
 on Kaggle's free T4s), evaluated on test-dev with latency on the Mac; a P2 (stride-4) head
-was then compared at 640 and 960. Next: SAHI, hybrid keyframe mode and copy-paste
-augmentation.
+was then compared at 640 and 960. Week 5: tiled (SAHI-style) inference, measured against
+training at the higher resolution. Next: hybrid keyframe mode and copy-paste augmentation.
 
 | Weeks | Stage |
 |---|---|
@@ -57,6 +57,10 @@ selection), mAP50-95 in %; latency on an Apple M3 Pro on AC power, detection onl
   latency. On GPU, resolution buys more per millisecond (plain 1280 beats P2 at 960); on
   CPU, P2 at 640 is the most accurate model within the budget: 15.4 mAP at 33 FPS
   ([w4-p2](reports/w4-p2/results.md)).
+- **Tiled inference (SAHI-style) helps, but training at the target resolution helps
+  more.** Cutting each frame into 2x2 tiles plus the whole frame lifts the 640 model from
+  14.2 to 18.1 mAP (27.9 ms on MPS); the model trained at 1280 reaches 22.5 in a single
+  pass for 23.5 ms ([w5-sahi](reports/w5-sahi/results.md)).
 
 <!-- results:start -->
 #### baseline ([full report](reports/baseline/results.md))
@@ -152,6 +156,26 @@ selection), mAP50-95 in %; latency on an Apple M3 Pro on AC power, detection onl
 | visdrone-yolo26n-1280 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 3.2 | 16.5 | 2.1 | 22.0 | 25.2 | 45.4 | yes |
 | visdrone-yolo26n-1280 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 6.5 | 78.7 | 2.6 | 87.9 | 91.9 | 11.4 | no |
 
+#### w5-sahi ([full report](reports/w5-sahi/results.md))
+
+| Model | Class map | imgsz | mAP50-95 | mAP50 | AP_small | AP_medium | AP_large | Images | Run |
+|---|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | visdrone | 640 | 14.2 | 25.5 | 6.4 | 21.3 | 33.7 | 1610 | `20261028-180657-w5-sahi-visdrone-yolo26n-640-4d0a84` |
+| visdrone-yolo26n-640-tiled | visdrone | 640 (2x2+full) | 18.1 | 32.5 | 10.5 | 25.3 | 31.8 | 1610 | `20261028-180917-w5-sahi-visdrone-yolo26n-640-tiled-bc48bf` |
+| visdrone-yolo26n-p2-640-tiled | visdrone | 640 (2x2+full) | 19.3 | 34.9 | 11.7 | 26.7 | 33.2 | 1610 | `20261028-181356-w5-sahi-visdrone-yolo26n-p2-640-tiled-f5be67` |
+| visdrone-yolo26n-1280 | visdrone | 1280 | 22.5 | 38.9 | 12.9 | 32.6 | 42.8 | 1610 | `20261028-182016-w5-sahi-visdrone-yolo26n-1280-e2b473` |
+
+| Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.0 | 5.7 | 1.3 | 8.3 | 9.8 | 120.5 | yes |
+| visdrone-yolo26n-640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.7 | 18.6 | 1.3 | 21.7 | 24.0 | 46.0 | yes |
+| visdrone-yolo26n-640-tiled | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 4.1 | 19.9 | 4.0 | 27.9 | 33.5 | 35.8 | yes |
+| visdrone-yolo26n-640-tiled | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 7.6 | 82.4 | 4.3 | 94.3 | 101.4 | 10.6 | no |
+| visdrone-yolo26n-p2-640-tiled | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 4.0 | 31.6 | 4.6 | 40.3 | 45.6 | 24.8 | no |
+| visdrone-yolo26n-p2-640-tiled | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 7.6 | 120.0 | 5.3 | 132.8 | 140.3 | 7.5 | no |
+| visdrone-yolo26n-1280 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 3.8 | 17.2 | 2.4 | 23.5 | 26.4 | 42.6 | yes |
+| visdrone-yolo26n-1280 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 7.1 | 82.2 | 2.4 | 91.9 | 104.2 | 10.9 | no |
+
 <!-- results:end -->
 
 ## Reproduce
@@ -167,6 +191,7 @@ make baseline     # zero-shot COCO YOLO on VisDrone-DET val, accuracy + latency
 make w3-eval      # each week's evaluation on test-dev (after pulling its runs), then README
 make w4-eval
 make w4-p2-eval
+make w5-sahi-eval
 make data         # everything: + VisDrone-MOT, UAVDT, visualisations, TrackEval checks
 make test
 ```

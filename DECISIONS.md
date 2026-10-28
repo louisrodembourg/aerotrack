@@ -291,3 +291,32 @@ millisecond: on MPS, plain 1280 (22.5 mAP, 22.0 ms in `reports/w4-resolution/`) 
 at 960 (20.2 mAP, 19.0 ms). P2 earns its place only where resolution cannot grow: under
 the 25 FPS budget on CPU, P2 at 640 (15.4 mAP, 33 FPS) is the most accurate model
 measured.
+
+## Tiled inference, SAHI-style (week 5)
+
+**Implemented in `inference.Detector`, not with the `sahi` package.** The package runs
+its own prediction loop around the model, so its accuracy and its latency would come from
+a different pipeline than every other row (one-pipeline rule), and it would have no ONNX /
+TensorRT path. Here a frame is cut into a fixed rows x cols grid of crops overlapping by
+20 % of a tile, plus the whole frame, each letterboxed to the model's input and run as one
+batch (static batch 5 for 2x2+full in ONNX). *Rejected:* fixed-size tiles as in SAHI
+(the number of tiles, hence the latency, would depend on each frame's resolution; a
+deployed camera has one resolution, a fixed grid gives a fixed cost); running tiles one
+by one (same detections, five calls per frame instead of one batched call; not measured).
+
+**Merge: class-wise greedy suppression on intersection over the smaller box (IOS > 0.5).**
+An object cut by a tile edge leaves a truncated box that lies inside the full one: their
+IoU can be 0.5 or less, so plain NMS keeps both, while IOS is ~1. The whole-frame pass
+supplies the uncut box for objects larger than a tile. *Rejected:* SAHI's box merging
+(NMM, averaging coordinates): it changes box geometry the model never predicted, and
+greedy suppression already removes the duplicates. Checked on a test-dev frame: torch CPU,
+torch MPS and ONNX Runtime return the same 84 detections.
+
+**Measured (`reports/w5-sahi/`, test-dev, one session).** Tiling the 640 model (2x2+full)
+lifts mAP50-95 from 14.2 to 18.1 and AP_small from 6.4 to 10.5, at 27.9 ms on MPS against
+8.3 ms; with P2 it reaches 19.3 but misses 25 FPS (40.3 ms). Training at 1280 instead gives
+22.5 mAP in one pass for 23.5 ms on MPS, and is as fast as tiling on CPU (91.9 vs 94.3
+ms): on this data, when retraining at a higher resolution is possible, it dominates
+slicing. Tiling also costs large objects (AP_large 33.7 → 31.8), which the merge keeps
+from the whole-frame pass only. It remains the option for a model that cannot be
+retrained, and is not pursued further as a training-free lever here.
