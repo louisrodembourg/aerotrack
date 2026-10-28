@@ -1,4 +1,4 @@
-.PHONY: w3-eval w4-eval w4-p2-eval w5-sahi-eval w6-track-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
+.PHONY: w3-eval w4-eval w4-p2-eval w5-sahi-eval w6-track-eval w6-track-tune w6-track-tuned-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
 
 RUN := uv run
 CLI := $(RUN) aerotrack
@@ -67,6 +67,14 @@ w5-sahi-eval:  ## week 5: tiled (SAHI-style) inference vs a 1280 input on test-d
 
 w6-track-eval:  ## week 6: ByteTrack on VisDrone-MOT val behind each detector, end-to-end latency, then README
 	$(EVAL) configs/eval/w6_bytetrack.yaml
+	$(CLI) readme-table
+
+w6-track-tuned-eval:  ## week 6: ByteTrack with the tuned thresholds on VisDrone-MOT test-dev, then README
+	$(EVAL) configs/eval/w6_bytetrack_tuned.yaml
+	$(CLI) readme-table
+
+w6-track-tune:  ## week 6: ByteTrack threshold search on MOT sequences unseen by the detector
+	$(KEEP_AWAKE) $(CLI) tune-tracker configs/tune/w6_bytetrack.yaml
 	$(CLI) readme-table
 
 readme:  ## regenerate README results from tracked reports

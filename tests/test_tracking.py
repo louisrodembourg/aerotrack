@@ -124,3 +124,12 @@ def test_seen_by_detector_matches_the_source_video(tmp_path):
     assert seen_by_detector("uav0000201_00000_v", tmp_path) == ["train/0000201_00412_d_0000045.jpg"]
     assert seen_by_detector("uav0000073_00600_v", tmp_path) == []  # DET test-dev: never trained on
     assert seen_by_detector("uav0000020_00000_v", tmp_path) == []  # 0000020_ is not 0000201_
+
+
+def test_grid_sets_new_from_high():
+    from aerotrack.eval.tune_tracker import grid
+
+    pts = grid({"high": [0.25, 0.5], "new_offset": [0.0, 0.1], "low": [0.1]})
+    assert len(pts) == 4
+    assert {(p["high"], p["new"]) for p in pts} == {(0.25, 0.25), (0.25, 0.35), (0.5, 0.5), (0.5, 0.6)}
+    assert all("new_offset" not in p for p in pts)

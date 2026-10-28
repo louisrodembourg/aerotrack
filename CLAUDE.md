@@ -19,7 +19,8 @@ uv run aerotrack --help
 scripts/remote_train.sh configs/train/<cfg>.yaml [--set key=value]   # CUDA box
 uv run aerotrack kaggle push <cfg> [<cfg2>] --slug <slug> [--suffix probe] [--dry-run]
 uv run aerotrack kaggle push <cfg> --slug <slug> --resume <run-id>   # continue an interrupted run
-make w3-eval | w4-eval | w4-p2-eval | w5-sahi-eval | w6-track-eval   # evaluate a week's pulled runs on test-dev, then README
+make w3-eval | w4-eval | w4-p2-eval | w5-sahi-eval | w6-track-eval | w6-track-tuned-eval   #
+make w6-track-tune   # tracker thresholds on MOT sequences unseen by the detector (never test-dev) evaluate a week's pulled runs on test-dev, then README
 uv run aerotrack kaggle status|pull <slug>                           # Kaggle 2 x T4
 ```
 

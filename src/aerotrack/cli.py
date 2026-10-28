@@ -96,6 +96,18 @@ def evaluate(
         run_evaluation(cfg)
 
 
+@app.command("tune-tracker")
+def tune_tracker(
+    config: Annotated[Path, typer.Argument(help="configs/tune/*.yaml")],
+    overrides: SetOpt = None,
+) -> None:
+    """Grid-search tracker thresholds on MOT sequences unseen by the detector."""
+    from aerotrack.config import load_config  # noqa: PLC0415
+    from aerotrack.eval.tune_tracker import run_tuning  # noqa: PLC0415
+
+    run_tuning(load_config(config, overrides or []))
+
+
 kaggle_app = typer.Typer(no_args_is_help=True, help="Train on Kaggle's free GPUs (push, status, pull).")
 app.add_typer(kaggle_app, name="kaggle")
 

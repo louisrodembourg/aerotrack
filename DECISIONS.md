@@ -370,3 +370,22 @@ with the reference thresholds (new tracks from score 0.25) false positives outwe
 matches MOTA credits; HOTA and IDF1 are less sensitive to them. These thresholds are
 Ultralytics' defaults, not tuned for VisDrone; tuning them on MOT val is the next step,
 and the test-dev numbers above stay as the untuned reference.
+
+**Tracker thresholds tuned on the unseen MOT sequences, not on test-dev
+(`reports/w6-tracker-tuning/`).** Only 4 sequences outside test-dev come from videos the
+detectors never saw (MOT train 0000020, 0000138, 0000278; MOT val 0000268; 2654 frames):
+they are the tuning set, gathered into one TrackEval benchmark. Detections are computed
+once per model and replayed through a 32-point grid (high 0.25-0.6, new = high or
+high + 0.1, low 0.05 / 0.1, match 0.8 / 0.9), selected on mean HOTA. Both deployment
+candidates land on high 0.5 and match 0.9 (n 640: new 0.5, low 0.1; n 1280: new 0.6,
+low 0.05, within 0.1 HOTA of low 0.1). *Rejected:* tuning on all of MOT val (6 of its 7
+videos are known to the detector, whose over-confident scores would bias the thresholds);
+a finer grid (4 sequences; neighbouring points already differ by tenths of a point).
+
+**Measured once on test-dev with those thresholds (`reports/w6-bytetrack-tuned/`, 12
+unseen sequences).** HOTA 36.5 → 39.2 (n 640) and 42.1 → 46.8 (n 1280), IDF1 40.9 → 46.0
+and 48.2 → 57.2, ID switches divided by 3. Raising the threshold for starting and
+first-matching tracks removes most tracks built on doubtful detections. MOTA rises
+(-5.6 → 8.5, 7.6 → 29.5) but stays low for n 640: its false positives at score ≥ 0.5 are
+still many on test-dev, where MOTA counts each one. Latency is unchanged (tracker 1.0-1.3
+ms per frame).

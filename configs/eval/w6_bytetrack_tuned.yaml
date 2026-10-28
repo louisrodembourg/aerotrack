@@ -1,0 +1,28 @@
+# Week 6: ByteTrack with thresholds selected per model by `make w6-track-tune`
+# (reports/w6-tracker-tuning/, MOT sequences unseen by the detector, never test-dev).
+# Measured once on test-dev; w6_bytetrack.yaml keeps the untuned defaults as reference.
+name: w6-bytetrack-tuned
+seed: 0
+device: auto
+dataset:
+  mot: visdrone_mot
+  split: test-dev
+models:
+  - {run: visdrone-yolo26n-640, imgsz: 640,
+     tracker: {high: 0.5, new: 0.5, low: 0.1, match: 0.9}}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280,
+     tracker: {high: 0.5, new: 0.6, low: 0.05, match: 0.9}}
+detection:
+  imgsz: 640
+  conf: 0.05         # the lowest `low` above; each tracker discards what it does not use
+  iou: 0.7
+  max_det: 500
+tracker:
+  type: bytetrack
+  buffer: 30
+latency:
+  enabled: true
+  backends: [torch, onnxruntime]
+  n_frames: 100
+  warmup: 20
+  iters: 200

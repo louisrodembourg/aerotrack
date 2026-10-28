@@ -1,0 +1,25 @@
+# Week 6: ByteTrack thresholds for VisDrone, searched on the MOT sequences whose source
+# video the detectors never saw (3 in MOT train, 1 in MOT val; DECISIONS.md). One search
+# per deployment candidate: n at 640 (CPU) and n at 1280 (GPU).
+name: w6-tracker-tuning
+seed: 0
+device: auto
+dataset:
+  mot: visdrone_mot
+  splits: [train, val]
+models:
+  - {run: visdrone-yolo26n-640, imgsz: 640}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280}
+detection:
+  imgsz: 640
+  conf: 0.05         # the grid's lowest `low`: every trial sees the detections it needs
+  iou: 0.7
+  max_det: 500
+tracker:
+  type: bytetrack
+  buffer: 30
+grid:
+  high: [0.25, 0.4, 0.5, 0.6]
+  new_offset: [0.0, 0.1]
+  low: [0.05, 0.1]
+  match: [0.8, 0.9]

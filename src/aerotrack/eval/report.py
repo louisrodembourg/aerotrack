@@ -201,6 +201,15 @@ def readme_section(reports_dir: Path = REPORTS_DIR) -> str:
     for path in sorted(reports_dir.glob("*/results.json")):
         payload = json.loads(path.read_text())
         rel = path.parent.relative_to(reports_dir.parent)
+        if payload.get("kind") == "tuning":
+            best = "\n".join(f"- {r['model']}: " + ", ".join(
+                f"{k}={v}" for k, v in r["best"]["tracker"].items() if k != "type") +
+                f" (HOTA {_pct(r['best']['HOTA'])} on {r['frames']} tuning frames)"
+                for r in payload["results"])
+            blocks.append(f"#### {payload['name']} ([full report]({rel}/results.md))\n\n"
+                          f"Selected tracker thresholds (MOT sequences unseen by the detector, "
+                          f"not test-dev):\n\n{best}\n")
+            continue
         if payload.get("kind") == "tracking":
             tables = (f"{tracking_table(payload['results'])}\n\n"
                       f"{tracking_latency_table(payload['results'], payload['budget_fps'])}\n")

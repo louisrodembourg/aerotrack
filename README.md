@@ -22,8 +22,8 @@ under the budget on CPU) and fine-tuned at 640, 960 and 1280 on VisDrone-DET (10
 on Kaggle's free T4s), evaluated on test-dev with latency on the Mac; a P2 (stride-4) head
 was then compared at 640 and 960. Week 5: tiled (SAHI-style) inference, measured against
 training at the higher resolution. Week 6: ByteTrack with a from-scratch Kalman filter,
-end to end on VisDrone-MOT test-dev. Next: tracker tuning on MOT val, the hybrid keyframe
-mode, copy-paste augmentation (needs Kaggle quota).
+end to end on VisDrone-MOT test-dev, thresholds tuned on unseen MOT sequences. Next: the
+hybrid keyframe mode, copy-paste augmentation (needs Kaggle quota), hardware decision.
 
 | Weeks | Stage |
 |---|---|
@@ -65,10 +65,12 @@ stated.
   pass for 23.5 ms ([w5-sahi](reports/w5-sahi/results.md)).
 - **Tracking follows detection, and costs little.** ByteTrack (Kalman filter written from
   scratch, checked against Ultralytics' implementation) on VisDrone-MOT test-dev, scored on
-  the 12 sequences whose videos the detector never saw: HOTA 36.5 behind the 640 model,
-  42.1 behind the 1280 one. The tracker takes ~1.5 ms per frame; end to end, n at 640
-  runs at 98 FPS on MPS and 43 FPS on CPU. Thresholds are still the untuned defaults
-  ([w6-bytetrack](reports/w6-bytetrack/results.md)).
+  the 12 sequences whose videos the detector never saw. With thresholds tuned on separate
+  unseen sequences, HOTA is 39.2 behind the 640 model and 46.8 behind the 1280 one (36.5
+  and 42.1 with the defaults), with a third of the ID switches. The tracker takes ~1 ms
+  per frame; end to end, n at 640 runs at 98 FPS on MPS and 44 FPS on CPU, n at 1280 at
+  45 FPS on MPS ([w6-bytetrack-tuned](reports/w6-bytetrack-tuned/results.md),
+  [w6-tracker-tuning](reports/w6-tracker-tuning/results.md)).
 
 <!-- results:start -->
 #### baseline ([full report](reports/baseline/results.md))
@@ -206,6 +208,29 @@ HOTA, MOTA, IDF1, IDSW on the 12 sequences unseen by the detector:
 | visdrone-yolo26n-1280 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 3.5 | 16.3 | 2.0 | 1.5 | 23.3 | 29.3 | 43.0 | yes |
 | visdrone-yolo26n-1280 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 6.2 | 78.2 | 1.6 | 1.6 | 87.9 | 94.6 | 11.4 | no |
 
+#### w6-bytetrack-tuned ([full report](reports/w6-bytetrack-tuned/results.md))
+
+HOTA, MOTA, IDF1, IDSW on the 12 sequences unseen by the detector:
+
+| Model | Tracker | imgsz | HOTA | MOTA | IDF1 | IDSW | HOTA, all 17 seq. | Run |
+|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | bytetrack | 640 | 39.2 | 8.5 | 46.0 | 1139 | 39.0 | `20261028-231419-w6-bytetrack-tuned-visdrone-yolo26n-640-172922` |
+| visdrone-yolo26n-1280 | bytetrack | 1280 | 46.8 | 29.5 | 57.2 | 1266 | 47.2 | `20261028-231814-w6-bytetrack-tuned-visdrone-yolo26n-1280-193d7d` |
+
+| Model | Backend | Device | Versions | Pre | Infer | Post | Track | Total median | Total p95 | FPS (median) | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.1 | 6.6 | 1.4 | 1.0 | 10.2 | 15.5 | 97.6 | yes |
+| visdrone-yolo26n-640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.6 | 18.6 | 1.4 | 1.1 | 22.7 | 27.6 | 44.0 | yes |
+| visdrone-yolo26n-1280 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 3.1 | 16.3 | 1.7 | 1.2 | 22.4 | 27.3 | 44.6 | yes |
+| visdrone-yolo26n-1280 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 6.0 | 78.4 | 1.7 | 1.3 | 87.7 | 92.8 | 11.4 | no |
+
+#### w6-tracker-tuning ([full report](reports/w6-tracker-tuning/results.md))
+
+Selected tracker thresholds (MOT sequences unseen by the detector, not test-dev):
+
+- visdrone-yolo26n-640: buffer=30, high=0.5, low=0.1, match=0.9, new=0.5 (HOTA 30.6 on 2654 tuning frames)
+- visdrone-yolo26n-1280: buffer=30, high=0.5, low=0.05, match=0.9, new=0.6 (HOTA 39.6 on 2654 tuning frames)
+
 <!-- results:end -->
 
 ## Reproduce
@@ -223,6 +248,8 @@ make w4-eval
 make w4-p2-eval
 make w5-sahi-eval
 make w6-track-eval
+make w6-track-tune
+make w6-track-tuned-eval
 make data         # everything: + VisDrone-MOT, UAVDT, visualisations, TrackEval checks
 make test
 ```
