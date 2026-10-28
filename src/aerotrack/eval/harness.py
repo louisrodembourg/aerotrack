@@ -20,7 +20,6 @@ from aerotrack.inference import Detector
 from aerotrack.paths import CONFIGS_DIR, PROCESSED_DIR, REPO_ROOT, from_data_relative
 from aerotrack.runtime import environment_info, resolve_device, seed_everything
 
-
 # Tiled-inference settings (inference.Detector), set per model or for the whole config.
 TILING = ("tiles", "tile_overlap", "tile_full", "merge_ios")
 
