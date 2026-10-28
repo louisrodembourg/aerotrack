@@ -99,11 +99,13 @@ def kaggle_push(
     overrides: SetOpt = None,
     suffix: Annotated[str | None, typer.Option(help="Appended to each run name")] = None,
     dry_run: Annotated[bool, typer.Option(help="Write the kernel locally, do not upload")] = False,
+    resume: Annotated[str | None, typer.Option(
+        help="Run id of an interrupted run of this config: continue it from its last epoch")] = None,
 ) -> None:
     """Upload HEAD and run the training configs on a Kaggle GPU session."""
     from aerotrack.remote import kaggle  # noqa: PLC0415
 
-    kaggle.push(configs, overrides or [], suffix, slug, dry_run=dry_run)
+    kaggle.push(configs, overrides or [], suffix, slug, dry_run=dry_run, resume=resume)
 
 
 @kaggle_app.command("status")

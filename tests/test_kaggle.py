@@ -62,3 +62,17 @@ def test_merge_output_relocates_paths_and_never_overwrites(tmp_path):
         assert "already exists" in str(e)
     else:
         raise AssertionError("an existing local run was overwritten")
+
+
+def test_resume_push_points_the_job_at_the_checkpoint(monkeypatch):
+    monkeypatch.setattr(kaggle, "bundle", lambda: ("a" * 40, _bundle_b64()))
+    rid = "20261027-222023-visdrone-yolo26n-p2-960-93f3b8"
+    folder = kaggle.push([CONFIGS_DIR / "train" / "smoke.yaml"], [], None, "aerotrack-test",
+                         dry_run=True, resume=rid)
+    src = (folder / "kernel.py").read_text()
+    ns: dict = {}
+    exec(src.split("\nROOT = ")[0], ns)
+    [job] = ns["JOBS"]
+    assert job["resume"] == rid
+    assert f"resume_from={kaggle.RESUME_DIR}/{rid}" in job["overrides"]
+    assert 'ROOT / "resume" / run_id' in src and kaggle.RESUME_DIR == "/tmp/aerotrack/resume"

@@ -271,3 +271,15 @@ scratch (would confound the head with pre-training).
 plain counterpart at the same resolution. 960 runs at batch 8 (the P2 maps are 4x the P3
 maps), nominal batch 64 as before. 1280 is left out: the plain model already needed 11.1 h
 of the 11.25 h session there.
+
+**P2 at 960 outgrew the session; resumed, not shortened.** The probe measured 5.7 min of
+training per epoch (~13-14 h with validation); the full run was interrupted at the
+deadline after 93 of 100 epochs (val mAP50-95 27.2). `aerotrack kaggle push --resume
+<run id>` uploads that run's last.pt / best.pt as a private Kaggle dataset; a new session
+continues from epoch 94 with the checkpoint's optimizer state, LR schedule and best
+fitness (Ultralytics resume; only `data`, `save_dir`, `device` and `workers` are allowed to
+change). The continuation is a new tracked run whose `resumed_from` names the interrupted
+one, which stays untouched. Not bit-identical to an uninterrupted run (dataloader RNG
+restarts), which is negligible over 7 cosine-tail epochs. *Rejected:* retraining 960 with
+fewer epochs (a different schedule from the plain 960 run, so the comparison would no
+longer isolate the head).

@@ -9,6 +9,7 @@ Layout on Kaggle:
   /tmp/aerotrack/repo      code (extracted bundle)
   /tmp/aerotrack/data      datasets, downloaded and converted here (not kept)
   /tmp/aerotrack/weights   pretrained checkpoints
+  /tmp/aerotrack/resume    checkpoints of interrupted runs, from an attached dataset
   /kaggle/working/runs     run records + trained weights: the kernel's saved output
   /kaggle/working/logs     one log per job, GPU/CPU utilisation samples
 
@@ -21,6 +22,7 @@ import base64
 import io
 import json
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -108,6 +110,16 @@ def main() -> int:
     for dataset in sorted({j["dataset"] for j in JOBS}):
         sh([*uv, "aerotrack", "data", "download", dataset, "--no-keep-archives"], cwd=REPO, env=env)
         sh([*uv, "aerotrack", "data", "convert", dataset], cwd=REPO, env=env)
+
+    for job in JOBS:
+        if run_id := job.get("resume"):
+            # Checkpoint of an interrupted run, attached as a dataset by `kaggle push --resume`.
+            dst = ROOT / "resume" / run_id
+            dst.mkdir(parents=True, exist_ok=True)
+            for src in Path("/kaggle/input").rglob(f"{run_id}-*.pt"):
+                shutil.copy2(src, dst / src.name.removeprefix(f"{run_id}-"))
+            if not (dst / "last.pt").exists():
+                raise SystemExit(f"resume: {run_id}-last.pt not found under /kaggle/input")
 
     gpus = subprocess.run(["nvidia-smi", "-L"], capture_output=True, text=True).stdout.count("GPU ")
     if len(JOBS) > max(gpus, 1):

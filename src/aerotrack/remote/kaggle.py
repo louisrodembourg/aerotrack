@@ -27,6 +27,7 @@ KAGGLE_CLI = ["uvx", "--from", "kaggle==2.2.5", "kaggle"]
 # Kaggle's free GPU (the P100 is retired; `kaggle kernels push --help`, CLI 2.2.5).
 ACCELERATOR = "NvidiaTeslaT4"
 KAGGLE_RUNS = "/kaggle/working/runs"
+RESUME_DIR = "/tmp/aerotrack/resume"  # kaggle_kernel.py copies checkpoints there
 BUNDLE_PATHS = ["pyproject.toml", "uv.lock", ".python-version", "README.md", "src", "configs", "scripts"]
 TEMPLATE = Path(__file__).with_name("kaggle_kernel.py")
 
@@ -80,6 +81,28 @@ def make_jobs(configs: list[Path], overrides: list[str], suffix: str | None) -> 
     return jobs
 
 
+def upload_checkpoint(run_id: str, slug: str) -> str:
+    """Upload an interrupted run's last.pt / best.pt as a private Kaggle dataset, so a new
+    session can resume it. Files are prefixed with the run id: the kernel finds them by
+    name under /kaggle/input, whatever directory Kaggle mounts the dataset in."""
+    weights = RUNS_DIR / "ultralytics" / run_id / "weights"
+    if not (weights / "last.pt").exists():
+        raise SystemExit(f"{weights}/last.pt not found: nothing to resume")
+    ref = kernel_ref(f"{slug}-ckpt")
+    folder = Path(tempfile.mkdtemp(prefix="aerotrack-ckpt-"))
+    for f in ("last.pt", "best.pt"):
+        if (weights / f).exists():
+            shutil.copy2(weights / f, folder / f"{run_id}-{f}")
+    (folder / "dataset-metadata.json").write_text(json.dumps(
+        {"title": f"{slug}-ckpt", "id": ref, "licenses": [{"name": "CC0-1.0"}]}))
+    kaggle("datasets", "create", "-p", str(folder), "-q")  # private unless --public
+    for _ in range(60):  # a kernel attached to a dataset still processing fails to start
+        if "ready" in kaggle("datasets", "status", ref, capture=True):
+            return ref
+        time.sleep(10)
+    raise SystemExit(f"dataset {ref} not ready after 10 min")
+
+
 def render(jobs: list[dict], commit: str, bundle_b64: str) -> str:
     src = TEMPLATE.read_text()
     for key, value in {"__JOBS__": json.dumps(jobs), "__GIT_COMMIT__": commit,
@@ -97,11 +120,18 @@ def kernel_ref(slug: str) -> str:
 
 
 def push(configs: list[Path], overrides: list[str], suffix: str | None, slug: str,
-         dry_run: bool = False) -> Path:
+         dry_run: bool = False, resume: str | None = None) -> Path:
+    if resume:
+        if len(configs) != 1:
+            raise SystemExit("--resume continues one run: pass its config alone")
+        overrides = [*overrides, f"resume_from={RESUME_DIR}/{resume}"]
     jobs = make_jobs(configs, overrides, suffix)
     if len(jobs) > 2:
         raise SystemExit("a Kaggle session has 2 GPUs: at most 2 jobs per push")
+    if resume:
+        jobs[0]["resume"] = resume
     commit, b64 = bundle()
+    datasets = [upload_checkpoint(resume, slug)] if resume and not dry_run else []
     ref = kernel_ref(slug) if not dry_run else f"dry-run/{slug}"
     folder = Path(tempfile.mkdtemp(prefix="aerotrack-kaggle-"))
     (folder / "kernel.py").write_text(render(jobs, commit, b64))
@@ -109,9 +139,10 @@ def push(configs: list[Path], overrides: list[str], suffix: str | None, slug: st
         "id": ref, "title": slug, "code_file": "kernel.py", "language": "python",
         "kernel_type": "script", "is_private": True, "enable_gpu": True,
         "enable_internet": True, "machine_shape": ACCELERATOR,
-        "dataset_sources": [], "kernel_sources": [], "competition_sources": [],
+        "dataset_sources": datasets, "kernel_sources": [], "competition_sources": [],
     }, indent=2))
     record = {"kernel": ref, "commit": commit, "jobs": jobs, "accelerator": ACCELERATOR,
+              "datasets": datasets,
               "pushed_at": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
     if dry_run:
         print(f"dry run: kernel written to {folder}")

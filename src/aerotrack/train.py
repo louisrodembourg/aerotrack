@@ -8,6 +8,7 @@ no second JPEG compression, no duplicated dataset on disk, and raw data stays un
 from __future__ import annotations
 
 import json
+import shutil
 import time
 from pathlib import Path
 
@@ -117,11 +118,26 @@ def run_training(cfg: dict) -> dict:
                   .subset(limits["train"], seed=seed).images)
 
     with start_run(cfg["name"], "train", cfg, seed=seed, device=device, tags=("train",)) as run:
-        model = load_yolo(cfg["model"])
-        if cfg.get("pretrained"):
-            # An architecture built from .yaml starts random: transfer every tensor of the
-            # release weights whose name and shape match (backbone, most of the neck).
-            model.load(resolve_weights(cfg["pretrained"]))
+        save_dir = RUNS_DIR / "ultralytics" / run.id
+        if cfg.get("resume_from"):
+            # Continue an interrupted run (Kaggle session deadline) from its last epoch, with
+            # its optimizer, schedule and best fitness. The weights are copied into this
+            # run's directory so the interrupted run stays untouched.
+            src = Path(cfg["resume_from"])
+            (save_dir / "weights").mkdir(parents=True, exist_ok=True)
+            for f in ("last.pt", "best.pt"):
+                if (src / f).exists():
+                    shutil.copy2(src / f, save_dir / "weights" / f)
+            resume = {"resume": str(save_dir / "weights" / "last.pt"), "save_dir": str(save_dir),
+                      "workers": tr.get("workers", 8)}
+            model = load_yolo(resume["resume"])
+        else:
+            resume = None
+            model = load_yolo(cfg["model"])
+            if cfg.get("pretrained"):
+                # An architecture built from .yaml starts random: transfer every tensor of the
+                # release weights whose name and shape match (backbone, most of the neck).
+                model.load(resolve_weights(cfg["pretrained"]))
         timing = {"train_seconds": []}
 
         def on_train_epoch_start(trainer):
@@ -144,11 +160,16 @@ def run_training(cfg: dict) -> dict:
         model.add_callback("on_fit_epoch_end", on_fit_epoch_end)
 
         t_start = time.perf_counter()
-        model.train(
-            data=str(data_yaml), trainer=_masked_trainer_class(), device=device, seed=seed,
-            project=str(RUNS_DIR / "ultralytics"), name=run.id, exist_ok=True, verbose=False,
-            **tr,
-        )
+        if resume:
+            # Ultralytics takes every other argument from the checkpoint; only these may change.
+            model.train(data=str(data_yaml), trainer=_masked_trainer_class(), device=device,
+                        **resume)
+        else:
+            model.train(
+                data=str(data_yaml), trainer=_masked_trainer_class(), device=device, seed=seed,
+                project=str(RUNS_DIR / "ultralytics"), name=run.id, exist_ok=True,
+                verbose=False, **tr,
+            )
         wall = time.perf_counter() - t_start
         save_dir = Path(model.trainer.save_dir)
         best = save_dir / "weights" / "best.pt"
@@ -158,7 +179,8 @@ def run_training(cfg: dict) -> dict:
         full_train = len(SplitGT.load(PROCESSED_DIR / dataset / "gt" / "train.json").images)
         summary = {
             "weights": str(best),
-            "wall_seconds": wall,
+            "wall_seconds": wall,  # this run only: a resumed run excludes the epochs before
+            "resumed_from": cfg.get("resume_from"),
             "train_images": n_train,
             "epochs": tr["epochs"],
             # Ultralytics halves the batch on a first-epoch CUDA OOM: record what actually
