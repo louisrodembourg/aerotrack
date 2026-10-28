@@ -320,3 +320,36 @@ ms): on this data, when retraining at a higher resolution is possible, it domina
 slicing. Tiling also costs large objects (AP_large 33.7 → 31.8), which the merge keeps
 from the whole-frame pass only. It remains the option for a model that cannot be
 retrained, and is not pursued further as a training-free lever here.
+
+## Tracking (week 6)
+
+**ByteTrack and its Kalman filter written in `aerotrack.track`, checked against
+Ultralytics' BYTETracker.** The filter is coded from the equations (constant velocity over
+centre, aspect ratio and height; noise proportional to box height, the SORT / DeepSORT /
+ByteTrack constants). The association follows Ultralytics 8.4.187 step for step (score-
+fused first stage, IoU-only low-score stage at 0.5, unconfirmed tracks at 0.7, 0.85-IoU
+duplicate removal), so the two can be compared: on five synthetic scenes with misses,
+weak detections, class flips and clutter, both return the same tracks, Kalman boxes and
+classes at every frame, ids equal up to a fixed renaming (the reference numbers tracks
+born in the same frame in `frozenset` iteration order). *Rejected:* using Ultralytics'
+tracker (the from-scratch filter is a project goal, and its tracker sits behind its own
+`predict`, outside our timed pipeline); `lap.lapjv` for the assignment, Ultralytics'
+default (an extra compiled dependency; scipy's Hungarian solver then a cost threshold is
+Ultralytics' own fallback, and what the comparison uses).
+
+**Association is class-agnostic**, as in the reference: a track survives a car/van flip
+of its detections and reports its latest class, so it is scored in the class benchmark
+of each frame's class. *Rejected:* per-class trackers (a flip would end the track and
+start a new id, an ID switch caused by the classifier, not the tracker).
+
+**Tracking is reported on VisDrone-MOT test-dev, not val.** VisDrone-DET still images are
+extracted from the same source videos: MOT val sequences 0000137, 0000182, 0000305 and
+0000339 have 6 to 18 frames in DET train each, 0000086 and 0000117 have frames in DET val;
+only 0000268 is unseen (file-name prefixes, checked October 2026). Val therefore serves to
+tune the tracker; test-dev (official link, added to `configs/data/visdrone_mot.yaml`)
+reports. A first pass on val (n at 640, not published) measured ByteTrack at 2.2 ms per
+frame on the M3 Pro CPU.
+
+**End-to-end latency includes the tracker.** Frames of one sequence are decoded
+beforehand and run in order through detector + tracker update; the tracker restarts when
+the frame list wraps so it never sees a jump in time.

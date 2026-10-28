@@ -1,0 +1,33 @@
+# Week 6: ByteTrack (aerotrack.track, Kalman filter from scratch) on VisDrone-MOT
+# test-dev, behind the week 4-5 detectors. Scored per evaluated class with TrackEval;
+# latency is end to end, the tracker inside the timed loop. Not MOT val: 6 of its 7 videos
+# have frames in VisDrone-DET train or val (DECISIONS.md); val is for tuning the tracker.
+name: w6-bytetrack
+seed: 0
+device: auto
+dataset:
+  mot: visdrone_mot
+  split: test-dev
+models:
+  - {run: visdrone-yolo26n-640, imgsz: 640}
+  - {run: visdrone-yolo26n-p2-640, imgsz: 640}
+  - {run: visdrone-yolo26n-960, imgsz: 960}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280}
+detection:
+  imgsz: 640
+  conf: 0.1          # = tracker.low: the second association needs the weak detections
+  iou: 0.7
+  max_det: 500
+tracker:
+  type: bytetrack
+  high: 0.25
+  low: 0.1
+  new: 0.25
+  buffer: 30
+  match: 0.8
+latency:
+  enabled: true
+  backends: [torch, onnxruntime]
+  n_frames: 100
+  warmup: 20
+  iters: 200

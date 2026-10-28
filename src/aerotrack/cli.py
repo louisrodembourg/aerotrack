@@ -81,11 +81,19 @@ def evaluate(
     config: Annotated[Path, typer.Argument(help="configs/eval/*.yaml")],
     overrides: SetOpt = None,
 ) -> None:
-    """Detection accuracy + latency for each model in the config; JSON + Markdown report."""
+    """Accuracy + latency for each model in the config (detection, or tracking when the
+    config has a `tracker` section); JSON + Markdown report."""
     from aerotrack.config import load_config  # noqa: PLC0415
-    from aerotrack.eval.harness import run_evaluation  # noqa: PLC0415
 
-    run_evaluation(load_config(config, overrides or []))
+    cfg = load_config(config, overrides or [])
+    if "tracker" in cfg:
+        from aerotrack.eval.track_harness import run_tracking_evaluation  # noqa: PLC0415
+
+        run_tracking_evaluation(cfg)
+    else:
+        from aerotrack.eval.harness import run_evaluation  # noqa: PLC0415
+
+        run_evaluation(cfg)
 
 
 kaggle_app = typer.Typer(no_args_is_help=True, help="Train on Kaggle's free GPUs (push, status, pull).")

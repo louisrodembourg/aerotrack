@@ -9,8 +9,13 @@ sources:
     gdrive_id: 1-qX2d-P1Xr64ke6nTdlm33om1VxCUTSh
     official_page: https://github.com/VisDrone/VisDrone-Dataset
     sha256: 566d08fb53fff4e539f386f5a408ccf17854fd53814dc756bdede2de1dbb4014
+  - filename: VisDrone2019-MOT-test-dev.zip
+    gdrive_id: 14z8Acxopj1d86-qhsF1NwS4Bv3KYa4Wu
+    official_page: https://github.com/VisDrone/VisDrone-Dataset
 splits:
   # Sequence counts from the VisDrone-Dataset README (56 train, 7 val).
   val: {dir: VisDrone2019-MOT-val, expected_sequences: 7}
   train: {dir: VisDrone2019-MOT-train, expected_sequences: 56}
+  # test-dev: the README gives no sequence count; pinned after the first download.
+  test-dev: {dir: VisDrone2019-MOT-test-dev}
 class_map: visdrone_mot

@@ -16,12 +16,12 @@ import torch
 from aerotrack.inference import STAGES, Detector
 
 
-def summarize(samples: list[dict[str, float]]) -> dict:
+def summarize(samples: list[dict[str, float]], stages: tuple[str, ...] = STAGES) -> dict:
     """Per-stage and end-to-end statistics. The end-to-end figure is computed per
     iteration and then summarised: summing per-stage medians would understate p95."""
     out = {}
-    columns = {s: np.array([x[s] for x in samples]) for s in STAGES}
-    columns["total"] = sum(columns[s] for s in STAGES)
+    columns = {s: np.array([x[s] for x in samples]) for s in stages}
+    columns["total"] = sum(columns[s] for s in stages)
     for name, v in columns.items():
         out[name] = {
             "median_ms": float(np.median(v)),
@@ -37,12 +37,12 @@ def summarize(samples: list[dict[str, float]]) -> dict:
     return out
 
 
-def _peak_rss_mb() -> float:
+def peak_rss_mb() -> float:
     peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     return peak / 2**20 if sys.platform == "darwin" else peak / 2**10  # bytes vs KiB
 
 
-def _device_memory_mb(device: str) -> float | None:
+def device_memory_mb(device: str) -> float | None:
     if device.startswith("cuda"):
         return torch.cuda.max_memory_allocated() / 2**20
     if device == "mps":
@@ -65,8 +65,8 @@ def benchmark(detector: Detector, images: list[np.ndarray], warmup: int, iters: 
         "imgsz": detector.imgsz,
         "conf": detector.conf,
         "n_distinct_images": len(images),
-        "peak_process_rss_mb": _peak_rss_mb(),
-        "device_memory_mb": _device_memory_mb(detector.device),
+        "peak_process_rss_mb": peak_rss_mb(),
+        "device_memory_mb": device_memory_mb(detector.device),
         "runtime": detector.runtime,
         "end2end_head": detector.end2end,
     })

@@ -1,19 +1,27 @@
-"""TrackEval wrapper for the per-class MOTChallenge benchmarks written by aerotrack.data.mot.
+"""Tracking on the per-class MOTChallenge benchmarks written by aerotrack.data.mot, scored
+with TrackEval.
 
-Week 1 only needs the self-check (ground truth scored as a tracker); the tracker
-evaluation of week 6 goes through `run_trackeval` with the same configuration.
+`track_sequence` runs detector -> tracker over one sequence's frames in order;
+`write_tracks` filters the output with the sequence's ignore regions (the same rule the
+ground truth went through) and writes one tracker file per class benchmark; `run_trackeval`
+scores one class. `gt_self_check` scores the ground truth as a tracker (week 1).
 """
 
 from __future__ import annotations
 
+import configparser
 import contextlib
 import io
 import shutil
 import tempfile
+import time
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
+import cv2
 import numpy as np
 
+from aerotrack.data.ignore import ignore_mask, keep_outside
 from aerotrack.paths import PROCESSED_DIR
 
 MOT_ROOTS = {"visdrone_mot": PROCESSED_DIR / "visdrone_mot", "uavdt": PROCESSED_DIR / "uavdt" / "mot"}
@@ -81,3 +89,81 @@ def gt_self_check(dataset: str, split: str, root: Path | None = None) -> dict[st
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     return out
+
+
+def sequences(split_dir: Path) -> list[dict]:
+    """name, frame paths, size of each sequence of a split (from any class's seqinfo)."""
+    cls = benchmark_classes(split_dir)[0]
+    out = []
+    for name in (split_dir / "seqmap.txt").read_text().split()[1:]:
+        ini = split_dir / cls / name / "seqinfo.ini"
+        info = configparser.ConfigParser()
+        info.read(ini)
+        seq = info["Sequence"]
+        im_dir = (ini.parent / seq["imDir"]).absolute()  # not resolve(): DECISIONS.md
+        out.append({"name": name, "length": int(seq["seqLength"]),
+                    "width": int(seq["imWidth"]), "height": int(seq["imHeight"]),
+                    "frames": [im_dir / f"{i:07d}{seq['imExt']}"
+                               for i in range(1, int(seq["seqLength"]) + 1)]})
+    return out
+
+
+def track_sequence(frames: Iterable[np.ndarray], detector: Callable, tracker,
+                   keep_classes: set[int]) -> np.ndarray:
+    """(N, 8) rows frame, id, x1, y1, x2, y2, score, class over the whole sequence.
+    Detections of classes outside `keep_classes` (not evaluated) never reach the tracker."""
+    rows = []
+    for f, img in enumerate(frames, 1):
+        det = detector(img)
+        det = det[np.isin(det[:, 5].astype(int), list(keep_classes))]
+        for x1, y1, x2, y2, tid, score, cls in tracker.update(det):
+            rows.append((f, tid, x1, y1, x2, y2, score, cls))
+    return np.array(rows, dtype=float).reshape(-1, 8)
+
+
+def read_frames(paths: list[Path]) -> Iterable[np.ndarray]:
+    for p in paths:
+        img = cv2.imread(str(p))
+        if img is None:
+            raise FileNotFoundError(p)
+        yield img
+
+
+def write_tracks(rows: np.ndarray, seq: dict, ignore_file: Path, class_names: dict[int, str],
+                 out_dir: Path) -> None:
+    """<out_dir>/<class>/<tracker>/data/<seq>.txt in MOTChallenge format, ignored-region
+    tracks dropped per frame with the dataset's rule (as for the ground truth)."""
+    xywh = np.c_[rows[:, 2:4], rows[:, 4:6] - rows[:, 2:4]]
+    keep = np.ones(len(rows), dtype=bool)
+    ign = np.loadtxt(ignore_file, delimiter=",", ndmin=2) if ignore_file.stat().st_size else \
+        np.zeros((0, 5))
+    for frame in np.unique(ign[:, 0]).astype(int):
+        mask = ignore_mask(ign[ign[:, 0] == frame, 1:5], seq["height"], seq["width"])
+        idx = np.flatnonzero(rows[:, 0] == frame)
+        keep[idx] = keep_outside(xywh[idx], mask)
+    for cid, name in class_names.items():
+        sel = keep & (rows[:, 7] == cid)
+        path = out_dir / name / "data" / f"{seq['name']}.txt"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("".join(
+            f"{int(r[0])},{int(r[1])},{b[0]:.2f},{b[1]:.2f},{b[2]:.2f},{b[3]:.2f},{r[6]:.4f},-1,-1,-1\n"
+            for r, b in zip(rows[sel], xywh[sel], strict=True)))
+
+
+def timed_tracking(detector, make_tracker: Callable, frames: list[np.ndarray], warmup: int,
+                   iters: int, keep_classes: set[int]) -> list[dict[str, float]]:
+    """Per-frame stage times over consecutive frames, the tracker included. The tracker
+    restarts whenever the frame list wraps, so it never sees a jump in time."""
+    samples = []
+    tracker = make_tracker()
+    keep = list(keep_classes)
+    for i in range(warmup + iters):
+        if i % len(frames) == 0:
+            tracker = make_tracker()
+        det, t = detector.timed(frames[i % len(frames)])
+        t0 = time.perf_counter()
+        tracker.update(det[np.isin(det[:, 5].astype(int), keep)])
+        t["tracking"] = (time.perf_counter() - t0) * 1e3
+        if i >= warmup:
+            samples.append(t)
+    return samples
