@@ -283,3 +283,11 @@ one, which stays untouched. Not bit-identical to an uninterrupted run (dataloade
 restarts), which is negligible over 7 cosine-tail epochs. *Rejected:* retraining 960 with
 fewer epochs (a different schedule from the plain 960 run, so the comparison would no
 longer isolate the head).
+
+**Measured (`reports/w4-p2/`, test-dev).** P2 adds 1.2 mAP50-95 at both resolutions
+(640: 14.2 → 15.4; 960: 19.0 → 20.2) and ~1 point of AP_small, for +15 % (640) to +41 %
+(960) latency on MPS and +40-45 % on ONNX Runtime CPU. Raising resolution buys more per
+millisecond: on MPS, plain 1280 (22.5 mAP, 22.0 ms in `reports/w4-resolution/`) beats P2
+at 960 (20.2 mAP, 19.0 ms). P2 earns its place only where resolution cannot grow: under
+the 25 FPS budget on CPU, P2 at 640 (15.4 mAP, 33 FPS) is the most accurate model
+measured.

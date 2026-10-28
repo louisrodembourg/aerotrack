@@ -1,4 +1,4 @@
-.PHONY: w3-eval w4-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
+.PHONY: w3-eval w4-eval w4-p2-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
 
 RUN := uv run
 CLI := $(RUN) aerotrack
@@ -55,6 +55,10 @@ w3-eval:  ## week 3: fine-tuned references on test-dev (pull them from Kaggle fi
 
 w4-eval:  ## week 4: YOLO26n resolution sweep on test-dev (pull from Kaggle first), then README
 	$(EVAL) configs/eval/w4_resolution.yaml
+	$(CLI) readme-table
+
+w4-p2-eval:  ## week 4: YOLO26n P2 head vs plain at 640 and 960 on test-dev, then README
+	$(EVAL) configs/eval/w4_p2.yaml
 	$(CLI) readme-table
 
 readme:  ## regenerate README results from tracked reports
