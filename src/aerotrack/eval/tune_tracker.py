@@ -14,6 +14,7 @@ import itertools
 import json
 import shutil
 import tempfile
+from functools import partial
 from pathlib import Path
 
 import numpy as np
@@ -35,6 +36,7 @@ from aerotrack.experiments import find_train_run, start_run
 from aerotrack.inference import Detector
 from aerotrack.paths import REPO_ROOT
 from aerotrack.runtime import resolve_device, seed_everything
+from aerotrack.track.pipeline import TrackingPipeline
 
 
 def tuning_sequences(mot: str, splits: list[str]) -> list[tuple[Path, dict]]:
@@ -101,8 +103,9 @@ def tune_model(model: dict, cfg: dict) -> dict:
                 out = tmp / f"trial{k}"
                 for split_dir, s in seqs:
                     # Cached detections replayed through the same loop as the evaluation.
-                    rows = track_sequence(cache[s["name"]], lambda d: d,
-                                          TRACKERS[tracker_cfg["type"]](**params), set(keep))
+                    make = partial(TRACKERS[tracker_cfg["type"]], **params)
+                    pipe = TrackingPipeline(lambda d: d, make, set(keep))
+                    rows = track_sequence(cache[s["name"]], pipe)
                     write_tracks(rows, s, split_dir / "ignore" / f"{s['name']}.txt",
                                  class_ids, out)
                 per_class = {c: run_trackeval(bench, c, out, c) for c in classes}

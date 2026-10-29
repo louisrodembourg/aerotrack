@@ -149,17 +149,21 @@ def tracking_per_class_table(results: list[dict]) -> str:
 
 
 def tracking_latency_table(results: list[dict], budget: float) -> str:
-    rows = ["| Model | Backend | Device | Versions | Pre | Infer | Post | Track | Total median | Total p95 | FPS (median) | ≥ budget |",
-            "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    """End-to-end frame time, tracker included. FPS is taken on the median frame time for
+    a single detector, on the mean for a keyframe pipeline whose frames cost unevenly
+    (`budget_basis`); mean, p95 and max are shown for every row."""
+    rows = ["| Model | Backend | Device | Versions | Track | Total median | Total mean | Total p95 | Total max | FPS | ≥ budget |",
+            "|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in results:
         for lat in r["latency"]:
+            basis = lat.get("budget_basis", "median")
+            fps = lat.get(f"fps_{basis}", 1000.0 / lat["total"][f"{basis}_ms"])
             rows.append(
                 f"| {r['model']} | {lat['runtime']['backend']} | {_device(lat['env'])} | "
-                f"{_versions(lat)} | {_ms(lat['preprocess']['median_ms'])} | "
-                f"{_ms(lat['inference']['median_ms'])} | {_ms(lat['postprocess']['median_ms'])} | "
-                f"{_ms(lat['tracking']['median_ms'])} | "
-                f"{_ms(lat['total']['median_ms'])} | {_ms(lat['total']['p95_ms'])} | "
-                f"{lat['fps_median']:.1f} | {'yes' if lat['fps_median'] >= budget else 'no'} |")
+                f"{_versions(lat)} | {_ms(lat['tracking']['median_ms'])} | "
+                f"{_ms(lat['total']['median_ms'])} | {_ms(lat['total']['mean_ms'])} | "
+                f"{_ms(lat['total']['p95_ms'])} | {_ms(lat['total']['max_ms'])} | "
+                f"{fps:.1f} ({basis}) | {'yes' if fps >= budget else 'no'} |")
     return "\n".join(rows)
 
 
@@ -190,7 +194,9 @@ Per class (unseen sequences):
 
 Budget: {budget} FPS, **tracking included**: detector stages plus the tracker update, per
 frame, over {lat.get('n_distinct_frames', 'n/a')} consecutive frames of
-`{lat.get('sequence', 'n/a')}` (decoded beforehand). Latency in ms, batch 1.
+`{lat.get('sequence', 'n/a')}` (decoded beforehand). Latency in ms, batch 1. FPS is on the
+median frame time for a single detector, on the mean (throughput) for keyframe pipelines,
+whose keyframes cost more than the frames between them (see the max column).
 
 {tracking_latency_table(results, budget)}
 """

@@ -14,8 +14,7 @@ import contextlib
 import io
 import shutil
 import tempfile
-import time
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from pathlib import Path
 
 import cv2
@@ -122,15 +121,14 @@ def sequences(split_dir: Path, names: list[str] | None = None) -> list[dict]:
     return out
 
 
-def track_sequence(frames: Iterable[np.ndarray], detector: Callable, tracker,
-                   keep_classes: set[int]) -> np.ndarray:
-    """(N, 8) rows frame, id, x1, y1, x2, y2, score, class over the whole sequence.
-    Detections of classes outside `keep_classes` (not evaluated) never reach the tracker."""
+def track_sequence(frames: Iterable[np.ndarray], pipeline) -> np.ndarray:
+    """(N, 8) rows frame, id, x1, y1, x2, y2, score, class over the whole sequence, through
+    a fresh `track.pipeline.TrackingPipeline` (detections of classes outside its `keep`
+    never reach the tracker)."""
+    pipeline.reset()
     rows = []
     for f, img in enumerate(frames, 1):
-        det = detector(img)
-        det = det[np.isin(det[:, 5].astype(int), list(keep_classes))]
-        for x1, y1, x2, y2, tid, score, cls in tracker.update(det):
+        for x1, y1, x2, y2, tid, score, cls in pipeline.step(img):
             rows.append((f, tid, x1, y1, x2, y2, score, cls))
     return np.array(rows, dtype=float).reshape(-1, 8)
 
@@ -164,20 +162,15 @@ def write_tracks(rows: np.ndarray, seq: dict, ignore_file: Path, class_names: di
             for r, b in zip(rows[sel], xywh[sel], strict=True)))
 
 
-def timed_tracking(detector, make_tracker: Callable, frames: list[np.ndarray], warmup: int,
-                   iters: int, keep_classes: set[int]) -> list[dict[str, float]]:
-    """Per-frame stage times over consecutive frames, the tracker included. The tracker
-    restarts whenever the frame list wraps, so it never sees a jump in time."""
+def timed_tracking(pipeline, frames: list[np.ndarray], warmup: int, iters: int
+                   ) -> list[dict]:
+    """Per-frame stage times over consecutive frames, the tracker included. The pipeline
+    restarts whenever the frame list wraps, so the tracker never sees a jump in time."""
     samples = []
-    tracker = make_tracker()
-    keep = list(keep_classes)
     for i in range(warmup + iters):
         if i % len(frames) == 0:
-            tracker = make_tracker()
-        det, t = detector.timed(frames[i % len(frames)])
-        t0 = time.perf_counter()
-        tracker.update(det[np.isin(det[:, 5].astype(int), keep)])
-        t["tracking"] = (time.perf_counter() - t0) * 1e3
+            pipeline.reset()
+        _, t = pipeline.timed_step(frames[i % len(frames)])
         if i >= warmup:
             samples.append(t)
     return samples

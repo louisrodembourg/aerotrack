@@ -157,6 +157,21 @@ class ByteTrack:
         return np.array([[*t.xyxy, t.track_id, t.score, t.cls]
                          for t in self.tracked if t.activated]).reshape(-1, 7)
 
+    def predict_only(self) -> np.ndarray:
+        """A frame without detections (hybrid keyframe mode): every track is carried one
+        frame forward by its Kalman prediction and reported there; no track changes
+        state, and the frame still counts towards the lost-track buffer."""
+        self.frame_id += 1
+        pool = [t for t in self.tracked if t.activated] + self.lost
+        if pool:
+            mean = np.array([t.mean for t in pool])
+            mean[[i for i, t in enumerate(pool) if t.state != TRACKED], 7] = 0
+            mean, cov = self.kf.predict(mean, np.array([t.cov for t in pool]))
+            for t, m, c in zip(pool, mean, cov, strict=True):
+                t.mean, t.cov = m, c
+        return np.array([[*t.xyxy, t.track_id, t.score, t.cls]
+                         for t in self.tracked if t.activated]).reshape(-1, 7)
+
     def _merge(self, updated, refound, lost, removed) -> None:
         """End-of-frame pools, in the reference order (Ultralytics merge_track_pools)."""
         ids = lambda ts: {t.track_id for t in ts}  # noqa: E731

@@ -32,6 +32,7 @@ def summarize(samples: list[dict[str, float]], stages: tuple[str, ...] = STAGES)
             "max_ms": float(v.max()),
         }
     out["fps_median"] = 1000.0 / out["total"]["median_ms"]
+    out["fps_mean"] = 1000.0 / out["total"]["mean_ms"]  # throughput, for uneven pipelines
     out["fps_p95"] = 1000.0 / out["total"]["p95_ms"]
     out["iterations"] = len(samples)
     return out

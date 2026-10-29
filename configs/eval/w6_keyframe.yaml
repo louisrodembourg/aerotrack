@@ -1,0 +1,40 @@
+# Week 6: hybrid keyframe mode on VisDrone-MOT test-dev. The 1280 model runs on one frame
+# in K; between keyframes either the 640 model runs ("+640") or the tracker only predicts
+# ("predict"). The single-detector pipelines are re-timed in the same session as
+# references. Thresholds from reports/w6-tracker-tuning/ (the 1280 ones for every
+# pipeline keyed on 1280). Reported as a trade-off curve over K, not to pick K on test-dev.
+name: w6-keyframe
+seed: 0
+device: auto
+dataset:
+  mot: visdrone_mot
+  split: test-dev
+models:
+  - {run: visdrone-yolo26n-640, imgsz: 640,
+     tracker: {high: 0.5, new: 0.5, low: 0.1, match: 0.9}}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: key1280-k2+640,
+     keyframe: {interval: 2, light: {run: visdrone-yolo26n-640, imgsz: 640}}}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: key1280-k5+640,
+     keyframe: {interval: 5, light: {run: visdrone-yolo26n-640, imgsz: 640}}}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: key1280-k2-predict, keyframe: {interval: 2}}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: key1280-k3-predict, keyframe: {interval: 3}}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: key1280-k5-predict, keyframe: {interval: 5}}
+detection:
+  imgsz: 640
+  conf: 0.05
+  iou: 0.7
+  max_det: 500
+tracker:
+  type: bytetrack
+  buffer: 30
+  high: 0.5
+  new: 0.6
+  low: 0.05
+  match: 0.9
+latency:
+  enabled: true
+  backends: [torch, onnxruntime]
+  n_frames: 100
+  warmup: 20
+  iters: 200

@@ -32,6 +32,7 @@ from aerotrack.inference import STAGES, Detector
 from aerotrack.paths import REPO_ROOT
 from aerotrack.runtime import environment_info, resolve_device, seed_everything
 from aerotrack.track.bytetrack import ByteTrack
+from aerotrack.track.pipeline import KINDS, TrackingPipeline
 
 TRACKERS = {"bytetrack": ByteTrack}
 
@@ -61,6 +62,18 @@ def evaluate_tracking_model(model: dict, cfg: dict, split_dir: Path, budget: flo
         detector = Detector(weights, backend="torch", device=device, imgsz=det_cfg["imgsz"],
                             conf=det_cfg["conf"], iou=det_cfg["iou"], max_det=det_cfg["max_det"],
                             **tiling)
+        kf = model.get("keyframe", {})
+        interval = kf.get("interval", 1)
+        light_w = find_train_run(kf["light"]["run"])["summary"]["weights"] if kf.get("light") \
+            else None
+
+        def light_detector(backend: str, dev: str) -> Detector | None:
+            if light_w is None:
+                return None
+            return Detector(light_w, backend=backend, device=dev, imgsz=kf["light"]["imgsz"],
+                            conf=det_cfg["conf"], iou=det_cfg["iou"], max_det=det_cfg["max_det"],
+                            ort_threads=lat_cfg.get("ort_threads"))
+
         keep = {i for i, n in detector.names.items() if n in classes}
         missing = set(classes) - {detector.names[i] for i in keep}
         if missing:
@@ -73,7 +86,9 @@ def evaluate_tracking_model(model: dict, cfg: dict, split_dir: Path, budget: flo
             for k, seq in enumerate(seqs, 1):
                 print(f"[{name}] {seq['name']} ({k}/{len(seqs)}, {seq['length']} frames)",
                       flush=True)
-                rows = track_sequence(read_frames(seq["frames"]), detector, make_tracker(), keep)
+                pipe = TrackingPipeline(detector, make_tracker, keep, interval,
+                                        light_detector("torch", device))
+                rows = track_sequence(read_frames(seq["frames"]), pipe)
                 write_tracks(rows, seq, split_dir / "ignore" / f"{seq['name']}.txt", class_ids,
                              tmp)
             # Scored twice: every sequence (comparable with published numbers), and only
@@ -95,7 +110,8 @@ def evaluate_tracking_model(model: dict, cfg: dict, split_dir: Path, budget: flo
                "classes": classes,
                "split": str(split_dir.relative_to(REPO_ROOT)) if split_dir.is_relative_to(REPO_ROOT)
                else str(split_dir), "imgsz": det_cfg["imgsz"], "conf": det_cfg["conf"],
-               "tracker": trk_cfg, "runtime": detector.runtime}
+               "tracker": trk_cfg, "runtime": detector.runtime,
+               "keyframe": {"interval": interval, "light": kf.get("light")} if interval > 1 else None}
         run.log({k: v for k, v in scores["unseen"].items() if k != "per_class"})
         result = {"model": name, "weights": str(weights), "run_id": run.id,
                   "train_run": train["id"], "accuracy": acc, "latency": []}
@@ -111,9 +127,17 @@ def evaluate_tracking_model(model: dict, cfg: dict, split_dir: Path, budget: flo
                              conf=det_cfg["conf"], iou=det_cfg["iou"], max_det=det_cfg["max_det"],
                              ort_threads=lat_cfg.get("ort_threads"), **tiling)
                 print(f"[{name}] end-to-end latency backend={backend} device={bdev}", flush=True)
-                samples = timed_tracking(d, make_tracker, frames, lat_cfg["warmup"],
-                                         lat_cfg["iters"], keep)
+                pipe = TrackingPipeline(d, make_tracker, keep, interval,
+                                        light_detector(backend, bdev))
+                samples = timed_tracking(pipe, frames, lat_cfg["warmup"], lat_cfg["iters"])
                 lat = summarize(samples, (*STAGES, "tracking"))
+                # Uneven frame costs (keyframe mode): the budget is a throughput, judged on
+                # the mean frame time; a single-detector pipeline keeps the median.
+                basis = "mean" if interval > 1 else "median"
+                lat["budget_basis"] = basis
+                lat["by_kind"] = {k: {"frames": len(v), "mean_ms": float(np.mean(v))}
+                                  for k in KINDS if (v := [sum(x[st] for st in (*STAGES, "tracking"))
+                                                           for x in samples if x["kind"] == k])}
                 lat.update({"warmup": lat_cfg["warmup"], "batch": 1, "imgsz": d.imgsz,
                             "conf": d.conf, "sequence": seq["name"],
                             "n_distinct_frames": len(frames), "runtime": d.runtime,
@@ -122,9 +146,9 @@ def evaluate_tracking_model(model: dict, cfg: dict, split_dir: Path, budget: flo
                             "env": environment_info(bdev),
                             "stages_measured": [*STAGES, "tracking"],
                             "tracking_included": True, "budget_fps": budget,
-                            "meets_budget_median": lat["fps_median"] >= budget})
+                            "meets_budget": lat[f"fps_{basis}"] >= budget})
                 result["latency"].append(lat)
-                run.log({f"latency/{backend}/fps_median": lat["fps_median"],
+                run.log({f"latency/{backend}/fps_{basis}": lat[f"fps_{basis}"],
                          f"latency/{backend}/total_p95_ms": lat["total"]["p95_ms"]})
                 del d
 

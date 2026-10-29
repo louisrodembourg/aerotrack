@@ -133,3 +133,32 @@ def test_grid_sets_new_from_high():
     assert len(pts) == 4
     assert {(p["high"], p["new"]) for p in pts} == {(0.25, 0.25), (0.25, 0.35), (0.5, 0.5), (0.5, 0.6)}
     assert all("new_offset" not in p for p in pts)
+
+
+def test_keyframe_pipeline_schedules_detectors_and_predicts_between():
+    from aerotrack.track.pipeline import TrackingPipeline
+
+    calls = []
+
+    def det(tag):
+        def run(img):
+            calls.append(tag)
+            # one car moving right 4 px per frame
+            return np.array([[100 + 4 * img, 100, 140 + 4 * img, 130, 0.9, 0]], dtype=float)
+        return run
+
+    light = TrackingPipeline(det("key"), ByteTrack, {0}, interval=3, light=det("light"))
+    light.reset()
+    for f in range(7):
+        light.step(f)
+    assert calls == ["key", "light", "light", "key", "light", "light", "key"]
+
+    calls.clear()
+    pred = TrackingPipeline(det("key"), ByteTrack, {0}, interval=3)
+    pred.reset()
+    out = [pred.step(f) for f in range(7)]
+    assert calls == ["key", "key", "key"]
+    # frames 4 and 5 have no detection: the confirmed track is carried forward by Kalman
+    assert len(out[4]) == 1 and len(out[5]) == 1
+    assert out[4][0, 4] == out[3][0, 4] == out[6][0, 4]  # one id throughout
+    assert out[5][0, 0] > out[4][0, 0] > out[3][0, 0] - 1  # moving right

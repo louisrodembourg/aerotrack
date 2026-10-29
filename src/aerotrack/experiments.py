@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 import uuid
 from contextlib import contextmanager
@@ -67,7 +68,9 @@ class Run:
         if self._wandb is not None and path.exists():
             import wandb  # noqa: PLC0415
 
-            art = wandb.Artifact(name=f"{self.name}-{path.stem}".replace("/", "_"), type=kind)
+            # W&B artifact names allow only [A-Za-z0-9_.-]; run names may carry others ("+").
+            name = re.sub(r"[^A-Za-z0-9_.-]", "_", f"{self.name}-{path.stem}")
+            art = wandb.Artifact(name=name, type=kind)
             if path.is_dir():
                 art.add_dir(str(path))
             else:

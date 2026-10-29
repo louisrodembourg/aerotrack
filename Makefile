@@ -1,4 +1,4 @@
-.PHONY: w3-eval w4-eval w4-p2-eval w5-sahi-eval w6-track-eval w6-track-tune w6-track-tuned-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
+.PHONY: w3-eval w4-eval w4-p2-eval w5-sahi-eval w6-track-eval w6-track-tune w6-track-tuned-eval w6-keyframe-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
 
 RUN := uv run
 CLI := $(RUN) aerotrack
@@ -71,6 +71,10 @@ w6-track-eval:  ## week 6: ByteTrack on VisDrone-MOT val behind each detector, e
 
 w6-track-tuned-eval:  ## week 6: ByteTrack with the tuned thresholds on VisDrone-MOT test-dev, then README
 	$(EVAL) configs/eval/w6_bytetrack_tuned.yaml
+	$(CLI) readme-table
+
+w6-keyframe-eval:  ## week 6: hybrid keyframe mode (1280 on keyframes) on VisDrone-MOT test-dev, then README
+	$(EVAL) configs/eval/w6_keyframe.yaml
 	$(CLI) readme-table
 
 w6-track-tune:  ## week 6: ByteTrack threshold search on MOT sequences unseen by the detector
