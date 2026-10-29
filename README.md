@@ -22,8 +22,9 @@ under the budget on CPU) and fine-tuned at 640, 960 and 1280 on VisDrone-DET (10
 on Kaggle's free T4s), evaluated on test-dev with latency on the Mac; a P2 (stride-4) head
 was then compared at 640 and 960. Week 5: tiled (SAHI-style) inference, measured against
 training at the higher resolution. Week 6: ByteTrack with a from-scratch Kalman filter,
-end to end on VisDrone-MOT test-dev, thresholds tuned on unseen MOT sequences. Next: the
-hybrid keyframe mode, copy-paste augmentation (needs Kaggle quota), hardware decision.
+end to end on VisDrone-MOT test-dev, thresholds tuned on unseen MOT sequences, and the
+hybrid keyframe mode. Next: copy-paste augmentation (needs Kaggle quota), hardware
+decision.
 
 | Weeks | Stage |
 |---|---|
@@ -71,6 +72,12 @@ stated.
   per frame; end to end, n at 640 runs at 98 FPS on MPS and 44 FPS on CPU, n at 1280 at
   45 FPS on MPS ([w6-bytetrack-tuned](reports/w6-bytetrack-tuned/results.md),
   [w6-tracker-tuning](reports/w6-tracker-tuning/results.md)).
+- **On CPU, keyframes buy back accuracy.** Running the 1280 model on one frame in three
+  and letting the Kalman filter carry the tracks in between gives HOTA 42.7 at 32.6 FPS
+  (mean) on ONNX Runtime CPU, against 39.2 for the 640 model on every frame, where the 1280
+  model alone runs at 11 FPS. The price is an uneven frame time (~90 ms keyframes). Kalman
+  prediction between keyframes beats running the 640 model there; on GPU, the 1280 model
+  on every frame already fits the budget ([w6-keyframe](reports/w6-keyframe/results.md)).
 
 <!-- results:start -->
 #### baseline ([full report](reports/baseline/results.md))
@@ -197,16 +204,16 @@ HOTA, MOTA, IDF1, IDSW on the 12 sequences unseen by the detector:
 | visdrone-yolo26n-960 | bytetrack | 960 | 41.7 | 8.4 | 47.0 | 3585 | 41.3 | `20261028-213852-w6-bytetrack-visdrone-yolo26n-960-16a9a0` |
 | visdrone-yolo26n-1280 | bytetrack | 1280 | 42.1 | 7.6 | 48.2 | 3438 | 43.5 | `20261028-214340-w6-bytetrack-visdrone-yolo26n-1280-315ce6` |
 
-| Model | Backend | Device | Versions | Pre | Infer | Post | Track | Total median | Total p95 | FPS (median) | ≥ budget |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| visdrone-yolo26n-640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.1 | 6.6 | 1.2 | 1.3 | 10.2 | 16.5 | 98.1 | yes |
-| visdrone-yolo26n-640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.6 | 18.6 | 1.2 | 1.5 | 23.0 | 29.0 | 43.4 | yes |
-| visdrone-yolo26n-p2-640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.1 | 7.3 | 1.5 | 1.4 | 11.4 | 17.0 | 88.0 | yes |
-| visdrone-yolo26n-p2-640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.6 | 27.3 | 1.5 | 1.5 | 31.9 | 38.2 | 31.4 | yes |
-| visdrone-yolo26n-960 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 2.0 | 9.7 | 1.4 | 1.4 | 14.7 | 21.0 | 68.1 | yes |
-| visdrone-yolo26n-960 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 3.5 | 41.5 | 1.4 | 1.5 | 48.6 | 54.3 | 20.6 | no |
-| visdrone-yolo26n-1280 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 3.5 | 16.3 | 2.0 | 1.5 | 23.3 | 29.3 | 43.0 | yes |
-| visdrone-yolo26n-1280 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 6.2 | 78.2 | 1.6 | 1.6 | 87.9 | 94.6 | 11.4 | no |
+| Model | Backend | Device | Versions | Track | Total median | Total mean | Total p95 | Total max | FPS | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.3 | 10.2 | 10.9 | 16.5 | 20.2 | 98.1 (median) | yes |
+| visdrone-yolo26n-640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.5 | 23.0 | 23.8 | 29.0 | 33.0 | 43.4 (median) | yes |
+| visdrone-yolo26n-p2-640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.4 | 11.4 | 12.2 | 17.0 | 24.0 | 88.0 (median) | yes |
+| visdrone-yolo26n-p2-640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.5 | 31.9 | 32.7 | 38.2 | 44.0 | 31.4 (median) | yes |
+| visdrone-yolo26n-960 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.4 | 14.7 | 15.6 | 21.0 | 27.4 | 68.1 (median) | yes |
+| visdrone-yolo26n-960 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.5 | 48.6 | 49.0 | 54.3 | 60.9 | 20.6 (median) | no |
+| visdrone-yolo26n-1280 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.5 | 23.3 | 24.1 | 29.3 | 38.2 | 43.0 (median) | yes |
+| visdrone-yolo26n-1280 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.6 | 87.9 | 89.0 | 94.6 | 103.2 | 11.4 (median) | no |
 
 #### w6-bytetrack-tuned ([full report](reports/w6-bytetrack-tuned/results.md))
 
@@ -217,12 +224,43 @@ HOTA, MOTA, IDF1, IDSW on the 12 sequences unseen by the detector:
 | visdrone-yolo26n-640 | bytetrack | 640 | 39.2 | 8.5 | 46.0 | 1139 | 39.0 | `20261028-231419-w6-bytetrack-tuned-visdrone-yolo26n-640-172922` |
 | visdrone-yolo26n-1280 | bytetrack | 1280 | 46.8 | 29.5 | 57.2 | 1266 | 47.2 | `20261028-231814-w6-bytetrack-tuned-visdrone-yolo26n-1280-193d7d` |
 
-| Model | Backend | Device | Versions | Pre | Infer | Post | Track | Total median | Total p95 | FPS (median) | ≥ budget |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| visdrone-yolo26n-640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.1 | 6.6 | 1.4 | 1.0 | 10.2 | 15.5 | 97.6 | yes |
-| visdrone-yolo26n-640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.6 | 18.6 | 1.4 | 1.1 | 22.7 | 27.6 | 44.0 | yes |
-| visdrone-yolo26n-1280 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 3.1 | 16.3 | 1.7 | 1.2 | 22.4 | 27.3 | 44.6 | yes |
-| visdrone-yolo26n-1280 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 6.0 | 78.4 | 1.7 | 1.3 | 87.7 | 92.8 | 11.4 | no |
+| Model | Backend | Device | Versions | Track | Total median | Total mean | Total p95 | Total max | FPS | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.0 | 10.2 | 10.8 | 15.5 | 24.7 | 97.6 (median) | yes |
+| visdrone-yolo26n-640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.1 | 22.7 | 23.4 | 27.6 | 31.9 | 44.0 (median) | yes |
+| visdrone-yolo26n-1280 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.2 | 22.4 | 23.2 | 27.3 | 35.1 | 44.6 (median) | yes |
+| visdrone-yolo26n-1280 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.3 | 87.7 | 88.5 | 92.8 | 111.8 | 11.4 (median) | no |
+
+#### w6-keyframe ([full report](reports/w6-keyframe/results.md))
+
+HOTA, MOTA, IDF1, IDSW on the 12 sequences unseen by the detector:
+
+| Model | Tracker | imgsz | HOTA | MOTA | IDF1 | IDSW | HOTA, all 17 seq. | Run |
+|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | bytetrack | 640 | 39.2 | 8.5 | 46.0 | 1139 | 39.0 | `20261029-084648-w6-keyframe-visdrone-yolo26n-640-83502b` |
+| visdrone-yolo26n-1280 | bytetrack | 1280 | 46.8 | 29.5 | 57.2 | 1266 | 47.2 | `20261029-085032-w6-keyframe-visdrone-yolo26n-1280-83216c` |
+| key1280-k2+640 | bytetrack | 1280 | 42.8 | 20.9 | 51.2 | 980 | 43.0 | `20261029-085619-w6-keyframe-key1280-k2+640-d61a1e` |
+| key1280-k5+640 | bytetrack | 1280 | 40.7 | 11.9 | 48.0 | 1046 | 41.1 | `20261029-090112-w6-keyframe-key1280-k5+640-044306` |
+| key1280-k2-predict | bytetrack | 1280 | 44.7 | 29.7 | 54.2 | 1388 | 45.3 | `20261029-090531-w6-keyframe-key1280-k2-predict-db0c60` |
+| key1280-k3-predict | bytetrack | 1280 | 42.7 | 26.3 | 52.0 | 1440 | 43.3 | `20261029-090931-w6-keyframe-key1280-k3-predict-1e5312` |
+| key1280-k5-predict | bytetrack | 1280 | 39.7 | 24.7 | 47.8 | 1325 | 39.6 | `20261029-091251-w6-keyframe-key1280-k5-predict-86ed3d` |
+
+| Model | Backend | Device | Versions | Track | Total median | Total mean | Total p95 | Total max | FPS | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.0 | 10.1 | 10.7 | 14.7 | 19.0 | 98.8 (median) | yes |
+| visdrone-yolo26n-640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.1 | 22.8 | 23.7 | 28.0 | 46.2 | 43.8 (median) | yes |
+| visdrone-yolo26n-1280 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.2 | 22.2 | 22.9 | 27.7 | 35.4 | 45.1 (median) | yes |
+| visdrone-yolo26n-1280 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.3 | 87.7 | 88.5 | 93.5 | 102.4 | 11.4 (median) | no |
+| key1280-k2+640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.0 | 19.8 | 16.5 | 26.5 | 31.6 | 60.5 (mean) | yes |
+| key1280-k2+640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.1 | 59.0 | 57.0 | 92.0 | 98.2 | 17.5 (mean) | no |
+| key1280-k5+640 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 1.0 | 9.0 | 12.3 | 23.6 | 28.0 | 81.4 (mean) | yes |
+| key1280-k5+640 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 1.1 | 24.2 | 37.2 | 89.8 | 96.1 | 26.9 (mean) | yes |
+| key1280-k2-predict | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 0.5 | 10.7 | 11.8 | 26.2 | 40.6 | 84.9 (mean) | yes |
+| key1280-k2-predict | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 0.6 | 44.2 | 45.2 | 93.7 | 98.9 | 22.1 (mean) | no |
+| key1280-k3-predict | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 0.2 | 0.2 | 8.0 | 25.2 | 35.8 | 124.8 (mean) | yes |
+| key1280-k3-predict | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 0.2 | 0.2 | 30.7 | 92.6 | 113.0 | 32.6 (mean) | yes |
+| key1280-k5-predict | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 0.1 | 0.1 | 4.6 | 22.8 | 26.8 | 215.1 (mean) | yes |
+| key1280-k5-predict | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 0.2 | 0.2 | 17.9 | 90.0 | 93.3 | 55.8 (mean) | yes |
 
 #### w6-tracker-tuning ([full report](reports/w6-tracker-tuning/results.md))
 
@@ -250,6 +288,7 @@ make w5-sahi-eval
 make w6-track-eval
 make w6-track-tune
 make w6-track-tuned-eval
+make w6-keyframe-eval
 make data         # everything: + VisDrone-MOT, UAVDT, visualisations, TrackEval checks
 make test
 ```

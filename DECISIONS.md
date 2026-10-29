@@ -389,3 +389,33 @@ first-matching tracks removes most tracks built on doubtful detections. MOTA ris
 (-5.6 → 8.5, 7.6 → 29.5) but stays low for n 640: its false positives at score ≥ 0.5 are
 still many on test-dev, where MOTA counts each one. Latency is unchanged (tracker 1.0-1.3
 ms per frame).
+
+## Hybrid keyframe mode (week 6)
+
+**`track.pipeline.TrackingPipeline`: the key detector on one frame in K; between, a light
+detector, or nothing and the tracker only predicts.** In predict-only frames ByteTrack
+advances every track by its Kalman prediction and reports it there, without changing any
+track's state (`ByteTrack.predict_only`); the frame still counts towards the lost-track
+buffer. Tracks born on a keyframe are confirmed or dropped at the next keyframe, K frames
+later. The same pipeline object serves accuracy, latency and threshold tuning.
+*Rejected:* propagating boxes by optical flow between keyframes (another model to run and
+time; the Kalman prediction is free, and was measured first).
+
+**Budget on throughput (mean frame time) for keyframe pipelines.** Their frames cost
+unevenly (a keyframe is the full key detector), so the median says nothing (with K=3 most
+frames cost 0.2 ms). Mean, p95 and max are all reported. Meeting the budget on the mean
+needs the keyframe's extra time to be absorbed, by an output delay of about one keyframe
+time or by running the key detector asynchronously; frame by frame, a CPU keyframe (~90 ms)
+still exceeds a 40 ms frame interval.
+
+**Measured (`reports/w6-keyframe/`, MOT test-dev, 12 unseen sequences).** Key detector n
+at 1280, tracker thresholds tuned for it.
+- Predict-only between keyframes beats running the 640 model there, at every K tried
+  (K=2: HOTA 44.7 vs 42.8), and costs nothing: the 640 detections, scored and localised
+  differently, perturb tracks the 1280 keyframes keep cleaner. (The 1280-tuned thresholds
+  are used for both; the 640 detections might do better with their own.)
+- On CPU (ONNX Runtime), where n at 1280 runs at 11 FPS: K=3 predict-only reaches HOTA
+  42.7 at 32.6 FPS mean, above n at 640 every frame (39.2 at 43.8 FPS); K=5 reaches 39.7
+  at 55.8 FPS. Keyframes trade per-frame latency for accuracy within the throughput budget.
+- On MPS, n at 1280 every frame already holds the budget (45 FPS) with the best HOTA
+  (46.8): the hybrid mode is not needed there.
