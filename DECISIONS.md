@@ -410,10 +410,12 @@ still exceeds a 40 ms frame interval.
 
 **Measured (`reports/w6-keyframe/`, MOT test-dev, 12 unseen sequences).** Key detector n
 at 1280, tracker thresholds tuned for it.
-- Predict-only between keyframes beats running the 640 model there, at every K tried
-  (K=2: HOTA 44.7 vs 42.8), and costs nothing: the 640 detections, scored and localised
-  differently, perturb tracks the 1280 keyframes keep cleaner. (The 1280-tuned thresholds
-  are used for both; the 640 detections might do better with their own.)
+- With keyframes close together, predict-only between them beats running the 640 model
+  there (K=2: HOTA 44.7 vs 42.8) and costs nothing: the 640 detections, scored and
+  localised differently, perturb tracks the 1280 keyframes keep cleaner. Far apart, the
+  Kalman prediction drifts and the 640 detections help (K=5: 39.7 vs 40.7). (The
+  1280-tuned thresholds are used for both; the 640 detections might do better with their
+  own.)
 - On CPU (ONNX Runtime), where n at 1280 runs at 11 FPS: K=3 predict-only reaches HOTA
   42.7 at 32.6 FPS mean, above n at 640 every frame (39.2 at 43.8 FPS); K=5 reaches 39.7
   at 55.8 FPS. Keyframes trade per-frame latency for accuracy within the throughput budget.

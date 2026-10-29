@@ -75,9 +75,10 @@ stated.
 - **On CPU, keyframes buy back accuracy.** Running the 1280 model on one frame in three
   and letting the Kalman filter carry the tracks in between gives HOTA 42.7 at 32.6 FPS
   (mean) on ONNX Runtime CPU, against 39.2 for the 640 model on every frame, where the 1280
-  model alone runs at 11 FPS. The price is an uneven frame time (~90 ms keyframes). Kalman
-  prediction between keyframes beats running the 640 model there; on GPU, the 1280 model
-  on every frame already fits the budget ([w6-keyframe](reports/w6-keyframe/results.md)).
+  model alone runs at 11 FPS. The price is an uneven frame time (~90 ms keyframes). With
+  keyframes close together, Kalman prediction between them beats running the 640 model
+  there; five frames apart, it drifts. On GPU, the 1280 model on every frame already fits
+  the budget ([w6-keyframe](reports/w6-keyframe/results.md)).
 
 <!-- results:start -->
 #### baseline ([full report](reports/baseline/results.md))
