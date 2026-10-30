@@ -102,7 +102,12 @@ def upload_dataset(files: dict[str, Path], slug: str) -> str:
         shutil.copy2(src, folder / name)
     (folder / "dataset-metadata.json").write_text(json.dumps(
         {"title": slug, "id": ref, "licenses": [{"name": "CC0-1.0"}]}))
-    kaggle("datasets", "create", "-p", str(folder), "-q")  # private unless --public
+    exists = subprocess.run([*KAGGLE_CLI, "datasets", "status", ref], capture_output=True,
+                            text=True).returncode == 0
+    if exists:  # a re-push of the same experiment: new version, same reference
+        kaggle("datasets", "version", "-p", str(folder), "-m", "re-push", "-q")
+    else:
+        kaggle("datasets", "create", "-p", str(folder), "-q")  # private unless --public
     for _ in range(60):  # a kernel attached to a dataset still processing fails to start
         if "ready" in kaggle("datasets", "status", ref, capture=True):
             return ref

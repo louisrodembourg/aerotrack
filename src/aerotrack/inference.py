@@ -23,6 +23,7 @@ A fixed grid, not fixed-size tiles: the cost per frame does not depend on its re
 from __future__ import annotations
 
 import hashlib
+import shutil
 import time
 from pathlib import Path
 
@@ -54,7 +55,7 @@ def export_onnx(weights: str | Path, imgsz: int, max_det: int, batch: int = 1) -
     out = Path(model.export(format="onnx", imgsz=imgsz, batch=batch, dynamic=False, simplify=True,
                             max_det=max_det, device="cpu", verbose=False))
     dest.parent.mkdir(parents=True, exist_ok=True)
-    out.rename(dest)
+    shutil.move(out, dest)  # not rename: the cache may sit on another filesystem
     return dest
 
 
@@ -103,7 +104,7 @@ def export_engine(weights: str | Path, imgsz: int, max_det: int, batch: int, pre
                             data=calibration_data if precision == "int8" else None,
                             verbose=False))
     dest.parent.mkdir(parents=True, exist_ok=True)
-    out.rename(dest)
+    shutil.move(out, dest)  # not rename: the cache may sit on another filesystem
     return dest
 
 
