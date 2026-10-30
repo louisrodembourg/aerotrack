@@ -24,6 +24,16 @@ dependencies = [
     "tabulate>=0.10.0",
 ]
 
+[project.optional-dependencies]
+# TensorRT engines (week 8): Linux + NVIDIA only, never on the Mac. CUDA 12 build, to match
+# the cu126 torch; Ultralytics builds the engine from our ONNX export through its Python API.
+# The `tensorrt-cu12` metapackage is an sdist only; its two wheel dependencies are taken
+# directly (the bindings provide the `tensorrt` module).
+trt = [
+    "tensorrt-cu12-libs>=10.9,<11; sys_platform == 'linux'",
+    "tensorrt-cu12-bindings>=10.9,<11; sys_platform == 'linux'",
+]
+
 [project.scripts]
 aerotrack = "aerotrack.cli:app"
 
@@ -52,11 +62,20 @@ trackeval = { git = "https://github.com/JonathonLuiten/TrackEval" }
 # NVIDIA driver >= 580 that many rented GPUs do not have yet; cu126 runs on drivers >= 525.
 # macOS keeps the PyPI wheels (MPS).
 torch = [{ index = "pytorch-cu126", marker = "sys_platform == 'linux'" }]
+# TensorRT: PyPI only carries stub sdists that download the real wheels from NVIDIA's index
+# at build time (and fail to build on macOS while locking); take the wheels from there.
+tensorrt-cu12-libs = { index = "nvidia" }
+tensorrt-cu12-bindings = { index = "nvidia" }
 torchvision = [{ index = "pytorch-cu126", marker = "sys_platform == 'linux'" }]
 
 [[tool.uv.index]]
 name = "pytorch-cu126"
 url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[[tool.uv.index]]
+name = "nvidia"
+url = "https://pypi.nvidia.com"
 explicit = true
 
 [tool.pytest.ini_options]

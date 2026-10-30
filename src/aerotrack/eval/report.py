@@ -18,13 +18,21 @@ def _pct(v) -> str:
     return "n/a" if v is None or v != v else f"{100 * v:.1f}"
 
 
+def _backend(rt: dict) -> str:
+    """Backend plus the precision it ran at: `torch fp16`, `tensorrt int8`."""
+    if rt["backend"] == "tensorrt":
+        return f"tensorrt {rt['precision']}"
+    return f"{rt['backend']} fp16" if rt.get("half") else rt["backend"]
+
+
 def _ms(v) -> str:
     return f"{v:.1f}"
 
 
 def _versions(lat: dict) -> str:
     env, rt = lat["env"], lat["runtime"]
-    parts = [f"torch {env['torch']}"] if rt["backend"] == "torch" else [f"ORT {env['onnxruntime']}"]
+    parts = {"torch": [f"torch {env['torch']}"], "onnxruntime": [f"ORT {env['onnxruntime']}"],
+             "tensorrt": []}[rt["backend"]]
     if env.get("tensorrt"):
         parts.append(f"TRT {env['tensorrt']}")
     if env.get("jetson_power_mode"):
@@ -72,7 +80,7 @@ def latency_table(results: list[dict], budget: float) -> str:
     for r in results:
         for lat in r["latency"]:
             rows.append(
-                f"| {r['model']} | {lat['runtime']['backend']} | {_device(lat['env'])} | "
+                f"| {r['model']} | {_backend(lat['runtime'])} | {_device(lat['env'])} | "
                 f"{_versions(lat)} | {_ms(lat['preprocess']['median_ms'])} | "
                 f"{_ms(lat['inference']['median_ms'])} | {_ms(lat['postprocess']['median_ms'])} | "
                 f"{_ms(lat['total']['median_ms'])} | {_ms(lat['total']['p95_ms'])} | "
@@ -159,7 +167,7 @@ def tracking_latency_table(results: list[dict], budget: float) -> str:
             basis = lat.get("budget_basis", "median")
             fps = lat.get(f"fps_{basis}", 1000.0 / lat["total"][f"{basis}_ms"])
             rows.append(
-                f"| {r['model']} | {lat['runtime']['backend']} | {_device(lat['env'])} | "
+                f"| {r['model']} | {_backend(lat['runtime'])} | {_device(lat['env'])} | "
                 f"{_versions(lat)} | {_ms(lat['tracking']['median_ms'])} | "
                 f"{_ms(lat['total']['median_ms'])} | {_ms(lat['total']['mean_ms'])} | "
                 f"{_ms(lat['total']['p95_ms'])} | {_ms(lat['total']['max_ms'])} | "

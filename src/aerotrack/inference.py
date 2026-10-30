@@ -5,7 +5,8 @@ end-to-end head's confidence filter, rescaling to the original image).
 
 Accuracy and latency go through the SAME object, so a variant can never be measured fast
 with one preprocessing and accurate with another. Backends: `torch` (cuda | mps | cpu) and
-`onnxruntime` (CPU execution provider). TensorRT is added in week 8 behind the same API.
+`onnxruntime` (CPU execution provider), and `tensorrt` (an engine built from the same
+ONNX export, run through the same AutoBackend as torch; NVIDIA GPU only).
 
 Input size is a fixed square letterbox (batch 1, static shape), which is what an exported
 engine runs. Ultralytics' own `predict` pads to the minimum rectangle instead, so its mAP
@@ -77,6 +78,35 @@ def merge_tiles(det: torch.Tensor, ios: float, max_det: int) -> torch.Tensor:
     return det[keep][:max_det]
 
 
+def export_engine(weights: str | Path, imgsz: int, max_det: int, batch: int, precision: str,
+                  calibration_data: str | None = None) -> Path:
+    """TensorRT engine (static batch), built by Ultralytics from its ONNX export, cached per
+    (weights CONTENT, imgsz, max_det, batch, precision). An engine is tied to the GPU and
+    TensorRT version it was built on, so the cache lives with the machine, never in git.
+    INT8 calibrates on `calibration_data` (a dataset yaml; its val split, never test)."""
+    if precision not in ("fp32", "fp16", "int8"):
+        raise ValueError(f"precision must be fp32, fp16 or int8, not {precision!r}")
+    if precision == "int8" and not calibration_data:
+        raise ValueError("int8 needs calibration_data (a dataset yaml)")
+    weights = resolve_weights(weights)
+    if not Path(weights).exists():
+        load_yolo(weights)
+    digest = hashlib.sha256(Path(weights).read_bytes()).hexdigest()[:12]
+    dest = (WEIGHTS_DIR / "engine" /
+            f"{Path(weights).stem}_{digest}_{imgsz}_md{max_det}_b{batch}_{precision}.engine")
+    if dest.exists():
+        return dest
+    model = load_yolo(weights)
+    quantize = {"fp32": None, "fp16": 16, "int8": 8}[precision]
+    out = Path(model.export(format="engine", imgsz=imgsz, batch=batch, dynamic=False,
+                            simplify=True, max_det=max_det, device=0, quantize=quantize,
+                            data=calibration_data if precision == "int8" else None,
+                            verbose=False))
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    out.rename(dest)
+    return dest
+
+
 class Detector:
     def __init__(
         self,
@@ -93,6 +123,8 @@ class Detector:
         tile_overlap: float = 0.2,
         tile_full: bool = True,
         merge_ios: float = 0.5,
+        precision: str = "fp16",
+        calibration_data: str | None = None,
     ) -> None:
         configure()
         from ultralytics.data.augment import LetterBox  # noqa: PLC0415
@@ -106,20 +138,35 @@ class Detector:
         self.batch = (self.tiles[0] * self.tiles[1] + int(tile_full)) if self.tiles else 1
         self._crops: list[tuple[int, int, int, int]] = []  # set by preprocess, read by postprocess
 
-        if backend == "torch":
+        if backend in ("torch", "tensorrt"):
             from ultralytics.nn.autobackend import AutoBackend  # noqa: PLC0415
 
             self.device = resolve_device(device)
-            self.model = AutoBackend(self.weights, device=torch.device(self.device), fp16=half,
+            path = self.weights
+            if backend == "tensorrt":
+                if not self.device.startswith("cuda"):
+                    raise ValueError("the tensorrt backend needs an NVIDIA GPU")
+                path = str(export_engine(self.weights, imgsz, max_det, self.batch, precision,
+                                         calibration_data))
+            # Same object for both: AutoBackend runs a .pt in torch and an .engine in TensorRT,
+            # behind the same preprocessing and postprocessing.
+            self.model = AutoBackend(path, device=torch.device(self.device), fp16=half,
                                      fuse=True, verbose=False)
             self.model.eval()
             self.half = bool(self.model.fp16)
             self.end2end = bool(getattr(self.model, "end2end", False))
-            head = getattr(getattr(self.model, "model", None), "model", [None])[-1]
+            try:
+                head = getattr(getattr(self.model, "model", None), "model", [None])[-1]
+            except TypeError:  # an engine: max_det was fixed at export (export_engine)
+                head = None
             if self.end2end and hasattr(head, "max_det"):
                 head.max_det = max_det  # top-k inside the NMS-free head
             self.names = dict(self.model.names)
-            self.runtime = {"backend": "torch", "device": self.device, "half": self.half}
+            self.runtime = {"backend": backend, "device": self.device, "half": self.half}
+            if backend == "tensorrt":
+                self.runtime.update({"precision": precision, "engine": path,
+                                     "calibration_data": calibration_data
+                                     if precision == "int8" else None})
         elif backend == "onnxruntime":
             import onnxruntime as ort  # noqa: PLC0415
 

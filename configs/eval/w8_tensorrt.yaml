@@ -1,0 +1,37 @@
+# Week 8: TensorRT on an NVIDIA T4 (Kaggle), for the two deployment candidates. Each
+# precision is a separate model entry because INT8 changes the detections: accuracy is
+# measured through the same engine as latency. torch fp32/fp16 on the same GPU and ONNX
+# Runtime on the session's CPU are the references. One job, one GPU: timings taken
+# sequentially, never two models at once. Run on Kaggle (TensorRT never runs on the Mac):
+#   uv run aerotrack kaggle push configs/eval/w8_tensorrt.yaml --slug aerotrack-w8-trt
+name: w8-tensorrt
+seed: 0
+device: auto
+dataset:
+  gt: visdrone_det/gt/test-dev.json
+  class_map: visdrone
+  limit: null
+models:
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-torch, latency_backends: [torch, onnxruntime]}
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-torch-fp16, half: true, latency_backends: [torch]}
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-trt-fp16, backend: tensorrt, precision: fp16, latency_backends: [tensorrt]}
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-trt-int8, backend: tensorrt, precision: int8, latency_backends: [tensorrt]}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-torch, latency_backends: [torch, onnxruntime]}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-torch-fp16, half: true, latency_backends: [torch]}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-trt-fp16, backend: tensorrt, precision: fp16, latency_backends: [tensorrt]}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-trt-int8, backend: tensorrt, precision: int8, latency_backends: [tensorrt]}
+detection:
+  imgsz: 640
+  conf: 0.001
+  iou: 0.7
+  max_det: 500
+  half: false
+  # INT8 post-training calibration images: VisDrone-DET val (548), never test-dev.
+  calibration_data: visdrone_det/dataset.yaml
+latency:
+  enabled: true
+  backends: [torch]
+  conf: 0.25
+  n_images: 50
+  warmup: 50
+  iters: 300

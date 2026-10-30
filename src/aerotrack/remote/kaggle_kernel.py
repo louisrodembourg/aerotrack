@@ -11,6 +11,7 @@ Layout on Kaggle:
   /tmp/aerotrack/weights   pretrained checkpoints
   /tmp/aerotrack/resume    checkpoints of interrupted runs, from an attached dataset
   /kaggle/working/runs     run records + trained weights: the kernel's saved output
+  /kaggle/working/reports  evaluation reports (evaluation jobs)
   /kaggle/working/logs     one log per job, GPU/CPU utilisation samples
 
 Jobs run in parallel, one per GPU (Kaggle's free GPU is 2 x T4). Ultralytics DDP is not
@@ -81,6 +82,26 @@ def sample_utilisation(stop: threading.Event) -> None:
             f.flush()
 
 
+def restore_inputs() -> list[str]:
+    """Training runs an evaluation job needs (`kaggle push` attaches them as a dataset):
+    record and best.pt back under /kaggle/working/runs, the weights path rewritten there,
+    so `find_train_run` finds them exactly as on the machine that trained them."""
+    ids = sorted({r for job in JOBS for r in job.get("inputs", [])})
+    for rid in ids:
+        rec_src = next(Path("/kaggle/input").rglob(f"{rid}__run.json"), None)
+        pt_src = next(Path("/kaggle/input").rglob(f"{rid}__best.pt"), None)
+        if rec_src is None or pt_src is None:
+            raise SystemExit(f"input run {rid} not found under /kaggle/input")
+        weights = OUT / "runs" / "ultralytics" / rid / "weights" / "best.pt"
+        weights.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(pt_src, weights)
+        rec = json.loads(rec_src.read_text())
+        rec["summary"]["weights"] = str(weights)
+        (OUT / "runs" / rid).mkdir(parents=True, exist_ok=True)
+        (OUT / "runs" / rid / "run.json").write_text(json.dumps(rec, indent=2))
+    return ids
+
+
 def main() -> int:
     LOGS.mkdir(parents=True, exist_ok=True)
     with tarfile.open(fileobj=io.BytesIO(base64.b64decode(BUNDLE)), mode="r:gz") as tar:
@@ -105,11 +126,15 @@ def main() -> int:
     # Same locked environment as everywhere else; Kaggle's preinstalled torch is not used.
     sh([sys.executable, "-m", "pip", "install", "-q", "uv==0.13.5"])
     uv = ["uv", "run", "--frozen", "--no-dev"]
-    sh(["uv", "sync", "--frozen", "--no-dev"], cwd=REPO, env=env)
+    # --extra trt: TensorRT wheels for evaluation jobs (week 8); unused by training.
+    sh(["uv", "sync", "--frozen", "--no-dev", "--extra", "trt"], cwd=REPO, env=env)
+    uv = [*uv, "--extra", "trt"]
 
     for dataset in sorted({j["dataset"] for j in JOBS}):
         sh([*uv, "aerotrack", "data", "download", dataset, "--no-keep-archives"], cwd=REPO, env=env)
         sh([*uv, "aerotrack", "data", "convert", dataset], cwd=REPO, env=env)
+
+    restored = restore_inputs()
 
     for job in JOBS:
         if run_id := job.get("resume"):
@@ -129,7 +154,7 @@ def main() -> int:
     threading.Thread(target=sample_utilisation, args=(stop,), daemon=True).start()
     procs = []
     for i, job in enumerate(JOBS):
-        cmd = [*uv, "aerotrack", "train", job["config"]]
+        cmd = [*uv, "aerotrack", job.get("kind", "train"), job["config"]]
         for o in job["overrides"]:
             cmd += ["--set", o]
         log = (LOGS / f"job{i}-{Path(job['config']).stem}.log").open("w")
@@ -160,6 +185,9 @@ def main() -> int:
                     timed_out.add(job["name"])
         time.sleep(10)
     stop.set()
+    for rid in restored:  # inputs, not results: keep them out of the saved output
+        shutil.rmtree(OUT / "runs" / rid, ignore_errors=True)
+        shutil.rmtree(OUT / "runs" / "ultralytics" / rid, ignore_errors=True)
     (OUT / "jobs.json").write_text(json.dumps(
         {"commit": GIT_COMMIT, "dirty": GIT_DIRTY, "jobs": status}, indent=2))
     return 0 if all(s["exit_code"] == 0 for s in status) else 1

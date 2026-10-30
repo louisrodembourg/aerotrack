@@ -64,9 +64,17 @@ def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float) -> di
                   "wandb_url": run.record.get("wandb", {}).get("url"),
                   "dataset": {**cfg["dataset"], "n_images": len(gt.images)}}
 
-        detector = Detector(weights, backend="torch", device=device, imgsz=det_cfg["imgsz"],
+        # A model may name its backend (tensorrt) and precision: accuracy is then measured
+        # through that engine too, since INT8 changes the detections, not only the speed.
+        acc_backend = model.get("backend", "torch")
+        engine = {}
+        if acc_backend == "tensorrt":
+            engine = {"precision": model.get("precision", "fp16")}
+            if engine["precision"] == "int8":
+                engine["calibration_data"] = str(PROCESSED_DIR / det_cfg["calibration_data"])
+        detector = Detector(weights, backend=acc_backend, device=device, imgsz=det_cfg["imgsz"],
                             conf=det_cfg["conf"], iou=det_cfg["iou"], max_det=det_cfg["max_det"],
-                            half=det_cfg.get("half", False), **tiling)
+                            half=det_cfg.get("half", False), **tiling, **engine)
         print(f"[{name}] accuracy on {len(gt.images)} images, device={device}", flush=True)
         acc = evaluate_detection(gt, cmap, detector, detector.names, det_cfg["max_det"],
                                  _progress(name))
@@ -79,12 +87,13 @@ def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float) -> di
         if lat_cfg.get("enabled", True):
             images = [cv2.imread(str(from_data_relative(im.file)))
                       for im in gt.subset(lat_cfg["n_images"], seed=cfg.get("seed", 0)).images]
-            for backend in lat_cfg["backends"]:
-                bdev = device if backend == "torch" else "cpu"
+            for backend in model.get("latency_backends", lat_cfg["backends"]):
+                bdev = "cpu" if backend == "onnxruntime" else device
                 d = Detector(weights, backend=backend, device=bdev, imgsz=det_cfg["imgsz"],
                              conf=lat_cfg["conf"], iou=det_cfg["iou"], max_det=det_cfg["max_det"],
                              half=det_cfg.get("half", False) and backend == "torch",
-                             ort_threads=lat_cfg.get("ort_threads"), **tiling)
+                             ort_threads=lat_cfg.get("ort_threads"), **tiling,
+                             **(engine if backend == "tensorrt" else {}))
                 print(f"[{name}] latency backend={backend} device={bdev}", flush=True)
                 lat = benchmark(d, images, lat_cfg["warmup"], lat_cfg["iters"])
                 lat["env"] = environment_info(bdev)

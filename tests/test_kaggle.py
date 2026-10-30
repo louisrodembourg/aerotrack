@@ -21,7 +21,7 @@ def _bundle_b64() -> str:
 
 def test_rendered_kernel_compiles_and_carries_jobs():
     jobs = kaggle.make_jobs([CONFIGS_DIR / "train" / "smoke.yaml"], ["train.epochs=1"], "probe")
-    assert jobs == [{"config": "configs/train/smoke.yaml",
+    assert jobs == [{"kind": "train", "config": "configs/train/smoke.yaml",
                      "overrides": ["train.epochs=1", "name=smoke-probe"],
                      "dataset": "visdrone_det", "name": "smoke-probe"}]
     src = kaggle.render(jobs, "a" * 40, _bundle_b64())
@@ -76,3 +76,22 @@ def test_resume_push_points_the_job_at_the_checkpoint(monkeypatch):
     assert job["resume"] == rid
     assert f"resume_from={kaggle.RESUME_DIR}/{rid}" in job["overrides"]
     assert 'ROOT / "resume" / run_id' in src and kaggle.RESUME_DIR == "/tmp/aerotrack/resume"
+
+
+def test_eval_job_names_its_input_runs_and_redirects_its_report(monkeypatch):
+    monkeypatch.setattr(kaggle, "find_train_run", lambda ref: {"id": f"id-{ref}"})
+    [job] = kaggle.make_jobs([CONFIGS_DIR / "eval" / "w6_keyframe.yaml"], [], None)
+    assert job["kind"] == "evaluate" and job["dataset"] == "visdrone_mot"
+    assert job["inputs"] == ["id-visdrone-yolo26n-640", "id-visdrone-yolo26n-1280"]
+    assert f"report_dir={kaggle.KAGGLE_REPORTS}/w6-keyframe" in job["overrides"]
+
+
+def test_merge_output_brings_reports_back_relocated(tmp_path):
+    out, runs, reports = tmp_path / "out", tmp_path / "runs", tmp_path / "reports"
+    (out / "reports" / "w8").mkdir(parents=True)
+    w = f"{kaggle.KAGGLE_RUNS}/ultralytics/x/weights/best.pt"
+    (out / "reports" / "w8" / "results.json").write_text(json.dumps({"results": [{"weights": w}]}))
+    (out / "reports" / "w8" / "results.md").write_text("# w8\n")
+    assert kaggle.merge_output(out, "aerotrack-w8", runs, reports) == ["reports/w8"]
+    rec = json.loads((reports / "w8" / "results.json").read_text())
+    assert rec["results"][0]["weights"] == f"{runs}/ultralytics/x/weights/best.pt"

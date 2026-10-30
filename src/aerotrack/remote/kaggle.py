@@ -21,12 +21,14 @@ import time
 from pathlib import Path
 
 from aerotrack.config import load_config
-from aerotrack.paths import REPO_ROOT, RUNS_DIR
+from aerotrack.experiments import find_train_run
+from aerotrack.paths import REPO_ROOT, REPORTS_DIR, RUNS_DIR
 
 KAGGLE_CLI = ["uvx", "--from", "kaggle==2.2.5", "kaggle"]
 # Kaggle's free GPU (the P100 is retired; `kaggle kernels push --help`, CLI 2.2.5).
 ACCELERATOR = "NvidiaTeslaT4"
 KAGGLE_RUNS = "/kaggle/working/runs"
+KAGGLE_REPORTS = "/kaggle/working/reports"
 RESUME_DIR = "/tmp/aerotrack/resume"  # kaggle_kernel.py copies checkpoints there
 BUNDLE_PATHS = ["pyproject.toml", "uv.lock", ".python-version", "README.md", "src", "configs", "scripts"]
 TEMPLATE = Path(__file__).with_name("kaggle_kernel.py")
@@ -70,37 +72,70 @@ def bundle() -> tuple[str, str]:
 
 
 def make_jobs(configs: list[Path], overrides: list[str], suffix: str | None) -> list[dict]:
+    """One job per config: a training config (configs/train) or an evaluation one
+    (configs/eval), whose report is redirected into the kernel's saved output."""
     jobs = []
     for path in configs:
         cfg = load_config(path, overrides)
-        extra = [f"name={cfg['name']}-{suffix}"] if suffix else []
+        name = f"{cfg['name']}-{suffix}" if suffix else cfg["name"]
+        extra = [f"name={name}"] if suffix else []
         rel = Path(path).resolve().relative_to(REPO_ROOT)
-        jobs.append({"config": str(rel), "overrides": [*overrides, *extra],
-                     "dataset": cfg["data"]["dataset"], "name": f"{cfg['name']}-{suffix}"
-                     if suffix else cfg["name"]})
+        if "data" in cfg:
+            jobs.append({"kind": "train", "config": str(rel), "overrides": [*overrides, *extra],
+                         "dataset": cfg["data"]["dataset"], "name": name})
+            continue
+        ds = cfg["dataset"]
+        dataset = ds["mot"] if "mot" in ds else ds["gt"].split("/")[0]
+        jobs.append({"kind": "evaluate", "config": str(rel), "name": name, "dataset": dataset,
+                     "overrides": [*overrides, *extra, f"report_dir={KAGGLE_REPORTS}/{name}"],
+                     "inputs": eval_inputs(cfg)})
     return jobs
 
 
-def upload_checkpoint(run_id: str, slug: str) -> str:
-    """Upload an interrupted run's last.pt / best.pt as a private Kaggle dataset, so a new
-    session can resume it. Files are prefixed with the run id: the kernel finds them by
-    name under /kaggle/input, whatever directory Kaggle mounts the dataset in."""
-    weights = RUNS_DIR / "ultralytics" / run_id / "weights"
-    if not (weights / "last.pt").exists():
-        raise SystemExit(f"{weights}/last.pt not found: nothing to resume")
-    ref = kernel_ref(f"{slug}-ckpt")
-    folder = Path(tempfile.mkdtemp(prefix="aerotrack-ckpt-"))
-    for f in ("last.pt", "best.pt"):
-        if (weights / f).exists():
-            shutil.copy2(weights / f, folder / f"{run_id}-{f}")
+def upload_dataset(files: dict[str, Path], slug: str) -> str:
+    """Upload local files as a private Kaggle dataset `<slug>`, wait until it is ready. File
+    names carry their own key (run id): the kernel finds them by name under /kaggle/input,
+    whatever directory Kaggle mounts the dataset in."""
+    ref = kernel_ref(slug)
+    folder = Path(tempfile.mkdtemp(prefix="aerotrack-dataset-"))
+    for name, src in files.items():
+        shutil.copy2(src, folder / name)
     (folder / "dataset-metadata.json").write_text(json.dumps(
-        {"title": f"{slug}-ckpt", "id": ref, "licenses": [{"name": "CC0-1.0"}]}))
+        {"title": slug, "id": ref, "licenses": [{"name": "CC0-1.0"}]}))
     kaggle("datasets", "create", "-p", str(folder), "-q")  # private unless --public
     for _ in range(60):  # a kernel attached to a dataset still processing fails to start
         if "ready" in kaggle("datasets", "status", ref, capture=True):
             return ref
         time.sleep(10)
     raise SystemExit(f"dataset {ref} not ready after 10 min")
+
+
+def upload_checkpoint(run_id: str, slug: str) -> str:
+    """An interrupted run's last.pt / best.pt, so a new session can resume it."""
+    weights = RUNS_DIR / "ultralytics" / run_id / "weights"
+    if not (weights / "last.pt").exists():
+        raise SystemExit(f"{weights}/last.pt not found: nothing to resume")
+    return upload_dataset({f"{run_id}-{f}": weights / f for f in ("last.pt", "best.pt")
+                           if (weights / f).exists()}, f"{slug}-ckpt")
+
+
+def eval_inputs(cfg: dict) -> list[str]:
+    """Training runs an evaluation config names (models and keyframe light detectors)."""
+    refs = []
+    for m in cfg.get("models", []):
+        refs += [m["run"]] if "run" in m else []
+        refs += [m["keyframe"]["light"]["run"]] if m.get("keyframe", {}).get("light") else []
+    return list(dict.fromkeys(find_train_run(r)["id"] for r in refs))
+
+
+def upload_runs(run_ids: list[str], slug: str) -> str:
+    """Finished training runs (record + best.pt) for a Kaggle evaluation."""
+    files = {}
+    for rid in run_ids:
+        rec = json.loads((RUNS_DIR / rid / "run.json").read_text())
+        files[f"{rid}__run.json"] = RUNS_DIR / rid / "run.json"
+        files[f"{rid}__best.pt"] = Path(rec["summary"]["weights"])
+    return upload_dataset(files, f"{slug}-runs")
 
 
 def render(jobs: list[dict], commit: str, bundle_b64: str) -> str:
@@ -132,6 +167,9 @@ def push(configs: list[Path], overrides: list[str], suffix: str | None, slug: st
         jobs[0]["resume"] = resume
     commit, b64 = bundle()
     datasets = [upload_checkpoint(resume, slug)] if resume and not dry_run else []
+    inputs = sorted({r for j in jobs for r in j.get("inputs", [])})
+    if inputs and not dry_run:
+        datasets.append(upload_runs(inputs, slug))
     ref = kernel_ref(slug) if not dry_run else f"dry-run/{slug}"
     folder = Path(tempfile.mkdtemp(prefix="aerotrack-kaggle-"))
     (folder / "kernel.py").write_text(render(jobs, commit, b64))
@@ -169,7 +207,8 @@ def relocate(obj, old: str, new: str):
     return obj
 
 
-def merge_output(output: Path, slug: str, runs_dir: Path = RUNS_DIR) -> list[str]:
+def merge_output(output: Path, slug: str, runs_dir: Path = RUNS_DIR,
+                 reports_dir: Path = REPORTS_DIR) -> list[str]:
     """Move pulled run records into `runs_dir`. Paths recorded on Kaggle are rewritten to
     their local location, and the rewrite itself is recorded in the run."""
     merged = []
@@ -194,6 +233,17 @@ def merge_output(output: Path, slug: str, runs_dir: Path = RUNS_DIR) -> list[str
             run_json.write_text(json.dumps(rec, indent=2, default=str))
         shutil.move(str(d), runs_dir / d.name)
         merged.append(d.name)
+    src_reports = output / "reports"
+    for d in sorted(src_reports.iterdir()) if src_reports.exists() else []:
+        target = reports_dir / d.name
+        if target.exists():
+            raise SystemExit(f"report {target} already exists locally; not overwriting it")
+        res = d / "results.json"
+        if res.exists():
+            res.write_text(json.dumps(relocate(json.loads(res.read_text()), KAGGLE_RUNS,
+                                               str(runs_dir)), indent=2, default=str))
+        shutil.move(str(d), target)
+        merged.append(f"reports/{d.name}")
     meta = runs_dir / "kaggle" / slug
     meta.mkdir(parents=True, exist_ok=True)
     for name in ("logs", "jobs.json"):
