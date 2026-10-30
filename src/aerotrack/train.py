@@ -10,12 +10,14 @@ from __future__ import annotations
 import json
 import shutil
 import time
+from collections import Counter
 from pathlib import Path
 
 import numpy as np
 import yaml
 
 from aerotrack.data.classes import get_class_map
+from aerotrack.data.copy_paste import build_bank, paste, rare_classes
 from aerotrack.data.gt import SplitGT
 from aerotrack.data.ignore import paint_ignored
 from aerotrack.eval.detection import evaluate_detection
@@ -61,10 +63,51 @@ def _masked_dataset_class():
                 paint_ignored(im, ign * scale, keep)
             return im, (h0, w0), (h, w)
 
+        def enable_copy_paste(self, cp: dict) -> dict:
+            """Build the rare-object bank (aerotrack.data.copy_paste) for this dataset."""
+            counts = Counter(int(c) for lb in self.labels for c in lb["cls"].reshape(-1))
+            classes = cp.get("classes") or rare_classes(counts, cp["rare_share"])
+            self.cp = cp
+            self.cp_bank = build_bank(self.labels, classes, cp["min_side"], cp["max_side"])
+            self.cp_index = {f: i for i, f in enumerate(self.im_files)}
+            return {"classes": classes, "bank_size": len(self.cp_bank),
+                    "bank_per_class": dict(Counter(self.cp_bank.cls.tolist()))}
+
+        def update_labels_info(self, label):
+            if getattr(self, "cp_bank", None) is not None and np.random.random() < self.cp["p"]:
+                label = self._paste(label)
+            return super().update_labels_info(label)
+
+        def _paste(self, label):
+            # A copy: the image may be the one Ultralytics buffers for mosaic, and pasting
+            # into it would accumulate objects across reads.
+            img = label["img"].copy()
+            h, w = img.shape[:2]
+            (h0, w0) = label["ori_shape"]
+            b = label["bboxes"]
+            boxes = np.column_stack([(b[:, 0] - b[:, 2] / 2) * w, (b[:, 1] - b[:, 3] / 2) * h,
+                                     (b[:, 0] + b[:, 2] / 2) * w, (b[:, 1] + b[:, 3] / 2) * h]
+                                    ) if len(b) else np.zeros((0, 4))
+            ign = self.ignore_boxes[self.cp_index[label["im_file"]]] * np.array(
+                [w / w0, h / h0, w / w0, h / h0])
+            ign = np.column_stack([ign[:, :2], ign[:, :2] + ign[:, 2:4]]) if len(ign) \
+                else np.zeros((0, 4))
+            n = int(np.random.randint(1, self.cp["max_paste"] + 1))
+            rng = np.random.default_rng(np.random.randint(2**31))
+            img, new, cls = paste(img, boxes, ign, self.cp_bank, w / w0, n, rng)
+            if len(new):
+                xywh = np.column_stack([(new[:, 0] + new[:, 2]) / 2 / w, (new[:, 1] + new[:, 3]) / 2 / h,
+                                        (new[:, 2] - new[:, 0]) / w, (new[:, 3] - new[:, 1]) / h])
+                label["bboxes"] = np.concatenate([b, xywh]).astype(np.float32)
+                label["cls"] = np.concatenate([label["cls"], cls.reshape(-1, 1)]).astype(
+                    label["cls"].dtype)
+            label["img"] = img
+            return label
+
     return MaskedYOLODataset
 
 
-def _masked_trainer_class():
+def _masked_trainer_class(copy_paste: dict | None = None, report: dict | None = None):
     from ultralytics.models.yolo.detect import DetectionTrainer  # noqa: PLC0415
 
     masked = _masked_dataset_class()
@@ -77,6 +120,10 @@ def _masked_trainer_class():
             ds = super().build_dataset(img_path, mode, batch)
             ds.__class__ = masked
             ds.load_ignore()
+            if copy_paste and mode == "train":  # never on validation images
+                info = ds.enable_copy_paste(copy_paste)
+                if report is not None:
+                    report.update(info)
             return ds
 
     return MaskedDetectionTrainer
@@ -159,14 +206,16 @@ def run_training(cfg: dict) -> dict:
         model.add_callback("on_train_epoch_end", on_train_epoch_end)
         model.add_callback("on_fit_epoch_end", on_fit_epoch_end)
 
+        cp, cp_info = cfg.get("copy_paste"), {}
         t_start = time.perf_counter()
         if resume:
             # Ultralytics takes every other argument from the checkpoint; only these may change.
-            model.train(data=str(data_yaml), trainer=_masked_trainer_class(), device=device,
-                        **resume)
+            model.train(data=str(data_yaml), trainer=_masked_trainer_class(cp, cp_info),
+                        device=device, **resume)
         else:
             model.train(
-                data=str(data_yaml), trainer=_masked_trainer_class(), device=device, seed=seed,
+                data=str(data_yaml), trainer=_masked_trainer_class(cp, cp_info), device=device,
+                seed=seed,
                 project=str(RUNS_DIR / "ultralytics"), name=run.id, exist_ok=True,
                 verbose=False, **tr,
             )
@@ -181,6 +230,7 @@ def run_training(cfg: dict) -> dict:
             "weights": str(best),
             "wall_seconds": wall,  # this run only: a resumed run excludes the epochs before
             "resumed_from": cfg.get("resume_from"),
+            "copy_paste": cp_info or None,  # rare classes used and the bank actually built
             "train_images": n_train,
             "epochs": tr["epochs"],
             # Ultralytics halves the batch on a first-epoch CUDA OOM: record what actually

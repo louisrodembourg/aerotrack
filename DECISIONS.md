@@ -421,3 +421,30 @@ at 1280, tracker thresholds tuned for it.
   at 55.8 FPS. Keyframes trade per-frame latency for accuracy within the throughput budget.
 - On MPS, n at 1280 every frame already holds the budget (45 FPS) with the best HOTA
   (46.8): the hybrid mode is not needed there.
+
+## Copy-paste of rare small objects (week 5)
+
+**Own implementation (`aerotrack.data.copy_paste`), in the masked training dataset.**
+Ultralytics' `copy_paste` only copies segmentation masks and returns box-only labels
+unchanged (`augment.py`, `CopyPaste.__call__`), so it does nothing on VisDrone. A bank of
+objects of the rare classes, 6-96 px on their longer side, is cropped once from the
+training images when the training dataset is built (never the validation one); half the
+training images then receive 1-8 of them, scaled like the receiving image, on background
+that no labelled box, pasted object or ignored region occupies. Classes are drawn
+uniformly before instances, so awning-tricycle is not drowned by truck. Pasting happens on
+a copy of the image: Ultralytics buffers recent images for mosaic, and pasting in place
+would accumulate objects across reads.
+
+**Rare = under 5 % of training instances**, computed from the labels: bicycle (3.1 %),
+truck (3.8 %), tricycle (1.4 %), awning-tricycle (0.9 %), bus (1.7 %); three of them are
+among the four weakest classes on test-dev. *Rejected:* choosing classes by test-dev AP
+(selection on the test set).
+
+**Rectangular crops, random free position, no blending.** Box labels give no outline, so a
+crop carries a little of its source background, and a position can be implausible (a bus
+on a roof). *Rejected:* blending (Poisson or Gaussian edges: extra cost in a dataloader
+that is already the bottleneck, for an effect not measured here); context-aware placement
+(needs a road / roof segmentation the dataset does not have).
+
+**Trained at 640 and 1280**, the CPU and GPU deployment candidates, same schedule as their
+plain counterparts.

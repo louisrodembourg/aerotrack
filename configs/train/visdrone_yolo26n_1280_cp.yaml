@@ -1,0 +1,36 @@
+# Week 5: copy-paste of small rare-class objects (aerotrack.data.copy_paste), YOLO26n at
+# 1280; otherwise identical to visdrone_yolo26n_1280.yaml, so the comparison isolates the
+# augmentation. With the other deployment candidate on Kaggle:
+#   uv run aerotrack kaggle push configs/train/visdrone_yolo26n_640_cp.yaml \
+#       configs/train/visdrone_yolo26n_1280_cp.yaml --slug aerotrack-w5-cp
+name: visdrone-yolo26n-1280-cp
+seed: 0
+device: auto
+model: yolo26n.pt
+copy_paste:
+  rare_share: 0.05     # classes under 5 % of train instances (bicycle, truck, tricycle,
+                       # awning-tricycle, bus on VisDrone-DET train)
+  min_side: 6          # px, original resolution: smaller crops carry no appearance
+  max_side: 96         # px: small objects only
+  p: 0.5               # share of training images receiving pastes
+  max_paste: 8         # 1..max_paste objects per receiving image
+data:
+  dataset: visdrone_det
+train:
+  epochs: 100
+  imgsz: 1280
+  batch: 8              # nominal batch stays 64 (nbs): gradients accumulate over 64/batch
+  workers: 2             # 2 jobs share a Kaggle session's vCPUs; see logs/utilisation.csv
+  deterministic: true
+  cos_lr: true
+  close_mosaic: 10
+evaluate:
+  # Monitoring only: best.pt is selected on val, so val numbers are optimistic. Reported
+  # results come from `aerotrack evaluate` on test-dev (DECISIONS.md).
+  class_map: visdrone
+  split: val
+  limit: null
+  imgsz: 1280
+  conf: 0.001
+  iou: 0.7
+  max_det: 500
