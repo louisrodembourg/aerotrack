@@ -190,7 +190,12 @@ def push(configs: list[Path], overrides: list[str], suffix: str | None, slug: st
     if dry_run:
         print(f"dry run: kernel written to {folder}")
         return folder
-    kaggle("kernels", "push", "-p", str(folder))
+    out = kaggle("kernels", "push", "-p", str(folder), capture=True)
+    print(out.strip())
+    # The CLI exits 0 even when Kaggle refuses the push (seen: "Kernel push error: Maximum
+    # weekly GPU quota of 30.00 hours reached."); its message is the only signal.
+    if "push error" in out.lower():
+        raise SystemExit(f"Kaggle refused the push: {out.strip()}")
     log = RUNS_DIR / "kaggle" / slug
     log.mkdir(parents=True, exist_ok=True)
     (log / f"push-{time.strftime('%Y%m%d-%H%M%S')}.json").write_text(json.dumps(record, indent=2))
