@@ -1,4 +1,4 @@
-.PHONY: w3-eval w4-eval w4-p2-eval w5-sahi-eval w6-track-eval w6-track-tune w6-track-tuned-eval w6-keyframe-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
+.PHONY: w5-cp-eval w3-eval w4-eval w4-p2-eval w5-sahi-eval w6-track-eval w6-track-tune w6-track-tuned-eval w6-keyframe-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
 
 RUN := uv run
 CLI := $(RUN) aerotrack
@@ -79,6 +79,10 @@ w6-keyframe-eval:  ## week 6: hybrid keyframe mode (1280 on keyframes) on VisDro
 
 w6-track-tune:  ## week 6: ByteTrack threshold search on MOT sequences unseen by the detector
 	$(KEEP_AWAKE) $(CLI) tune-tracker configs/tune/w6_bytetrack.yaml
+	$(CLI) readme-table
+
+w5-cp-eval:  ## week 5: copy-paste of rare small objects vs plain, 640 and 1280, on test-dev (accuracy), then README
+	$(EVAL) configs/eval/w5_copy_paste.yaml
 	$(CLI) readme-table
 
 readme:  ## regenerate README results from tracked reports

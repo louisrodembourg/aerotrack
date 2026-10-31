@@ -1,0 +1,23 @@
+# Week 5: copy-paste of small rare-class objects, against the same model trained without
+# it, at the two deployment candidates' resolutions. Test-dev, 10 classes. Accuracy only:
+# the augmentation leaves the architecture, hence the latency, unchanged (w4-resolution
+# has the latency of both plain models).
+name: w5-copy-paste
+seed: 0
+device: auto
+dataset:
+  gt: visdrone_det/gt/test-dev.json
+  class_map: visdrone
+  limit: null
+models:
+  - {run: visdrone-yolo26n-640, imgsz: 640}
+  - {run: visdrone-yolo26n-640-cp, imgsz: 640}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280}
+  - {run: visdrone-yolo26n-1280-cp, imgsz: 1280}
+detection:
+  imgsz: 640
+  conf: 0.001
+  iou: 0.7
+  max_det: 500
+latency:
+  enabled: false
