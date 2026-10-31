@@ -448,3 +448,15 @@ that is already the bottleneck, for an effect not measured here); context-aware 
 
 **Trained at 640 and 1280**, the CPU and GPU deployment candidates, same schedule as their
 plain counterparts.
+
+**Measured (`reports/w5-copy-paste/`, test-dev): no gain.** mAP50-95 14.2 → 14.1 at 640
+and 22.5 → 22.3 at 1280. On the five pasted classes the changes go both ways and stay
+within about a point (tricycle +0.5 / +0.7, awning-tricycle 0.0 / -1.3, bicycle -0.2 /
+-0.1, truck -0.8 / +0.8, bus -0.3 / -0.2); with one seed per model, differences of this
+size are not distinguishable from run-to-run variation, which was not measured. The bank
+was large (30,809 objects), so the lack of effect is not for want of material. Likely
+reasons, untested: the rare classes are rare as images of a scene type (tricycles in
+markets, buses on main roads) more than as instances, and random placement puts them out
+of context; mosaic already raises the number of objects per sample. The reference detector
+stays the plain one. *Not pursued:* context-aware placement and several seeds, worth less
+here than the deployment work of weeks 8-10.

@@ -23,8 +23,9 @@ on Kaggle's free T4s), evaluated on test-dev with latency on the Mac; a P2 (stri
 was then compared at 640 and 960. Week 5: tiled (SAHI-style) inference, measured against
 training at the higher resolution. Week 6: ByteTrack with a from-scratch Kalman filter,
 end to end on VisDrone-MOT test-dev, thresholds tuned on unseen MOT sequences, and the
-hybrid keyframe mode. Next: copy-paste augmentation (needs Kaggle quota), hardware
-decision.
+hybrid keyframe mode. Copy-paste of rare objects, tried last, brought nothing: the plain
+detectors are the reference. Next: TensorRT FP16 / INT8 on an NVIDIA T4 (hardware
+decision: DECISIONS.md).
 
 | Weeks | Stage |
 |---|---|
@@ -64,6 +65,11 @@ stated.
   more.** Cutting each frame into 2x2 tiles plus the whole frame lifts the 640 model from
   14.2 to 18.1 mAP (27.9 ms on MPS); the model trained at 1280 reaches 22.5 in a single
   pass for 23.5 ms ([w5-sahi](reports/w5-sahi/results.md)).
+- **Copy-paste of rare small objects does not help here.** Pasting objects of the five
+  rarest classes into training images changes test-dev mAP by -0.1 (640) and -0.2 (1280),
+  and the rare classes themselves by about a point either way
+  ([w5-copy-paste](reports/w5-copy-paste/results.md)). The reference detector stays the
+  plain one.
 - **Tracking follows detection, and costs little.** ByteTrack (Kalman filter written from
   scratch, checked against Ultralytics' implementation) on VisDrone-MOT test-dev, scored on
   the 12 sequences whose videos the detector never saw. With thresholds tuned on separate
@@ -173,6 +179,18 @@ stated.
 | visdrone-yolo26n-960 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 3.6 | 41.7 | 2.4 | 47.7 | 50.8 | 21.0 | no |
 | visdrone-yolo26n-1280 | torch | Apple M3 Pro GPU (MPS) [AC] | torch 2.14.1 | 3.2 | 16.5 | 2.1 | 22.0 | 25.2 | 45.4 | yes |
 | visdrone-yolo26n-1280 | onnxruntime | Apple M3 Pro [AC] | ORT 1.31.0 | 6.5 | 78.7 | 2.6 | 87.9 | 91.9 | 11.4 | no |
+
+#### w5-copy-paste ([full report](reports/w5-copy-paste/results.md))
+
+| Model | Class map | imgsz | mAP50-95 | mAP50 | AP_small | AP_medium | AP_large | Images | Run |
+|---|---|---|---|---|---|---|---|---|---|
+| visdrone-yolo26n-640 | visdrone | 640 | 14.2 | 25.5 | 6.4 | 21.3 | 33.7 | 1610 | `20261031-202240-w5-copy-paste-visdrone-yolo26n-640-02aeed` |
+| visdrone-yolo26n-640-cp | visdrone | 640 | 14.1 | 25.2 | 6.1 | 21.4 | 33.1 | 1610 | `20261031-202602-w5-copy-paste-visdrone-yolo26n-640-cp-a287aa` |
+| visdrone-yolo26n-1280 | visdrone | 1280 | 22.5 | 38.9 | 12.9 | 32.6 | 42.8 | 1610 | `20261031-202921-w5-copy-paste-visdrone-yolo26n-1280-81ae85` |
+| visdrone-yolo26n-1280-cp | visdrone | 1280 | 22.3 | 38.5 | 12.8 | 32.5 | 42.1 | 1610 | `20261031-203254-w5-copy-paste-visdrone-yolo26n-1280-cp-2b207f` |
+
+| Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|
 
 #### w5-sahi ([full report](reports/w5-sahi/results.md))
 
@@ -290,6 +308,7 @@ make w6-track-eval
 make w6-track-tune
 make w6-track-tuned-eval
 make w6-keyframe-eval
+make w5-cp-eval
 make data         # everything: + VisDrone-MOT, UAVDT, visualisations, TrackEval checks
 make test
 ```

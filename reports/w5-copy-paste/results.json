@@ -1,0 +1,448 @@
+{
+  "name": "w5-copy-paste",
+  "config": {
+    "name": "w5-copy-paste",
+    "seed": 0,
+    "device": "auto",
+    "dataset": {
+      "gt": "visdrone_det/gt/test-dev.json",
+      "class_map": "visdrone",
+      "limit": null
+    },
+    "models": [
+      {
+        "run": "visdrone-yolo26n-640",
+        "imgsz": 640
+      },
+      {
+        "run": "visdrone-yolo26n-640-cp",
+        "imgsz": 640
+      },
+      {
+        "run": "visdrone-yolo26n-1280",
+        "imgsz": 1280
+      },
+      {
+        "run": "visdrone-yolo26n-1280-cp",
+        "imgsz": 1280
+      }
+    ],
+    "detection": {
+      "imgsz": 640,
+      "conf": 0.001,
+      "iou": 0.7,
+      "max_det": 500
+    },
+    "latency": {
+      "enabled": false
+    },
+    "_source": "configs/eval/w5_copy_paste.yaml"
+  },
+  "budget_fps": 25,
+  "results": [
+    {
+      "model": "visdrone-yolo26n-640",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261025-192839-visdrone-yolo26n-640-540b95/weights/best.pt",
+      "run_id": "20261031-202240-w5-copy-paste-visdrone-yolo26n-640-02aeed",
+      "train_run": "20261025-192839-visdrone-yolo26n-640-540b95",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "visdrone_det/gt/test-dev.json",
+        "class_map": "visdrone",
+        "limit": null,
+        "n_images": 1610
+      },
+      "accuracy": {
+        "mAP50-95": 0.14164660715303595,
+        "mAP50": 0.25472405080676463,
+        "mAP75": 0.14048776945089428,
+        "AP_small": 0.06371947269494835,
+        "AP_medium": 0.21317816952984772,
+        "AP_large": 0.3372117041440879,
+        "AR500": 0.23947599282113516,
+        "max_det": 500,
+        "n_images": 1610,
+        "n_gt": 74687,
+        "n_dets": 633488,
+        "per_class": {
+          "pedestrian": {
+            "AP": 0.09211480036097422,
+            "AP50": 0.24049134767294347,
+            "n_gt": 20749
+          },
+          "people": {
+            "AP": 0.04140244928703572,
+            "AP50": 0.12157788821044155,
+            "n_gt": 6317
+          },
+          "bicycle": {
+            "AP": 0.023800616669551522,
+            "AP50": 0.05209998859550382,
+            "n_gt": 1294
+          },
+          "car": {
+            "AP": 0.40495522098172315,
+            "AP50": 0.6706667245679931,
+            "n_gt": 28029
+          },
+          "van": {
+            "AP": 0.14915178317218716,
+            "AP50": 0.22415614891895166,
+            "n_gt": 5762
+          },
+          "truck": {
+            "AP": 0.18814439153500506,
+            "AP50": 0.3000321132842962,
+            "n_gt": 2653
+          },
+          "tricycle": {
+            "AP": 0.06572023561699275,
+            "AP50": 0.13451854621733433,
+            "n_gt": 525
+          },
+          "awning-tricycle": {
+            "AP": 0.049592103886201146,
+            "AP50": 0.09509471788383024,
+            "n_gt": 594
+          },
+          "bus": {
+            "AP": 0.3037339759299995,
+            "AP50": 0.4523520939743433,
+            "n_gt": 2939
+          },
+          "motor": {
+            "AP": 0.0978504940906891,
+            "AP50": 0.2562509387420083,
+            "n_gt": 5825
+          }
+        },
+        "class_map": "visdrone",
+        "model_class_to_target": {
+          "pedestrian": "pedestrian",
+          "people": "people",
+          "bicycle": "bicycle",
+          "car": "car",
+          "van": "van",
+          "truck": "truck",
+          "tricycle": "tricycle",
+          "awning-tricycle": "awning-tricycle",
+          "bus": "bus",
+          "motor": "motor"
+        },
+        "excluded_classes": {},
+        "imgsz": 640,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false
+        }
+      },
+      "latency": []
+    },
+    {
+      "model": "visdrone-yolo26n-640-cp",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261030-174143-visdrone-yolo26n-640-cp-2726cc/weights/best.pt",
+      "run_id": "20261031-202602-w5-copy-paste-visdrone-yolo26n-640-cp-a287aa",
+      "train_run": "20261030-174143-visdrone-yolo26n-640-cp-2726cc",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "visdrone_det/gt/test-dev.json",
+        "class_map": "visdrone",
+        "limit": null,
+        "n_images": 1610
+      },
+      "accuracy": {
+        "mAP50-95": 0.1406628639189863,
+        "mAP50": 0.2519568546328329,
+        "mAP75": 0.1390642850807149,
+        "AP_small": 0.06103446955386568,
+        "AP_medium": 0.21392978525445144,
+        "AP_large": 0.331048867860836,
+        "AR500": 0.23933585491213974,
+        "max_det": 500,
+        "n_images": 1610,
+        "n_gt": 74687,
+        "n_dets": 625338,
+        "per_class": {
+          "pedestrian": {
+            "AP": 0.0937971692235678,
+            "AP50": 0.24501470297155742,
+            "n_gt": 20749
+          },
+          "people": {
+            "AP": 0.043191717169551766,
+            "AP50": 0.12473499820177901,
+            "n_gt": 6317
+          },
+          "bicycle": {
+            "AP": 0.022201295652266216,
+            "AP50": 0.05260163368391992,
+            "n_gt": 1294
+          },
+          "car": {
+            "AP": 0.4039121517690906,
+            "AP50": 0.6659219800564922,
+            "n_gt": 28029
+          },
+          "van": {
+            "AP": 0.14258716151417325,
+            "AP50": 0.2144028669868716,
+            "n_gt": 5762
+          },
+          "truck": {
+            "AP": 0.1804106338408281,
+            "AP50": 0.28688654540057024,
+            "n_gt": 2653
+          },
+          "tricycle": {
+            "AP": 0.07142171135617845,
+            "AP50": 0.13941730187879783,
+            "n_gt": 525
+          },
+          "awning-tricycle": {
+            "AP": 0.04961959216330329,
+            "AP50": 0.0868558402032707,
+            "n_gt": 594
+          },
+          "bus": {
+            "AP": 0.3009989567527556,
+            "AP50": 0.44552400830557953,
+            "n_gt": 2939
+          },
+          "motor": {
+            "AP": 0.09848824974814828,
+            "AP50": 0.25820866863949105,
+            "n_gt": 5825
+          }
+        },
+        "class_map": "visdrone",
+        "model_class_to_target": {
+          "pedestrian": "pedestrian",
+          "people": "people",
+          "bicycle": "bicycle",
+          "car": "car",
+          "van": "van",
+          "truck": "truck",
+          "tricycle": "tricycle",
+          "awning-tricycle": "awning-tricycle",
+          "bus": "bus",
+          "motor": "motor"
+        },
+        "excluded_classes": {},
+        "imgsz": 640,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false
+        }
+      },
+      "latency": []
+    },
+    {
+      "model": "visdrone-yolo26n-1280",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261026-121849-visdrone-yolo26n-1280-88e380/weights/best.pt",
+      "run_id": "20261031-202921-w5-copy-paste-visdrone-yolo26n-1280-81ae85",
+      "train_run": "20261026-121849-visdrone-yolo26n-1280-88e380",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "visdrone_det/gt/test-dev.json",
+        "class_map": "visdrone",
+        "limit": null,
+        "n_images": 1610
+      },
+      "accuracy": {
+        "mAP50-95": 0.2254197426222251,
+        "mAP50": 0.3894601830109333,
+        "mAP75": 0.2243337934776009,
+        "AP_small": 0.12929076834896308,
+        "AP_medium": 0.3256089791512013,
+        "AP_large": 0.42823010493951835,
+        "AR500": 0.3559460767120663,
+        "max_det": 500,
+        "n_images": 1610,
+        "n_gt": 74687,
+        "n_dets": 559368,
+        "per_class": {
+          "pedestrian": {
+            "AP": 0.17961944199465418,
+            "AP50": 0.4274096138972202,
+            "n_gt": 20749
+          },
+          "people": {
+            "AP": 0.08930056706033061,
+            "AP50": 0.2422289030593386,
+            "n_gt": 6317
+          },
+          "bicycle": {
+            "AP": 0.0701087173828501,
+            "AP50": 0.16012299023435053,
+            "n_gt": 1294
+          },
+          "car": {
+            "AP": 0.5092242549839582,
+            "AP50": 0.7903663805203929,
+            "n_gt": 28029
+          },
+          "van": {
+            "AP": 0.24643547902293544,
+            "AP50": 0.34797360291755336,
+            "n_gt": 5762
+          },
+          "truck": {
+            "AP": 0.28715310704591046,
+            "AP50": 0.4373539767381813,
+            "n_gt": 2653
+          },
+          "tricycle": {
+            "AP": 0.14415989542541813,
+            "AP50": 0.26033497469061445,
+            "n_gt": 525
+          },
+          "awning-tricycle": {
+            "AP": 0.13802021487067867,
+            "AP50": 0.22102931912312668,
+            "n_gt": 594
+          },
+          "bus": {
+            "AP": 0.4010065475199259,
+            "AP50": 0.5641872416331728,
+            "n_gt": 2939
+          },
+          "motor": {
+            "AP": 0.18916920091558947,
+            "AP50": 0.4435948272953826,
+            "n_gt": 5825
+          }
+        },
+        "class_map": "visdrone",
+        "model_class_to_target": {
+          "pedestrian": "pedestrian",
+          "people": "people",
+          "bicycle": "bicycle",
+          "car": "car",
+          "van": "van",
+          "truck": "truck",
+          "tricycle": "tricycle",
+          "awning-tricycle": "awning-tricycle",
+          "bus": "bus",
+          "motor": "motor"
+        },
+        "excluded_classes": {},
+        "imgsz": 1280,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false
+        }
+      },
+      "latency": []
+    },
+    {
+      "model": "visdrone-yolo26n-1280-cp",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261030-174143-visdrone-yolo26n-1280-cp-2158c2/weights/best.pt",
+      "run_id": "20261031-203254-w5-copy-paste-visdrone-yolo26n-1280-cp-2b207f",
+      "train_run": "20261030-174143-visdrone-yolo26n-1280-cp-2158c2",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "visdrone_det/gt/test-dev.json",
+        "class_map": "visdrone",
+        "limit": null,
+        "n_images": 1610
+      },
+      "accuracy": {
+        "mAP50-95": 0.22317268743119775,
+        "mAP50": 0.3854862176075817,
+        "mAP75": 0.22420878583129364,
+        "AP_small": 0.12811123820954562,
+        "AP_medium": 0.3253218875345844,
+        "AP_large": 0.42103679328403903,
+        "AR500": 0.35125143865300823,
+        "max_det": 500,
+        "n_images": 1610,
+        "n_gt": 74687,
+        "n_dets": 580986,
+        "per_class": {
+          "pedestrian": {
+            "AP": 0.17449341745313168,
+            "AP50": 0.4230295892581777,
+            "n_gt": 20749
+          },
+          "people": {
+            "AP": 0.08816431288766542,
+            "AP50": 0.23850682960010935,
+            "n_gt": 6317
+          },
+          "bicycle": {
+            "AP": 0.06945142959923067,
+            "AP50": 0.1534567226044193,
+            "n_gt": 1294
+          },
+          "car": {
+            "AP": 0.5084593009034342,
+            "AP50": 0.7912313219175129,
+            "n_gt": 28029
+          },
+          "van": {
+            "AP": 0.23432376827432982,
+            "AP50": 0.3278399471065632,
+            "n_gt": 5762
+          },
+          "truck": {
+            "AP": 0.29476582900641546,
+            "AP50": 0.4443615863533756,
+            "n_gt": 2653
+          },
+          "tricycle": {
+            "AP": 0.15051420493431578,
+            "AP50": 0.26802891371568005,
+            "n_gt": 525
+          },
+          "awning-tricycle": {
+            "AP": 0.1248684028224357,
+            "AP50": 0.20502003102123564,
+            "n_gt": 594
+          },
+          "bus": {
+            "AP": 0.39865486126409316,
+            "AP50": 0.559478093502346,
+            "n_gt": 2939
+          },
+          "motor": {
+            "AP": 0.18803134716692535,
+            "AP50": 0.44390914099639783,
+            "n_gt": 5825
+          }
+        },
+        "class_map": "visdrone",
+        "model_class_to_target": {
+          "pedestrian": "pedestrian",
+          "people": "people",
+          "bicycle": "bicycle",
+          "car": "car",
+          "van": "van",
+          "truck": "truck",
+          "tricycle": "tricycle",
+          "awning-tricycle": "awning-tricycle",
+          "bus": "bus",
+          "motor": "motor"
+        },
+        "excluded_classes": {},
+        "imgsz": 1280,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false
+        }
+      },
+      "latency": []
+    }
+  ]
+}
