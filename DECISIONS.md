@@ -460,3 +460,16 @@ markets, buses on main roads) more than as instances, and random placement puts 
 of context; mosaic already raises the number of objects per sample. The reference detector
 stays the plain one. *Not pursued:* context-aware placement and several seeds, worth less
 here than the deployment work of weeks 8-10.
+
+## Hardware for weeks 8-10 (end of week 6)
+
+**TensorRT is developed and measured on Kaggle's NVIDIA T4 first; a Jetson Orin Nano Super
+is the embedded target if one is bought, which is still open.** What weeks 4-6 measured:
+on a GPU, n at 1280 on every frame is the best pipeline within the budget; on a CPU, only
+the 640 model (or the keyframe mode) is. The T4 (Turing, INT8 tensor cores) is free within
+the weekly quota and runs the whole FP16 / INT8 PTQ / QAT method; benchmarks take minutes.
+The Jetson would give the embedded figure (power modes, power draw, shared memory) through
+the same `Detector`, at about USD 399 in October 2026 (USD 249 at launch, out of stock on
+NVIDIA's US store). *Rejected:* renting a cloud L4 (about USD 0.4-0.6 per hour; no more
+embedded than the free T4 for this purpose). Without a Jetson, results are stated as
+"TensorRT on an NVIDIA T4", never as embedded.
