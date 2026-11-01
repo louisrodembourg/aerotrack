@@ -21,6 +21,7 @@ uv run aerotrack kaggle push <cfg> [<cfg2>] --slug <slug> [--suffix probe] [--dr
 uv run aerotrack kaggle push <cfg> --slug <slug> --resume <run-id>   # continue an interrupted run
 make w3-eval | w4-eval | w4-p2-eval | w5-sahi-eval | w6-track-eval | w6-track-tuned-eval | w6-keyframe-eval   #
 make w6-track-tune   # tracker thresholds on MOT sequences unseen by the detector (never test-dev) evaluate a week's pulled runs on test-dev, then README
+uv run aerotrack kaggle push configs/eval/w8_tensorrt.yaml --slug aerotrack-w8-trt   # TensorRT: Kaggle only
 uv run aerotrack kaggle status|pull <slug>                           # Kaggle 2 x T4
 ```
 

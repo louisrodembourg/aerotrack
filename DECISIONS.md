@@ -486,3 +486,24 @@ published accuracy and latency compares like with like; a test now checks that t
 ONNX Runtime agree. *Not done (yet):* switching to the NMS-free head (`end2end=True` /
 `nms=False`), which would drop NMS from the postprocess; it changes the network output,
 so it would be a new, separately measured variant, not a fix.
+
+## TensorRT on the T4 (week 8)
+
+**Measured (`reports/w8-tensorrt/`, Kaggle Tesla T4, TensorRT 10.16.1.11, test-dev).**
+- Accuracy: TensorRT FP16 equals torch FP32 (mAP50-95 14.2 at 640, 22.6 at 1280). INT8
+  post-training quantisation, calibrated on the 548 val images, costs 1.4 (640) and 1.9
+  (1280) points; at 1280 large objects lose most (AP_large 43.1 → 35.9). Torch FP16 changes
+  accuracy by 0.1-0.2 and inference time not at all.
+- Inference: 8.4 → 3.5 ms (FP16) → 3.2 ms (INT8) at 640, 12.1 → 6.2 → 5.7 ms at 1280: TensorRT
+  FP16 runs the network 2.0-2.4x faster than torch; INT8 adds only 8-9 % on top, at batch 1
+  on this small model, for its accuracy cost. FP16 is the TensorRT setting to keep.
+- End to end the gain shrinks (640: 24.4 → 19.9 ms, 1280: 35.4 → 29.5 ms) because
+  postprocessing (NMS, rescaling, copy to host) takes 13-16 ms on CUDA, more than inference.
+  The same pattern was measured on MPS (NMS on the device 12-18 ms, ~1.2 ms after copying
+  the raw output to the host), where the Detector already copies first; on CUDA it does not
+  yet. Copying first on CUDA too is the next measurement, not yet a result.
+- Spread: p95 is about twice the median (std 10-15 ms) on every GPU row, against 1-2 ms on
+  the Mac: a shared cloud VM. Medians are reported; p95 on this machine is not a property of
+  the model.
+- The session's CPU (Intel Xeon 2.00 GHz) with ONNX Runtime: 48.2 ms at 640, 189.9 ms at
+  1280, far slower than the M3 Pro's CPU (21.9 / 87.7 ms).

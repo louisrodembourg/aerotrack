@@ -24,15 +24,15 @@ was then compared at 640 and 960. Week 5: tiled (SAHI-style) inference, measured
 training at the higher resolution. Week 6: ByteTrack with a from-scratch Kalman filter,
 end to end on VisDrone-MOT test-dev, thresholds tuned on unseen MOT sequences, and the
 hybrid keyframe mode. Copy-paste of rare objects, tried last, brought nothing: the plain
-detectors are the reference. Next: TensorRT FP16 / INT8 on an NVIDIA T4 (hardware
-decision: DECISIONS.md).
+detectors are the reference. Week 8: TensorRT FP16 / INT8 on an NVIDIA T4 (hardware
+decision: DECISIONS.md). Next: postprocessing on CUDA, INT8 QAT, C++ runtime.
 
 | Weeks | Stage |
 |---|---|
 | 1–2 | foundations + baseline |
 | 3–5 | fine-tuning on VisDrone-DET: resolution, P2 head, SAHI, hybrid keyframe mode, copy-paste augmentation → reference detector frozen |
-| 6–7 ← *here* | ByteTrack / BoT-SORT on VisDrone-MOT (TrackEval: HOTA, MOTA, IDF1, IDSW), Kalman filter from scratch, hardware decision |
-| 8–10 | ONNX → TensorRT FP16 → INT8 PTQ → INT8 QAT, C++ runtime |
+| 6–7 | ByteTrack / BoT-SORT on VisDrone-MOT (TrackEval: HOTA, MOTA, IDF1, IDSW), Kalman filter from scratch, hardware decision |
+| 8–10 ← *here* | ONNX → TensorRT FP16 → INT8 PTQ → INT8 QAT, C++ runtime |
 | 11 | robustness: VisDrone → UAVDT transfer by attribute, synthetic degradations |
 | 12 | write-up, demo |
 
@@ -65,6 +65,11 @@ stated.
   more.** Cutting each frame into 2x2 tiles plus the whole frame lifts the 640 model from
   14.2 to 18.1 mAP (27.9 ms on MPS); the model trained at 1280 reaches 22.5 in a single
   pass for 23.5 ms ([w5-sahi](reports/w5-sahi/results.md)).
+- **TensorRT FP16 is free accuracy-wise and halves inference; INT8 is not worth it here.**
+  On an NVIDIA T4, TensorRT FP16 matches torch FP32 exactly and runs the network 2.0-2.4x
+  faster (640: 8.4 → 3.5 ms; 1280: 12.1 → 6.2 ms). INT8 post-training quantisation adds
+  under 10 % speed for -1.4 / -1.9 mAP. End to end the gain shrinks, because NMS on the GPU
+  (13-16 ms) now outweighs the network ([w8-tensorrt](reports/w8-tensorrt/results.md)).
 - **Copy-paste of rare small objects does not help here.** Pasting objects of the five
   rarest classes into training images changes test-dev mAP by -0.1 (640) and -0.2 (1280),
   and the rare classes themselves by about a point either way
@@ -287,6 +292,32 @@ Selected tracker thresholds (MOT sequences unseen by the detector, not test-dev)
 
 - visdrone-yolo26n-640: buffer=30, high=0.5, low=0.1, match=0.9, new=0.5 (HOTA 30.6 on 2654 tuning frames)
 - visdrone-yolo26n-1280: buffer=30, high=0.5, low=0.05, match=0.9, new=0.6 (HOTA 39.6 on 2654 tuning frames)
+
+#### w8-tensorrt ([full report](reports/w8-tensorrt/results.md))
+
+| Model | Class map | imgsz | mAP50-95 | mAP50 | AP_small | AP_medium | AP_large | Images | Run |
+|---|---|---|---|---|---|---|---|---|---|
+| n640-trt-fp16 | visdrone | 640 | 14.2 | 25.5 | 6.4 | 21.3 | 33.7 | 1610 | `20261101-092549-w8-tensorrt-n640-trt-fp16-13c04e` |
+| n640-trt-int8 | visdrone | 640 | 12.8 | 23.5 | 5.6 | 19.5 | 30.6 | 1610 | `20261101-094122-w8-tensorrt-n640-trt-int8-f94816` |
+| n1280-trt-fp16 | visdrone | 1280 | 22.6 | 39.0 | 13.0 | 32.6 | 43.1 | 1610 | `20261101-100437-w8-tensorrt-n1280-trt-fp16-98e235` |
+| n1280-trt-int8 | visdrone | 1280 | 20.7 | 36.7 | 12.2 | 30.0 | 35.9 | 1610 | `20261101-101956-w8-tensorrt-n1280-trt-int8-f9fc62` |
+| n640-torch | visdrone | 640 | 14.2 | 25.5 | 6.4 | 21.3 | 33.7 | 1610 | `20261101-104340-w8-tensorrt-n640-torch-e6f742` |
+| n640-torch-fp16 | visdrone | 640 | 14.1 | 25.4 | 6.3 | 21.3 | 33.7 | 1610 | `20261101-105408-w8-tensorrt-n640-torch-fp16-e682fb` |
+| n1280-torch | visdrone | 1280 | 22.6 | 39.0 | 13.0 | 32.6 | 43.1 | 1610 | `20261101-110435-w8-tensorrt-n1280-torch-1b3fb7` |
+| n1280-torch-fp16 | visdrone | 1280 | 22.4 | 38.8 | 12.8 | 32.4 | 43.1 | 1610 | `20261101-111641-w8-tensorrt-n1280-torch-fp16-1d0922` |
+
+| Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|
+| n640-trt-fp16 | tensorrt fp16 | Tesla T4 | TRT 10.16.1.11 | 2.2 | 3.5 | 14.1 | 19.9 | 43.2 | 50.3 | yes |
+| n640-trt-int8 | tensorrt int8 | Tesla T4 | TRT 10.16.1.11 | 2.2 | 3.2 | 12.8 | 18.2 | 44.8 | 54.9 | yes |
+| n1280-trt-fp16 | tensorrt fp16 | Tesla T4 | TRT 10.16.1.11 | 6.6 | 6.2 | 16.3 | 29.5 | 65.4 | 33.9 | yes |
+| n1280-trt-int8 | tensorrt int8 | Tesla T4 | TRT 10.16.1.11 | 6.7 | 5.7 | 14.7 | 27.1 | 60.6 | 36.9 | yes |
+| n640-torch | torch | Tesla T4 | torch 2.14.1+cu126, TRT 10.16.1.11 | 2.2 | 8.4 | 13.2 | 24.4 | 48.9 | 41.0 | yes |
+| n640-torch | onnxruntime | Intel(R) Xeon(R) CPU @ 2.00GHz | ORT 1.31.0, TRT 10.16.1.11 | 4.1 | 37.9 | 5.6 | 48.2 | 57.5 | 20.8 | no |
+| n640-torch-fp16 | torch fp16 | Tesla T4 | torch 2.14.1+cu126, TRT 10.16.1.11 | 2.1 | 9.5 | 13.2 | 24.9 | 48.8 | 40.2 | yes |
+| n1280-torch | torch | Tesla T4 | torch 2.14.1+cu126, TRT 10.16.1.11 | 6.7 | 12.1 | 16.4 | 35.4 | 71.3 | 28.3 | yes |
+| n1280-torch | onnxruntime | Intel(R) Xeon(R) CPU @ 2.00GHz | ORT 1.31.0, TRT 10.16.1.11 | 13.5 | 168.1 | 7.3 | 189.9 | 319.0 | 5.3 | no |
+| n1280-torch-fp16 | torch fp16 | Tesla T4 | torch 2.14.1+cu126, TRT 10.16.1.11 | 6.6 | 9.7 | 16.7 | 33.5 | 70.5 | 29.9 | yes |
 
 <!-- results:end -->
 
