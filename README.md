@@ -25,7 +25,8 @@ training at the higher resolution. Week 6: ByteTrack with a from-scratch Kalman 
 end to end on VisDrone-MOT test-dev, thresholds tuned on unseen MOT sequences, and the
 hybrid keyframe mode. Copy-paste of rare objects, tried last, brought nothing: the plain
 detectors are the reference. Week 8: TensorRT FP16 / INT8 on an NVIDIA T4 (hardware
-decision: DECISIONS.md). Next: postprocessing on CUDA, INT8 QAT, C++ runtime.
+decision: DECISIONS.md). NMS moved to the host on every GPU. Next:
+INT8 QAT, C++ runtime.
 
 | Weeks | Stage |
 |---|---|
@@ -68,8 +69,12 @@ stated.
 - **TensorRT FP16 is free accuracy-wise and halves inference; INT8 is not worth it here.**
   On an NVIDIA T4, TensorRT FP16 matches torch FP32 exactly and runs the network 2.0-2.4x
   faster (640: 8.4 → 3.5 ms; 1280: 12.1 → 6.2 ms). INT8 post-training quantisation adds
-  under 10 % speed for -1.4 / -1.9 mAP. End to end the gain shrinks, because NMS on the GPU
-  (13-16 ms) now outweighs the network ([w8-tensorrt](reports/w8-tensorrt/results.md)).
+  under 10 % speed for -1.4 / -1.9 mAP ([w8-tensorrt](reports/w8-tensorrt/results.md)).
+- **Then NMS was the bottleneck, and moving it to the host fixed it.** On the GPU, NMS took
+  13.8-17.7 ms, more than the network. Copying the raw output to the CPU first cuts it to
+  4.6-6.2 ms with identical detections: end to end, TensorRT FP16 runs n at 640 in 10.6 ms
+  (95 FPS) and n at 1280 in 19.8 ms (51 FPS) on a T4
+  ([w8-postprocess](reports/w8-postprocess/results.md)).
 - **Copy-paste of rare small objects does not help here.** Pasting objects of the five
   rarest classes into training images changes test-dev mAP by -0.1 (640) and -0.2 (1280),
   and the rare classes themselves by about a point either way
@@ -292,6 +297,22 @@ Selected tracker thresholds (MOT sequences unseen by the detector, not test-dev)
 
 - visdrone-yolo26n-640: buffer=30, high=0.5, low=0.1, match=0.9, new=0.5 (HOTA 30.6 on 2654 tuning frames)
 - visdrone-yolo26n-1280: buffer=30, high=0.5, low=0.05, match=0.9, new=0.6 (HOTA 39.6 on 2654 tuning frames)
+
+#### w8-postprocess ([full report](reports/w8-postprocess/results.md))
+
+| Model | Class map | imgsz | mAP50-95 | mAP50 | AP_small | AP_medium | AP_large | Images | Run |
+|---|---|---|---|---|---|---|---|---|---|
+| n640-trt-fp16-gpu-nms | visdrone | 640 | 14.1 | 25.5 | 6.3 | 21.3 | 33.8 | 1610 | `20261101-180710-w8-postprocess-n640-trt-fp16-gpu-nms-bb803d` |
+| n640-trt-fp16-host-nms | visdrone | 640 | 14.1 | 25.5 | 6.3 | 21.3 | 33.8 | 1610 | `20261101-182315-w8-postprocess-n640-trt-fp16-host-nms-65a9a6` |
+| n1280-trt-fp16-gpu-nms | visdrone | 1280 | 22.5 | 38.9 | 12.9 | 32.5 | 42.7 | 1610 | `20261101-182915-w8-postprocess-n1280-trt-fp16-gpu-nms-f288d3` |
+| n1280-trt-fp16-host-nms | visdrone | 1280 | 22.5 | 38.9 | 12.9 | 32.5 | 42.7 | 1610 | `20261101-184346-w8-postprocess-n1280-trt-fp16-host-nms-78ca0c` |
+
+| Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|
+| n640-trt-fp16-gpu-nms | tensorrt fp16 | Tesla T4 | TRT 10.16.1.11 | 2.2 | 3.7 | 13.8 | 19.7 | 45.1 | 50.8 | yes |
+| n640-trt-fp16-host-nms | tensorrt fp16 | Tesla T4 | TRT 10.16.1.11 | 2.2 | 3.7 | 4.6 | 10.6 | 18.2 | 94.6 | yes |
+| n1280-trt-fp16-gpu-nms | tensorrt fp16 | Tesla T4 | TRT 10.16.1.11 | 6.5 | 6.7 | 17.7 | 31.1 | 68.7 | 32.2 | yes |
+| n1280-trt-fp16-host-nms | tensorrt fp16 | Tesla T4 | TRT 10.16.1.11 | 6.6 | 6.7 | 6.2 | 19.8 | 32.8 | 50.5 | yes |
 
 #### w8-tensorrt ([full report](reports/w8-tensorrt/results.md))
 

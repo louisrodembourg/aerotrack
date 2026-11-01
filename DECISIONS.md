@@ -507,3 +507,12 @@ so it would be a new, separately measured variant, not a fix.
   the model.
 - The session's CPU (Intel Xeon 2.00 GHz) with ONNX Runtime: 48.2 ms at 640, 189.9 ms at
   1280, far slower than the M3 Pro's CPU (21.9 / 87.7 ms).
+
+**NMS on the host on CUDA too (`reports/w8-postprocess/`, T4, TensorRT FP16, one session).**
+Copying the raw output to the host before NMS takes postprocessing from 13.8 to 4.6 ms at
+640 and from 17.7 to 6.2 ms at 1280, with identical detections; end to end 19.7 → 10.6 ms
+(51 → 95 FPS) and 31.1 → 19.8 ms (32 → 51 FPS), and p95 drops by more than half (45 → 18
+ms, 69 → 33 ms). It is the Detector's default on any GPU from this commit; `host_nms:
+false` reproduces the earlier CUDA rows (`reports/w8-tensorrt/`), which keep NMS on the
+device. Note: two builds of the same engine scored 14.2 and 14.1 at 640 (TensorRT picks
+kernels per build); within one session the two settings score identically.

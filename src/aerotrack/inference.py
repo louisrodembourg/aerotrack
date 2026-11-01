@@ -167,7 +167,7 @@ class Detector:
             self.names = dict(self.model.names)
             self.runtime = {"backend": backend, "device": self.device, "half": self.half,
                             "host_nms": host_nms if host_nms is not None
-                            else self.device == "mps"}
+                            else self.device != "cpu"}
             if backend == "tensorrt":
                 self.runtime.update({"precision": precision, "engine": path,
                                      "calibration_data": calibration_data
@@ -237,11 +237,12 @@ class Detector:
     def postprocess(self, raw, orig_shape: tuple[int, int]) -> np.ndarray:
         from ultralytics.utils import nms, ops  # noqa: PLC0415
 
-        if self.host_nms if self.host_nms is not None else self.device == "mps":
-            # Measured on an M3 Pro: NMS / top-k filtering on MPS costs 12-18 ms per image
-            # (kernel-launch overhead of many small ops), against ~1.2 ms for copying the
-            # raw output to the host and filtering there. The copy stays inside this stage.
-            # On CUDA it is a measured option (`host_nms`, reports/w8-postprocess/).
+        if self.host_nms if self.host_nms is not None else self.device != "cpu":
+            # NMS on the host by default on any GPU: on the device it is many small kernel
+            # launches. Measured on an M3 Pro (MPS: 12-18 ms vs ~1.2 ms) and on a T4 (CUDA,
+            # TensorRT FP16: 13.8 vs 4.6 ms at 640, 17.7 vs 6.2 ms at 1280, same detections;
+            # reports/w8-postprocess/). The copy stays inside this stage. host_nms=False
+            # restores NMS on the device (the rows published before that measurement).
             raw = raw[0] if isinstance(raw, list | tuple) else raw
             raw = raw.float().cpu()
         dets = nms.non_max_suppression(raw, self.conf, self.iou, max_det=self.max_det,
