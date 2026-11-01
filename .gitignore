@@ -32,3 +32,6 @@ __pycache__/
 
 # W&B offline runs
 wandb/
+
+# C++ runtime build
+/cpp/build/

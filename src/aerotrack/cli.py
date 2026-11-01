@@ -108,6 +108,18 @@ def tune_tracker(
     run_tuning(load_config(config, overrides or []))
 
 
+@app.command("build-cpp")
+def build_cpp(
+    tensorrt: Annotated[bool | None, typer.Option(
+        help="Build the TensorRT runtime (default: when the tensorrt-cu12-libs wheel is there)")] = None,
+) -> None:
+    """Compile the C++ runtime (cpp/) into cpp/build/, for Detector(backend="cpp")."""
+    from aerotrack import cpp_runtime  # noqa: PLC0415
+
+    cpp = cpp_runtime.load(cpp_runtime.build(with_tensorrt=tensorrt))
+    typer.echo(f"aerotrack_cpp: {cpp.compiler}, TensorRT {'on' if cpp.with_tensorrt else 'off'}")
+
+
 kaggle_app = typer.Typer(no_args_is_help=True, help="Train on Kaggle's free GPUs (push, status, pull).")
 app.add_typer(kaggle_app, name="kaggle")
 

@@ -75,6 +75,14 @@ def bundle() -> tuple[str, str]:
     return commit, base64.b64encode(data).decode()
 
 
+def uses_cpp(cfg: dict) -> bool:
+    """Whether an evaluation runs the C++ runtime: the kernel then builds it first."""
+    backends = {m.get("backend") for m in cfg.get("models", [])}
+    backends |= {b for m in cfg.get("models", []) for b in m.get("latency_backends", [])}
+    backends |= set(cfg.get("latency", {}).get("backends", []))
+    return "cpp" in backends
+
+
 def make_jobs(configs: list[Path], overrides: list[str], suffix: str | None) -> list[dict]:
     """One job per config: a training config (configs/train) or an evaluation one
     (configs/eval), whose report is redirected into the kernel's saved output."""
@@ -92,7 +100,7 @@ def make_jobs(configs: list[Path], overrides: list[str], suffix: str | None) -> 
         dataset = ds["mot"] if "mot" in ds else ds["gt"].split("/")[0]
         jobs.append({"kind": "evaluate", "config": str(rel), "name": name, "dataset": dataset,
                      "overrides": [*overrides, *extra, f"report_dir={KAGGLE_REPORTS}/{name}"],
-                     "inputs": eval_inputs(cfg)})
+                     "inputs": eval_inputs(cfg), "cpp": uses_cpp(cfg)})
     return jobs
 
 

@@ -68,7 +68,7 @@ def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float) -> di
         # through that engine too, since INT8 changes the detections, not only the speed.
         acc_backend = model.get("backend", "torch")
         engine = {}
-        if acc_backend == "tensorrt":
+        if acc_backend in ("tensorrt", "cpp"):  # cpp: the same engine, run from C++
             engine = {"precision": model.get("precision", "fp16")}
             if engine["precision"] == "int8":
                 engine["calibration_data"] = str(PROCESSED_DIR / det_cfg["calibration_data"])
@@ -95,7 +95,7 @@ def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float) -> di
                              half=det_cfg.get("half", False) and backend == "torch",
                              ort_threads=lat_cfg.get("ort_threads"), **tiling,
                              host_nms=det_cfg.get("host_nms"),
-                             **(engine if backend == "tensorrt" else {}))
+                             **(engine if backend in ("tensorrt", "cpp") else {}))
                 print(f"[{name}] latency backend={backend} device={bdev}", flush=True)
                 lat = benchmark(d, images, lat_cfg["warmup"], lat_cfg["iters"])
                 lat["env"] = environment_info(bdev)

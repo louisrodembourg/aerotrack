@@ -516,3 +516,40 @@ ms, 69 → 33 ms). It is the Detector's default on any GPU from this commit; `ho
 false` reproduces the earlier CUDA rows (`reports/w8-tensorrt/`), which keep NMS on the
 device. Note: two builds of the same engine scored 14.2 and 14.1 at 640 (TensorRT picks
 kernels per build); within one session the two settings score identically.
+
+## C++ runtime (week 9)
+
+**What runs in C++ (`cpp/`, Python module `aerotrack_cpp`).** The whole frame pipeline
+behind `Detector(backend="cpp")`: letterbox on the host, upload of the 8-bit image, BGR→RGB
+/ HWC→CHW / ÷255 in a CUDA kernel, TensorRT `enqueueV3`, download of the raw head output,
+NMS and rescaling on the host. Same three stages, same boundaries and same per-stage sync
+as the Python Detector with `host_nms` (the defaults), so their timings compare stage by
+stage. The engine is the one `export_engine` builds for the `tensorrt` backend (same cache
+key, Ultralytics' JSON header skipped). Rejected: a standalone C++ benchmark binary, which
+would need its own accuracy path and break the one-pipeline rule; pybind11 adds a few
+microseconds per stage call, against milliseconds per stage.
+
+**Build on Kaggle (probe of the image, Ubuntu 24.04, g++ 13.3, CMake 3.31, CUDA 12.8).**
+The `tensorrt-cu12-libs` wheel ships `libnvinfer.so.10` but no headers, and the image has
+no TensorRT install. NVIDIA's apt repository (preconfigured on Kaggle) has
+`libnvinfer-headers-dev` at every release, including the wheel's 10.16.1.11: the kernel
+installs the headers at the wheel's exact version and links the wheel's library, the one
+that built the engines. Rejected: apt's full `libnvinfer-dev` (default candidate 11.4, a
+second TensorRT that cannot load 10.x engines); headers from the TensorRT OSS repository
+(tagged 10.16.0, not 10.16.1). The CUDA runtime is linked statically: the process also
+loads torch's own `libcudart` (cu126).
+
+**Resize.** OpenCV is not installed for C++ on Kaggle, and is not needed: the letterbox is
+~100 lines. It reproduces Ultralytics' LetterBox geometry exactly, and cv2's bilinear resize
+as `INTER_LINEAR_EXACT` (11-bit fixed-point weights). Bit-matching `INTER_LINEAR`, which
+LetterBox uses, is not possible portably: its rounding depends on the build. On the M3 Pro
+(OpenCV 5.0) it differs from `INTER_LINEAR_EXACT` by 1 on ~20 % of values, and from an
+emulation of OpenCV's generic SIMD path by 1 on ~25 %. The C++ letterbox is within 1 of
+LetterBox everywhere (`tests/test_cpp.py`). Its effect on accuracy is measured on test-dev,
+not assumed.
+
+**NMS.** Ultralytics' `non_max_suppression` (best class per anchor, `conf` filter, at most
+30000 candidates, class offset 7680 for class-aware NMS) followed by torchvision's NMS
+(descending score order, IoU > threshold suppresses, float arithmetic), then `scale_boxes`
+and clipping. Same detections as the Python postprocess up to the order of equal scores,
+which torch's unstable `argsort` leaves arbitrary (`tests/test_cpp.py`).

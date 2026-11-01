@@ -130,6 +130,17 @@ def main() -> int:
     sh(["uv", "sync", "--frozen", "--no-dev", "--extra", "trt"], cwd=REPO, env=env)
     uv = [*uv, "--extra", "trt"]
 
+    if any(job.get("cpp") for job in JOBS):  # before the datasets: a build error fails fast
+        # C++ runtime: TensorRT headers from NVIDIA's apt repository (preconfigured on
+        # Kaggle) at the exact version of the wheel whose libraries built the engines.
+        trt = subprocess.run([*uv, "python", "-c", "import tensorrt; print(tensorrt.__version__)"],
+                             cwd=REPO, env=env, capture_output=True, text=True,
+                             check=True).stdout.strip()
+        sh(["apt-get", "update", "-q"])
+        sh(["apt-get", "install", "-y", "-q", "--no-install-recommends",
+            f"libnvinfer-headers-dev={trt}-1+cuda12.9"])
+        sh([*uv, "aerotrack", "build-cpp", "--tensorrt"], cwd=REPO, env=env)
+
     for dataset in sorted({j["dataset"] for j in JOBS}):
         sh([*uv, "aerotrack", "data", "download", dataset, "--no-keep-archives"], cwd=REPO, env=env)
         sh([*uv, "aerotrack", "data", "convert", dataset], cwd=REPO, env=env)

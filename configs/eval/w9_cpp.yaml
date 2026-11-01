@@ -1,0 +1,32 @@
+# Week 9: the C++ runtime (cpp/) against the Python one, same TensorRT FP16 engines, same
+# session. Both run letterbox -> TensorRT -> NMS on the host, timed per stage: what moving
+# the pipeline from Python to C++ buys, stage by stage. Kaggle only (TensorRT); the
+# kernel installs the TensorRT headers and builds cpp/ first:
+#   uv run aerotrack kaggle push configs/eval/w9_cpp.yaml --slug aerotrack-w9-cpp
+name: w9-cpp
+seed: 0
+device: auto
+dataset:
+  gt: visdrone_det/gt/test-dev.json
+  class_map: visdrone
+  limit: null
+models:
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-trt-fp16-python, backend: tensorrt, precision: fp16, latency_backends: [tensorrt]}
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-trt-fp16-cpp, backend: cpp, precision: fp16, latency_backends: [cpp]}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-trt-fp16-python, backend: tensorrt, precision: fp16, latency_backends: [tensorrt]}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-trt-fp16-cpp, backend: cpp, precision: fp16, latency_backends: [cpp]}
+detection:
+  imgsz: 640
+  conf: 0.001
+  iou: 0.7
+  max_det: 500
+  half: false
+  host_nms: null
+  calibration_data: visdrone_det/dataset.yaml
+latency:
+  enabled: true
+  backends: [tensorrt]
+  conf: 0.25
+  n_images: 50
+  warmup: 50
+  iters: 300

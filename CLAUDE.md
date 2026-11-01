@@ -22,6 +22,8 @@ uv run aerotrack kaggle push <cfg> --slug <slug> --resume <run-id>   # continue 
 make w3-eval | w4-eval | w4-p2-eval | w5-sahi-eval | w6-track-eval | w6-track-tuned-eval | w6-keyframe-eval   #
 make w6-track-tune   # tracker thresholds on MOT sequences unseen by the detector (never test-dev) evaluate a week's pulled runs on test-dev, then README
 uv run aerotrack kaggle push configs/eval/w8_tensorrt.yaml --slug aerotrack-w8-trt   # TensorRT: Kaggle only
+uv run aerotrack build-cpp   # C++ runtime -> cpp/build/ (host stages only on the Mac)
+uv run aerotrack kaggle push configs/eval/w9_cpp.yaml --slug aerotrack-w9-cpp      # C++ vs Python, T4
 uv run aerotrack kaggle status|pull <slug>                           # Kaggle 2 x T4
 ```
 
@@ -58,11 +60,13 @@ uv run aerotrack kaggle status|pull <slug>                           # Kaggle 2 
 configs/      project.yaml (budget), data/ (sources, class maps), train/, eval/
 src/aerotrack/
   data/       download, per-dataset converters, ignore rule, class maps, visualisation
-  inference.py  Detector (torch | onnxruntime)
+  inference.py  Detector (torch | onnxruntime | tensorrt | cpp)
+  cpp_runtime.py  builds / loads the C++ module
   eval/       detection (COCO), latency, tracking (TrackEval), harness, track_harness, report
   track/      Kalman filter (from scratch), ByteTrack, TrackingPipeline (keyframe mode)
   train.py    Ultralytics training with masked dataset + tracked run
   experiments.py, runtime/ (device, env fingerprint, git, seed), ultra.py
+cpp/          C++ runtime: letterbox, TensorRT, NMS (pybind11 module aerotrack_cpp)
 docker/       Dockerfile.cuda
   remote/     Kaggle launcher (kernel template + push/status/pull)
 scripts/      remote_train.sh

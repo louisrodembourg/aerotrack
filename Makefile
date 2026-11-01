@@ -1,4 +1,4 @@
-.PHONY: w5-cp-eval w3-eval w4-eval w4-p2-eval w5-sahi-eval w6-track-eval w6-track-tune w6-track-tuned-eval w6-keyframe-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
+.PHONY: cpp w5-cp-eval w3-eval w4-eval w4-p2-eval w5-sahi-eval w6-track-eval w6-track-tune w6-track-tuned-eval w6-keyframe-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
 
 RUN := uv run
 CLI := $(RUN) aerotrack
@@ -37,6 +37,9 @@ check-data:  ## converted MOT ground truth, scored by TrackEval as a tracker, mu
 
 test:  ## offline unit tests (add --run-network for the Ultralytics consistency test)
 	$(RUN) pytest -q
+
+cpp:  ## build the C++ runtime (cpp/build/); TensorRT only where its wheel is installed
+	$(CLI) build-cpp
 
 lint:
 	$(RUN) ruff check src tests

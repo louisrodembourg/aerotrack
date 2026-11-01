@@ -67,7 +67,9 @@ def benchmark(detector: Detector, images: list[np.ndarray], warmup: int, iters: 
         "conf": detector.conf,
         "n_distinct_images": len(images),
         "peak_process_rss_mb": peak_rss_mb(),
-        "device_memory_mb": device_memory_mb(detector.device),
+        # torch's allocator does not see the C++ runtime's buffers
+        "device_memory_mb": None if detector.backend == "cpp"
+        else device_memory_mb(detector.device),
         "runtime": detector.runtime,
         "end2end_head": detector.end2end,
     })

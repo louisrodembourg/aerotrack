@@ -84,6 +84,13 @@ def test_eval_job_names_its_input_runs_and_redirects_its_report(monkeypatch):
     assert job["kind"] == "evaluate" and job["dataset"] == "visdrone_mot"
     assert job["inputs"] == ["id-visdrone-yolo26n-640", "id-visdrone-yolo26n-1280"]
     assert f"report_dir={kaggle.KAGGLE_REPORTS}/w6-keyframe" in job["overrides"]
+    assert not job["cpp"]
+
+
+def test_eval_job_with_the_cpp_backend_builds_the_cpp_runtime(monkeypatch):
+    monkeypatch.setattr(kaggle, "find_train_run", lambda ref: {"id": f"id-{ref}"})
+    [job] = kaggle.make_jobs([CONFIGS_DIR / "eval" / "w9_cpp.yaml"], [], None)
+    assert job["cpp"]
 
 
 def test_merge_output_brings_reports_back_relocated(tmp_path):

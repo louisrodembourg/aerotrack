@@ -20,8 +20,8 @@ def _pct(v) -> str:
 
 def _backend(rt: dict) -> str:
     """Backend plus the precision it ran at: `torch fp16`, `tensorrt int8`."""
-    if rt["backend"] == "tensorrt":
-        return f"tensorrt {rt['precision']}"
+    if rt["backend"] in ("tensorrt", "cpp"):
+        return f"{rt['backend']} {rt['precision']}"
     return f"{rt['backend']} fp16" if rt.get("half") else rt["backend"]
 
 
@@ -32,7 +32,7 @@ def _ms(v) -> str:
 def _versions(lat: dict) -> str:
     env, rt = lat["env"], lat["runtime"]
     parts = {"torch": [f"torch {env['torch']}"], "onnxruntime": [f"ORT {env['onnxruntime']}"],
-             "tensorrt": []}[rt["backend"]]
+             "tensorrt": [], "cpp": [rt.get("compiler", "C++")]}[rt["backend"]]
     if env.get("tensorrt"):
         parts.append(f"TRT {env['tensorrt']}")
     if env.get("jetson_power_mode"):

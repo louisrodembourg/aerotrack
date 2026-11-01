@@ -34,13 +34,15 @@ trt = [
     "tensorrt-cu12>=10.9,<11; sys_platform == 'linux'",
     "tensorrt-cu12-libs>=10.9,<11; sys_platform == 'linux'",
     "tensorrt-cu12-bindings>=10.9,<11; sys_platform == 'linux'",
+    # C++ runtime (cpp/, week 9): the Python module is a pybind11 extension.
+    "pybind11>=2.12",
 ]
 
 [project.scripts]
 aerotrack = "aerotrack.cli:app"
 
 [dependency-groups]
-dev = ["pytest>=8.0", "ruff>=0.6"]
+dev = ["pytest>=8.0", "ruff>=0.6", "pybind11>=2.12", "cmake>=3.24"]
 
 [build-system]
 requires = ["hatchling"]

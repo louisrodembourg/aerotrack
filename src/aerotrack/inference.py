@@ -5,8 +5,10 @@ end-to-end head's confidence filter, rescaling to the original image).
 
 Accuracy and latency go through the SAME object, so a variant can never be measured fast
 with one preprocessing and accurate with another. Backends: `torch` (cuda | mps | cpu) and
-`onnxruntime` (CPU execution provider), and `tensorrt` (an engine built from the same
-ONNX export, run through the same AutoBackend as torch; NVIDIA GPU only).
+`onnxruntime` (CPU execution provider), `tensorrt` (an engine built from the same
+ONNX export, run through the same AutoBackend as torch; NVIDIA GPU only) and `cpp` (the
+same engine run by the C++ runtime in cpp/: letterbox, TensorRT and NMS in C++, with the
+same three stages; NVIDIA GPU only).
 
 Input size is a fixed square letterbox (batch 1, static shape), which is what an exported
 engine runs. Ultralytics' own `predict` pads to the minimum rectangle instead, so its mAP
@@ -23,6 +25,7 @@ A fixed grid, not fixed-size tiles: the cost per frame does not depend on its re
 from __future__ import annotations
 
 import hashlib
+import json
 import shutil
 import time
 from pathlib import Path
@@ -108,6 +111,13 @@ def export_engine(weights: str | Path, imgsz: int, max_det: int, batch: int, pre
     return dest
 
 
+def engine_metadata(path: str | Path) -> dict:
+    """The JSON header Ultralytics writes before the serialized engine (int32 length first)."""
+    with open(path, "rb") as f:
+        n = int.from_bytes(f.read(4), "little", signed=True)
+        return json.loads(f.read(n))
+
+
 class Detector:
     def __init__(
         self,
@@ -172,6 +182,32 @@ class Detector:
                 self.runtime.update({"precision": precision, "engine": path,
                                      "calibration_data": calibration_data
                                      if precision == "int8" else None})
+        elif backend == "cpp":
+            from aerotrack import cpp_runtime  # noqa: PLC0415
+
+            self.device = resolve_device(device)
+            if not self.device.startswith("cuda"):
+                raise ValueError("the cpp backend needs an NVIDIA GPU")
+            if self.tiles:
+                raise ValueError("the cpp backend runs whole frames (no tiling)")
+            cpp = cpp_runtime.load()
+            if not cpp.with_tensorrt:
+                raise RuntimeError("the C++ runtime was built without TensorRT")
+            path = export_engine(self.weights, imgsz, max_det, 1, precision, calibration_data)
+            index = int(self.device.partition(":")[2] or torch.cuda.current_device())
+            self.engine = cpp.TrtDetector(str(path), imgsz, conf, iou, max_det, index)
+            self.half = False  # network I/O; the engine's own precision is `precision`
+            self.end2end = False  # the C++ runtime refuses an NMS-free head
+            self.names = {int(k): v for k, v in engine_metadata(path)["names"].items()}
+            lib = cpp.tensorrt_library()
+            self.runtime = {"backend": "cpp", "device": self.device, "half": False,
+                            "host_nms": True, "precision": precision, "engine": str(path),
+                            "calibration_data": calibration_data
+                            if precision == "int8" else None,
+                            "tensorrt_headers": cpp.tensorrt_headers,
+                            "tensorrt_library": f"{lib // 10000}.{lib // 100 % 100}.{lib % 100}",
+                            "compiler": cpp.compiler,
+                            "io_dtype": [self.engine.input_dtype, self.engine.output_dtype]}
         elif backend == "onnxruntime":
             import onnxruntime as ort  # noqa: PLC0415
 
@@ -219,6 +255,8 @@ class Detector:
         return out + [(0, 0, w, h)] if self.tile_full else out
 
     def preprocess(self, img_bgr: np.ndarray):
+        if self.backend == "cpp":  # each C++ stage synchronises its own stream
+            return self.engine.preprocess(img_bgr)
         self._crops = self.crops(*img_bgr.shape[:2])
         padded = np.stack([self.letterbox(image=img_bgr[y0:y1, x0:x1])
                            for x0, y0, x1, y1 in self._crops])
@@ -229,12 +267,16 @@ class Detector:
         return chw.astype(np.float32) / 255.0
 
     def infer(self, inp):
+        if self.backend == "cpp":
+            return self.engine.infer()
         if self.backend in ("torch", "tensorrt"):
             with torch.inference_mode():
                 return self.model(inp)
         return torch.from_numpy(self.session.run(None, {self.input_name: inp})[0])
 
     def postprocess(self, raw, orig_shape: tuple[int, int]) -> np.ndarray:
+        if self.backend == "cpp":
+            return self.engine.postprocess()  # the frame passed to preprocess
         from ultralytics.utils import nms, ops  # noqa: PLC0415
 
         if self.host_nms if self.host_nms is not None else self.device != "cpu":
