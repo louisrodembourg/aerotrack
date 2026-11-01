@@ -1,0 +1,32 @@
+# Week 8: where NMS runs on CUDA. reports/w8-tensorrt/ showed postprocessing (NMS on the
+# GPU) at 13-16 ms on the T4, above TensorRT FP16 inference; on MPS, copying the raw
+# output to the host first was measured faster. Same TensorRT FP16 engines, NMS on the
+# GPU vs on the host, in one session. Kaggle only (TensorRT):
+#   uv run aerotrack kaggle push configs/eval/w8_postprocess.yaml --slug aerotrack-w8-post
+name: w8-postprocess
+seed: 0
+device: auto
+dataset:
+  gt: visdrone_det/gt/test-dev.json
+  class_map: visdrone
+  limit: null
+models:
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-trt-fp16-gpu-nms, backend: tensorrt, precision: fp16, host_nms: false}
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-trt-fp16-host-nms, backend: tensorrt, precision: fp16, host_nms: true}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-trt-fp16-gpu-nms, backend: tensorrt, precision: fp16, host_nms: false}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-trt-fp16-host-nms, backend: tensorrt, precision: fp16, host_nms: true}
+detection:
+  imgsz: 640
+  conf: 0.001
+  iou: 0.7
+  max_det: 500
+  half: false
+  host_nms: null
+  calibration_data: visdrone_det/dataset.yaml
+latency:
+  enabled: true
+  backends: [tensorrt]
+  conf: 0.25
+  n_images: 50
+  warmup: 50
+  iters: 300

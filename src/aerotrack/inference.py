@@ -126,6 +126,7 @@ class Detector:
         merge_ios: float = 0.5,
         precision: str = "fp16",
         calibration_data: str | None = None,
+        host_nms: bool | None = None,
     ) -> None:
         configure()
         from ultralytics.data.augment import LetterBox  # noqa: PLC0415
@@ -138,6 +139,7 @@ class Detector:
         self.tile_overlap, self.tile_full, self.merge_ios = tile_overlap, tile_full, merge_ios
         self.batch = (self.tiles[0] * self.tiles[1] + int(tile_full)) if self.tiles else 1
         self._crops: list[tuple[int, int, int, int]] = []  # set by preprocess, read by postprocess
+        self.host_nms = host_nms
 
         if backend in ("torch", "tensorrt"):
             from ultralytics.nn.autobackend import AutoBackend  # noqa: PLC0415
@@ -163,7 +165,9 @@ class Detector:
             if self.end2end and hasattr(head, "max_det"):
                 head.max_det = max_det  # top-k inside the NMS-free head
             self.names = dict(self.model.names)
-            self.runtime = {"backend": backend, "device": self.device, "half": self.half}
+            self.runtime = {"backend": backend, "device": self.device, "half": self.half,
+                            "host_nms": host_nms if host_nms is not None
+                            else self.device == "mps"}
             if backend == "tensorrt":
                 self.runtime.update({"precision": precision, "engine": path,
                                      "calibration_data": calibration_data
@@ -233,10 +237,11 @@ class Detector:
     def postprocess(self, raw, orig_shape: tuple[int, int]) -> np.ndarray:
         from ultralytics.utils import nms, ops  # noqa: PLC0415
 
-        if self.device == "mps":
+        if self.host_nms if self.host_nms is not None else self.device == "mps":
             # Measured on an M3 Pro: NMS / top-k filtering on MPS costs 12-18 ms per image
             # (kernel-launch overhead of many small ops), against ~1.2 ms for copying the
             # raw output to the host and filtering there. The copy stays inside this stage.
+            # On CUDA it is a measured option (`host_nms`, reports/w8-postprocess/).
             raw = raw[0] if isinstance(raw, list | tuple) else raw
             raw = raw.float().cpu()
         dets = nms.non_max_suppression(raw, self.conf, self.iou, max_det=self.max_det,

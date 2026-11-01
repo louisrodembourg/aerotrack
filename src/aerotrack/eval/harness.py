@@ -74,7 +74,8 @@ def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float) -> di
                 engine["calibration_data"] = str(PROCESSED_DIR / det_cfg["calibration_data"])
         detector = Detector(weights, backend=acc_backend, device=device, imgsz=det_cfg["imgsz"],
                             conf=det_cfg["conf"], iou=det_cfg["iou"], max_det=det_cfg["max_det"],
-                            half=det_cfg.get("half", False), **tiling, **engine)
+                            half=det_cfg.get("half", False), host_nms=det_cfg.get("host_nms"),
+                            **tiling, **engine)
         print(f"[{name}] accuracy on {len(gt.images)} images, device={device}", flush=True)
         acc = evaluate_detection(gt, cmap, detector, detector.names, det_cfg["max_det"],
                                  _progress(name))
@@ -93,6 +94,7 @@ def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float) -> di
                              conf=lat_cfg["conf"], iou=det_cfg["iou"], max_det=det_cfg["max_det"],
                              half=det_cfg.get("half", False) and backend == "torch",
                              ort_threads=lat_cfg.get("ort_threads"), **tiling,
+                             host_nms=det_cfg.get("host_nms"),
                              **(engine if backend == "tensorrt" else {}))
                 print(f"[{name}] latency backend={backend} device={bdev}", flush=True)
                 lat = benchmark(d, images, lat_cfg["warmup"], lat_cfg["iters"])
