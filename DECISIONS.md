@@ -473,3 +473,16 @@ the same `Detector`, at about USD 399 in October 2026 (USD 249 at launch, out of
 NVIDIA's US store). *Rejected:* renting a cloud L4 (about USD 0.4-0.6 per hour; no more
 embedded than the free T4 for this purpose). Without a Jetson, results are stated as
 "TensorRT on an NVIDIA T4", never as embedded.
+
+## Detection head: one-to-many + NMS on every backend (week 8)
+
+**Checked when the first TensorRT engine came out as (1, 14, 8400).** YOLO26 carries an
+NMS-free (one-to-one) head and a one-to-many head. In Ultralytics 8.4.187 both
+`AutoBackend` on our checkpoints (`end2end` False: output (1, 4 + classes, 8400), measured)
+and every export with the default `nms=None` (`exporter.py`: `model.end2end =
+self.args.nms is False ...`) run the one-to-many head; our postprocess then applies NMS.
+Torch, ONNX Runtime and TensorRT have therefore always run the same head, and every
+published accuracy and latency compares like with like; a test now checks that torch and
+ONNX Runtime agree. *Not done (yet):* switching to the NMS-free head (`end2end=True` /
+`nms=False`), which would drop NMS from the postprocess; it changes the network output,
+so it would be a new, separately measured variant, not a fix.

@@ -276,3 +276,22 @@ def test_tiled_detector_runs_one_batch_and_maps_boxes_to_the_frame():
     h, w = img.shape[:2]
     assert len(det) and (det[:, [0, 2]] <= w + 1).all() and (det[:, [1, 3]] <= h + 1).all()
     assert 0 in det[:, 5].astype(int)  # the people in bus.jpg survive the merge
+
+
+def test_onnx_runs_the_same_head_as_torch():
+    """Torch (AutoBackend) and the ONNX export both run YOLO26's one-to-many head + NMS
+    with Ultralytics' defaults (DECISIONS.md): same detections, so their rows compare."""
+    import cv2
+    from ultralytics.utils import ASSETS
+
+    from aerotrack.inference import Detector
+
+    img = cv2.imread(str(ASSETS / "bus.jpg"))
+    pt = Detector("yolo26n.pt", device="cpu", conf=0.5)
+    ort = Detector("yolo26n.pt", backend="onnxruntime", conf=0.5)
+    assert pt.end2end == ort.end2end
+    a, b = pt(img), ort(img)
+    assert len(a) == len(b)
+    a, b = a[np.lexsort(a[:, :2].T)], b[np.lexsort(b[:, :2].T)]
+    assert a[:, 5].tolist() == b[:, 5].tolist()
+    assert np.abs(a[:, :4] - b[:, :4]).max() < 2.0  # px: fp32 graph vs eager

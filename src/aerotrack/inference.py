@@ -219,13 +219,13 @@ class Detector:
         padded = np.stack([self.letterbox(image=img_bgr[y0:y1, x0:x1])
                            for x0, y0, x1, y1 in self._crops])
         chw = np.ascontiguousarray(padded[..., ::-1].transpose(0, 3, 1, 2))
-        if self.backend == "torch":
+        if self.backend in ("torch", "tensorrt"):
             t = torch.from_numpy(chw).to(self.device, non_blocking=True)
             return (t.half() if self.half else t.float()).div_(255)
         return chw.astype(np.float32) / 255.0
 
     def infer(self, inp):
-        if self.backend == "torch":
+        if self.backend in ("torch", "tensorrt"):
             with torch.inference_mode():
                 return self.model(inp)
         return torch.from_numpy(self.session.run(None, {self.input_name: inp})[0])
