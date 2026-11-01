@@ -37,6 +37,7 @@ dependencies = [
 
 [package.optional-dependencies]
 trt = [
+    { name = "tensorrt-cu12", marker = "sys_platform == 'linux'" },
     { name = "tensorrt-cu12-bindings", marker = "sys_platform == 'linux'" },
     { name = "tensorrt-cu12-libs", marker = "sys_platform == 'linux'" },
 ]
@@ -59,6 +60,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "tabulate", specifier = ">=0.10.0" },
+    { name = "tensorrt-cu12", marker = "sys_platform == 'linux' and extra == 'trt'", specifier = ">=10.9,<11", index = "https://pypi.nvidia.com/" },
     { name = "tensorrt-cu12-bindings", marker = "sys_platform == 'linux' and extra == 'trt'", specifier = ">=10.9,<11", index = "https://pypi.nvidia.com/" },
     { name = "tensorrt-cu12-libs", marker = "sys_platform == 'linux' and extra == 'trt'", specifier = ">=10.9,<11", index = "https://pypi.nvidia.com/" },
     { name = "torch", marker = "sys_platform != 'linux'", specifier = ">=2.4" },
@@ -1108,6 +1110,16 @@ sdist = { url = "https://files.pythonhosted.org/packages/46/58/8c37dea7bbf769b20
 wheels = [
     { url = "https://files.pythonhosted.org/packages/99/55/db07de81b5c630da5cbf5c7df646580ca26dfaefa593667fc6f2fe016d2e/tabulate-0.10.0-py3-none-any.whl", hash = "sha256:f0b0622e567335c8fabaaa659f1b33bcb6ddfe2e496071b743aa113f8774f2d3", size = 39814, upload-time = "2026-03-04T18:55:31.284Z" },
 ]
+
+[[package]]
+name = "tensorrt-cu12"
+version = "10.16.1.11"
+source = { registry = "https://pypi.nvidia.com/" }
+dependencies = [
+    { name = "tensorrt-cu12-bindings" },
+    { name = "tensorrt-cu12-libs" },
+]
+sdist = { url = "https://pypi.nvidia.com/tensorrt-cu12/tensorrt_cu12-10.16.1.11.tar.gz", hash = "sha256:a044fe4a2e2e51fc205d806534102529c6f744402350b7730d221c99ffa6d269" }
 
 [[package]]
 name = "tensorrt-cu12-bindings"

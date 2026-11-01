@@ -12,14 +12,15 @@ dataset:
   class_map: visdrone
   limit: null
 models:
-  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-torch, latency_backends: [torch, onnxruntime]}
-  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-torch-fp16, half: true, latency_backends: [torch]}
+  # TensorRT first: a failure there shows within minutes, not after the references.
   - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-trt-fp16, backend: tensorrt, precision: fp16, latency_backends: [tensorrt]}
   - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-trt-int8, backend: tensorrt, precision: int8, latency_backends: [tensorrt]}
-  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-torch, latency_backends: [torch, onnxruntime]}
-  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-torch-fp16, half: true, latency_backends: [torch]}
   - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-trt-fp16, backend: tensorrt, precision: fp16, latency_backends: [tensorrt]}
   - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-trt-int8, backend: tensorrt, precision: int8, latency_backends: [tensorrt]}
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-torch, latency_backends: [torch, onnxruntime]}
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-torch-fp16, half: true, latency_backends: [torch]}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-torch, latency_backends: [torch, onnxruntime]}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-torch-fp16, half: true, latency_backends: [torch]}
 detection:
   imgsz: 640
   conf: 0.001
