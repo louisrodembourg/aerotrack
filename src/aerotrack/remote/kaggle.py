@@ -24,7 +24,9 @@ from aerotrack.config import load_config
 from aerotrack.experiments import find_train_run
 from aerotrack.paths import REPO_ROOT, REPORTS_DIR, RUNS_DIR
 
-KAGGLE_CLI = ["uvx", "--from", "kaggle==2.2.5", "kaggle"]
+# `six` is imported by the CLI (kaggle/models/upload_file.py) but not declared by it; it
+# stopped arriving transitively on 2026-11-01, breaking every call.
+KAGGLE_CLI = ["uvx", "--from", "kaggle==2.2.5", "--with", "six", "kaggle"]
 # Kaggle's free GPU (the P100 is retired; `kaggle kernels push --help`, CLI 2.2.5).
 ACCELERATOR = "NvidiaTeslaT4"
 KAGGLE_RUNS = "/kaggle/working/runs"
@@ -47,8 +49,10 @@ def username() -> str:
     if cred.exists():
         return json.loads(cred.read_text())["username"]
     # Newer API tokens (~/.kaggle/access_token) do not store the username; the CLI resolves it.
-    view = subprocess.run([*KAGGLE_CLI, "config", "view"], text=True, capture_output=True).stdout
-    if (m := re.search(r"^- username: (\S+)$", view, re.MULTILINE)) and m.group(1) != "None":
+    view = subprocess.run([*KAGGLE_CLI, "config", "view"], text=True, capture_output=True)
+    if view.returncode != 0:  # the CLI itself failed: say so, not "no credentials"
+        raise SystemExit(f"Kaggle CLI failed: {view.stderr.strip().splitlines()[-1]}")
+    if (m := re.search(r"^- username: (\S+)$", view.stdout, re.MULTILINE)) and m.group(1) != "None":
         return m.group(1)
     raise SystemExit("Kaggle credentials not found: create an API token on kaggle.com "
                      "(Settings -> API -> Create New Token) and save it under ~/.kaggle/")
