@@ -32,7 +32,7 @@ ACCELERATOR = "NvidiaTeslaT4"
 KAGGLE_RUNS = "/kaggle/working/runs"
 KAGGLE_REPORTS = "/kaggle/working/reports"
 RESUME_DIR = "/tmp/aerotrack/resume"  # kaggle_kernel.py copies checkpoints there
-BUNDLE_PATHS = ["pyproject.toml", "uv.lock", ".python-version", "README.md", "src", "configs", "scripts"]
+BUNDLE_PATHS = ["pyproject.toml", "uv.lock", ".python-version", "README.md", "src", "configs", "scripts", "cpp"]
 TEMPLATE = Path(__file__).with_name("kaggle_kernel.py")
 
 

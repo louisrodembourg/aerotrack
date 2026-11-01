@@ -91,6 +91,7 @@ def test_eval_job_with_the_cpp_backend_builds_the_cpp_runtime(monkeypatch):
     monkeypatch.setattr(kaggle, "find_train_run", lambda ref: {"id": f"id-{ref}"})
     [job] = kaggle.make_jobs([CONFIGS_DIR / "eval" / "w9_cpp.yaml"], [], None)
     assert job["cpp"]
+    assert "cpp" in kaggle.BUNDLE_PATHS  # the kernel compiles it from the bundle
 
 
 def test_merge_output_brings_reports_back_relocated(tmp_path):
