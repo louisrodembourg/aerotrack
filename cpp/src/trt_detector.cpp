@@ -74,7 +74,7 @@ TrtDetector::TrtDetector(const std::string& engine_path, int imgsz, float conf, 
   if (!context_) throw std::runtime_error("createExecutionContext failed");
 
   for (int i = 0; i < engine_->getNbIOTensors(); ++i) {
-    const char* name = engine_->getTensorName(i);
+    const char* name = engine_->getIOTensorName(i);
     nvinfer1::Dims d = engine_->getTensorShape(name);
     if (engine_->getTensorIOMode(name) == nvinfer1::TensorIOMode::kINPUT) {
       if (!in_name_.empty()) throw std::runtime_error("engine has more than one input");
@@ -99,8 +99,8 @@ TrtDetector::TrtDetector(const std::string& engine_path, int imgsz, float conf, 
   const size_t img_bytes = static_cast<size_t>(imgsz) * imgsz * 3;
   const size_t out_bytes = static_cast<size_t>(channels_) * anchors_ * element_size(out_type_);
   check(cudaStreamCreate(&stream_), "cudaStreamCreate");
-  check(cudaMallocHost(&host_img_, img_bytes), "cudaMallocHost");
-  check(cudaMalloc(&dev_img_, img_bytes), "cudaMalloc");
+  check(cudaMallocHost(reinterpret_cast<void**>(&host_img_), img_bytes), "cudaMallocHost");
+  check(cudaMalloc(reinterpret_cast<void**>(&dev_img_), img_bytes), "cudaMalloc");
   check(cudaMalloc(&dev_in_, img_bytes * element_size(in_type_)), "cudaMalloc");
   check(cudaMalloc(&dev_out_, out_bytes), "cudaMalloc");
   check(cudaMallocHost(&host_out_, out_bytes), "cudaMallocHost");
