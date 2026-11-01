@@ -553,3 +553,14 @@ not assumed.
 (descending score order, IoU > threshold suppresses, float arithmetic), then `scale_boxes`
 and clipping. Same detections as the Python postprocess up to the order of equal scores,
 which torch's unstable `argsort` leaves arbitrary (`tests/test_cpp.py`).
+
+**Measured (`reports/w9-cpp/`, Kaggle T4, TensorRT 10.16.1.11 linked from C++, g++ 13.3,
+one session, same engines as the Python rows).** Accuracy unchanged: mAP50-95 14.2 / 22.6
+for both runtimes, per-class AP within 0.1, AP_large at 1280 42.6 vs 43.2 (the ±1 pixels of
+the letterbox). Median end to end 10.1 → 5.3 ms at 640, 19.5 → 14.1 ms at 1280; p95 17.1 →
+6.3 and 30.2 → 16.5 ms. Per stage: inference 3.7 → 2.1 and 6.6 → 4.9 ms on the same engine
+(AutoBackend's per-call Python and torch work), postprocess 4.2 → 0.3 and 5.9 → 0.8 ms
+(Ultralytics' NMS in torch vs a plain loop), preprocess 2.2 → 2.9 and 6.7 → 8.2 ms: slower,
+because the letterbox is single-threaded scalar code against OpenCV's SIMD and threads.
+That is now the largest stage at 1280 and the next target (resize on the GPU from the
+uploaded original frame, or threads), not yet a result.

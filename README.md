@@ -25,8 +25,9 @@ training at the higher resolution. Week 6: ByteTrack with a from-scratch Kalman 
 end to end on VisDrone-MOT test-dev, thresholds tuned on unseen MOT sequences, and the
 hybrid keyframe mode. Copy-paste of rare objects, tried last, brought nothing: the plain
 detectors are the reference. Week 8: TensorRT FP16 / INT8 on an NVIDIA T4 (hardware
-decision: DECISIONS.md). NMS moved to the host on every GPU. Next:
-INT8 QAT, C++ runtime.
+decision: DECISIONS.md). NMS moved to the host on every GPU. Week 9: the C++ runtime
+(letterbox, TensorRT, NMS in C++, `cpp/`), measured against the Python pipeline on the same
+engines. Next: preprocessing on the GPU, INT8 QAT.
 
 | Weeks | Stage |
 |---|---|
@@ -75,6 +76,14 @@ stated.
   4.6-6.2 ms with identical detections: end to end, TensorRT FP16 runs n at 640 in 10.6 ms
   (95 FPS) and n at 1280 in 19.8 ms (51 FPS) on a T4
   ([w8-postprocess](reports/w8-postprocess/results.md)).
+- **The C++ runtime halves the 640 pipeline at identical accuracy.** Same TensorRT FP16
+  engines, same stages, one session on the T4: test-dev mAP50-95 is unchanged (14.2 and
+  22.6), and end to end goes from 10.1 to 5.3 ms at 640 (99 → 187 FPS) and from 19.5 to
+  14.1 ms at 1280 (51 → 71 FPS). The gain is Python overhead: inference 3.7 → 2.1 ms and
+  6.6 → 4.9 ms (same engine), NMS 4.2 → 0.3 ms and 5.9 → 0.8 ms. p95 drops from 17.1 to
+  6.3 ms and from 30.2 to 16.5 ms. Preprocessing is now the largest stage: the hand-written
+  letterbox (single-threaded, no SIMD) is slower than OpenCV's, 2.9 vs 2.2 ms and 8.2 vs
+  6.7 ms ([w9-cpp](reports/w9-cpp/results.md)).
 - **Copy-paste of rare small objects does not help here.** Pasting objects of the five
   rarest classes into training images changes test-dev mAP by -0.1 (640) and -0.2 (1280),
   and the rare classes themselves by about a point either way
@@ -339,6 +348,22 @@ Selected tracker thresholds (MOT sequences unseen by the detector, not test-dev)
 | n1280-torch | torch | Tesla T4 | torch 2.14.1+cu126, TRT 10.16.1.11 | 6.7 | 12.1 | 16.4 | 35.4 | 71.3 | 28.3 | yes |
 | n1280-torch | onnxruntime | Intel(R) Xeon(R) CPU @ 2.00GHz | ORT 1.31.0, TRT 10.16.1.11 | 13.5 | 168.1 | 7.3 | 189.9 | 319.0 | 5.3 | no |
 | n1280-torch-fp16 | torch fp16 | Tesla T4 | torch 2.14.1+cu126, TRT 10.16.1.11 | 6.6 | 9.7 | 16.7 | 33.5 | 70.5 | 29.9 | yes |
+
+#### w9-cpp ([full report](reports/w9-cpp/results.md))
+
+| Model | Class map | imgsz | mAP50-95 | mAP50 | AP_small | AP_medium | AP_large | Images | Run |
+|---|---|---|---|---|---|---|---|---|---|
+| n640-trt-fp16-python | visdrone | 640 | 14.2 | 25.5 | 6.4 | 21.3 | 33.7 | 1610 | `20261101-211148-w9-cpp-n640-trt-fp16-python-fd2254` |
+| n640-trt-fp16-cpp | visdrone | 640 | 14.2 | 25.4 | 6.4 | 21.4 | 33.7 | 1610 | `20261101-212259-w9-cpp-n640-trt-fp16-cpp-0146f9` |
+| n1280-trt-fp16-python | visdrone | 1280 | 22.6 | 39.0 | 13.0 | 32.6 | 43.2 | 1610 | `20261101-212655-w9-cpp-n1280-trt-fp16-python-7e79e3` |
+| n1280-trt-fp16-cpp | visdrone | 1280 | 22.6 | 39.0 | 13.0 | 32.6 | 42.6 | 1610 | `20261101-213634-w9-cpp-n1280-trt-fp16-cpp-f0404d` |
+
+| Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|
+| n640-trt-fp16-python | tensorrt fp16 | Tesla T4 | TRT 10.16.1.11 | 2.2 | 3.7 | 4.2 | 10.1 | 17.1 | 98.6 | yes |
+| n640-trt-fp16-cpp | cpp fp16 | Tesla T4 | GNU 13.3.0, TRT 10.16.1.11 | 2.9 | 2.1 | 0.3 | 5.3 | 6.3 | 187.4 | yes |
+| n1280-trt-fp16-python | tensorrt fp16 | Tesla T4 | TRT 10.16.1.11 | 6.7 | 6.6 | 5.9 | 19.5 | 30.2 | 51.2 | yes |
+| n1280-trt-fp16-cpp | cpp fp16 | Tesla T4 | GNU 13.3.0, TRT 10.16.1.11 | 8.2 | 4.9 | 0.8 | 14.1 | 16.5 | 70.8 | yes |
 
 <!-- results:end -->
 
