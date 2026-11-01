@@ -1,0 +1,872 @@
+{
+  "name": "w9-cpp-preprocess",
+  "config": {
+    "name": "w9-cpp-preprocess",
+    "seed": 0,
+    "device": "auto",
+    "dataset": {
+      "gt": "visdrone_det/gt/test-dev.json",
+      "class_map": "visdrone",
+      "limit": null
+    },
+    "models": [
+      {
+        "run": "visdrone-yolo26n-640",
+        "imgsz": 640,
+        "name": "n640-cpp-host-pre",
+        "backend": "cpp",
+        "precision": "fp16",
+        "gpu_preprocess": false
+      },
+      {
+        "run": "visdrone-yolo26n-640",
+        "imgsz": 640,
+        "name": "n640-cpp-gpu-pre",
+        "backend": "cpp",
+        "precision": "fp16",
+        "gpu_preprocess": true
+      },
+      {
+        "run": "visdrone-yolo26n-1280",
+        "imgsz": 1280,
+        "name": "n1280-cpp-host-pre",
+        "backend": "cpp",
+        "precision": "fp16",
+        "gpu_preprocess": false
+      },
+      {
+        "run": "visdrone-yolo26n-1280",
+        "imgsz": 1280,
+        "name": "n1280-cpp-gpu-pre",
+        "backend": "cpp",
+        "precision": "fp16",
+        "gpu_preprocess": true
+      }
+    ],
+    "detection": {
+      "imgsz": 640,
+      "conf": 0.001,
+      "iou": 0.7,
+      "max_det": 500,
+      "half": false,
+      "host_nms": null,
+      "gpu_preprocess": false,
+      "calibration_data": "visdrone_det/dataset.yaml"
+    },
+    "latency": {
+      "enabled": true,
+      "backends": [
+        "cpp"
+      ],
+      "conf": 0.25,
+      "n_images": 50,
+      "warmup": 50,
+      "iters": 300
+    },
+    "report_dir": "/kaggle/working/reports/w9-cpp-preprocess",
+    "_source": "configs/eval/w9_cpp_preprocess.yaml"
+  },
+  "budget_fps": 25,
+  "results": [
+    {
+      "model": "n640-cpp-host-pre",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261025-192839-visdrone-yolo26n-640-540b95/weights/best.pt",
+      "run_id": "20261101-222601-w9-cpp-preprocess-n640-cpp-host-pre-608d91",
+      "train_run": "20261025-192839-visdrone-yolo26n-640-540b95",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "visdrone_det/gt/test-dev.json",
+        "class_map": "visdrone",
+        "limit": null,
+        "n_images": 1610
+      },
+      "accuracy": {
+        "mAP50-95": 0.1416864937926611,
+        "mAP50": 0.25462003550171913,
+        "mAP75": 0.14025207803274006,
+        "AP_small": 0.06360865223147301,
+        "AP_medium": 0.2134466962719189,
+        "AP_large": 0.3374117059999256,
+        "AR500": 0.23905732231027893,
+        "max_det": 500,
+        "n_images": 1610,
+        "n_gt": 74687,
+        "n_dets": 634308,
+        "per_class": {
+          "pedestrian": {
+            "AP": 0.09221743968358638,
+            "AP50": 0.2407370489290841,
+            "n_gt": 20749
+          },
+          "people": {
+            "AP": 0.041554724215812036,
+            "AP50": 0.12156590286784354,
+            "n_gt": 6317
+          },
+          "bicycle": {
+            "AP": 0.02385551119800538,
+            "AP50": 0.05297562563912085,
+            "n_gt": 1294
+          },
+          "car": {
+            "AP": 0.40498558878602464,
+            "AP50": 0.6712362862995132,
+            "n_gt": 28029
+          },
+          "van": {
+            "AP": 0.14873161457453501,
+            "AP50": 0.22410362241538542,
+            "n_gt": 5762
+          },
+          "truck": {
+            "AP": 0.1874751225499691,
+            "AP50": 0.29962523140031944,
+            "n_gt": 2653
+          },
+          "tricycle": {
+            "AP": 0.06567383352987155,
+            "AP50": 0.1326044697853195,
+            "n_gt": 525
+          },
+          "awning-tricycle": {
+            "AP": 0.04959066142916528,
+            "AP50": 0.09507473308439146,
+            "n_gt": 594
+          },
+          "bus": {
+            "AP": 0.30456072741321827,
+            "AP50": 0.4520807016496154,
+            "n_gt": 2939
+          },
+          "motor": {
+            "AP": 0.09821971454642338,
+            "AP50": 0.2561967329465986,
+            "n_gt": 5825
+          }
+        },
+        "class_map": "visdrone",
+        "model_class_to_target": {
+          "pedestrian": "pedestrian",
+          "people": "people",
+          "bicycle": "bicycle",
+          "car": "car",
+          "van": "van",
+          "truck": "truck",
+          "tricycle": "tricycle",
+          "awning-tricycle": "awning-tricycle",
+          "bus": "bus",
+          "motor": "motor"
+        },
+        "excluded_classes": {},
+        "imgsz": 640,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "cpp",
+          "device": "cuda",
+          "half": false,
+          "host_nms": true,
+          "gpu_preprocess": false,
+          "precision": "fp16",
+          "engine": "/tmp/aerotrack/weights/engine/best_e7c4c905d5e7_640_md500_b1_fp16.engine",
+          "calibration_data": null,
+          "tensorrt_headers": "10.16.1.11",
+          "tensorrt_library": "10.16.1",
+          "compiler": "GNU 13.3.0",
+          "io_dtype": [
+            "float32",
+            "float32"
+          ]
+        }
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 2.521018999914304,
+            "p95_ms": 3.2895981499905247,
+            "mean_ms": 2.6025356066687286,
+            "std_ms": 0.2682037839070508,
+            "min_ms": 2.145055000028151,
+            "max_ms": 3.861376000031669
+          },
+          "inference": {
+            "median_ms": 1.7983210000238614,
+            "p95_ms": 2.4411795499077016,
+            "mean_ms": 1.9477374066620239,
+            "std_ms": 0.30945631652625677,
+            "min_ms": 1.7100050001772615,
+            "max_ms": 3.0078740001044935
+          },
+          "postprocess": {
+            "median_ms": 0.24678900001617876,
+            "p95_ms": 0.358575299947006,
+            "mean_ms": 0.25544662333762364,
+            "std_ms": 0.04539371126685588,
+            "min_ms": 0.19458199994915049,
+            "max_ms": 0.4503360000853718
+          },
+          "total": {
+            "median_ms": 4.692194999847743,
+            "p95_ms": 5.5959646500127755,
+            "mean_ms": 4.805719636668376,
+            "std_ms": 0.3843765613024092,
+            "min_ms": 4.139383999927304,
+            "max_ms": 6.058959000029063
+          },
+          "fps_median": 213.11987247598384,
+          "fps_mean": 208.08538067219882,
+          "fps_p95": 178.7001996157565,
+          "iterations": 300,
+          "warmup": 50,
+          "batch": 1,
+          "imgsz": 640,
+          "conf": 0.25,
+          "n_distinct_images": 50,
+          "peak_process_rss_mb": 3906.42578125,
+          "device_memory_mb": null,
+          "runtime": {
+            "backend": "cpp",
+            "device": "cuda",
+            "half": false,
+            "host_nms": true,
+            "gpu_preprocess": false,
+            "precision": "fp16",
+            "engine": "/tmp/aerotrack/weights/engine/best_e7c4c905d5e7_640_md500_b1_fp16.engine",
+            "calibration_data": null,
+            "tensorrt_headers": "10.16.1.11",
+            "tensorrt_library": "10.16.1",
+            "compiler": "GNU 13.3.0",
+            "io_dtype": [
+              "float32",
+              "float32"
+            ]
+          },
+          "end2end_head": false,
+          "env": {
+            "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+            "machine": "x86_64",
+            "cpu": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+            "python": "3.12.3",
+            "torch": "2.14.1+cu126",
+            "torch_cuda": "12.6",
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": "10.16.1.11",
+            "jetson_power_mode": null,
+            "macos_power": null,
+            "device": "cuda",
+            "device_name": "Tesla T4"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess"
+          ],
+          "tracking_included": false,
+          "budget_fps": 25,
+          "meets_budget_median": true
+        }
+      ]
+    },
+    {
+      "model": "n640-cpp-gpu-pre",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261025-192839-visdrone-yolo26n-640-540b95/weights/best.pt",
+      "run_id": "20261101-223514-w9-cpp-preprocess-n640-cpp-gpu-pre-b3166f",
+      "train_run": "20261025-192839-visdrone-yolo26n-640-540b95",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "visdrone_det/gt/test-dev.json",
+        "class_map": "visdrone",
+        "limit": null,
+        "n_images": 1610
+      },
+      "accuracy": {
+        "mAP50-95": 0.1416864937926611,
+        "mAP50": 0.25462003550171913,
+        "mAP75": 0.14025207803274006,
+        "AP_small": 0.06360865223147301,
+        "AP_medium": 0.2134466962719189,
+        "AP_large": 0.3374117059999256,
+        "AR500": 0.23905732231027893,
+        "max_det": 500,
+        "n_images": 1610,
+        "n_gt": 74687,
+        "n_dets": 634308,
+        "per_class": {
+          "pedestrian": {
+            "AP": 0.09221743968358638,
+            "AP50": 0.2407370489290841,
+            "n_gt": 20749
+          },
+          "people": {
+            "AP": 0.041554724215812036,
+            "AP50": 0.12156590286784354,
+            "n_gt": 6317
+          },
+          "bicycle": {
+            "AP": 0.02385551119800538,
+            "AP50": 0.05297562563912085,
+            "n_gt": 1294
+          },
+          "car": {
+            "AP": 0.40498558878602464,
+            "AP50": 0.6712362862995132,
+            "n_gt": 28029
+          },
+          "van": {
+            "AP": 0.14873161457453501,
+            "AP50": 0.22410362241538542,
+            "n_gt": 5762
+          },
+          "truck": {
+            "AP": 0.1874751225499691,
+            "AP50": 0.29962523140031944,
+            "n_gt": 2653
+          },
+          "tricycle": {
+            "AP": 0.06567383352987155,
+            "AP50": 0.1326044697853195,
+            "n_gt": 525
+          },
+          "awning-tricycle": {
+            "AP": 0.04959066142916528,
+            "AP50": 0.09507473308439146,
+            "n_gt": 594
+          },
+          "bus": {
+            "AP": 0.30456072741321827,
+            "AP50": 0.4520807016496154,
+            "n_gt": 2939
+          },
+          "motor": {
+            "AP": 0.09821971454642338,
+            "AP50": 0.2561967329465986,
+            "n_gt": 5825
+          }
+        },
+        "class_map": "visdrone",
+        "model_class_to_target": {
+          "pedestrian": "pedestrian",
+          "people": "people",
+          "bicycle": "bicycle",
+          "car": "car",
+          "van": "van",
+          "truck": "truck",
+          "tricycle": "tricycle",
+          "awning-tricycle": "awning-tricycle",
+          "bus": "bus",
+          "motor": "motor"
+        },
+        "excluded_classes": {},
+        "imgsz": 640,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "cpp",
+          "device": "cuda",
+          "half": false,
+          "host_nms": true,
+          "gpu_preprocess": true,
+          "precision": "fp16",
+          "engine": "/tmp/aerotrack/weights/engine/best_e7c4c905d5e7_640_md500_b1_fp16.engine",
+          "calibration_data": null,
+          "tensorrt_headers": "10.16.1.11",
+          "tensorrt_library": "10.16.1",
+          "compiler": "GNU 13.3.0",
+          "io_dtype": [
+            "float32",
+            "float32"
+          ]
+        }
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 0.7988030000660729,
+            "p95_ms": 1.4471893499148791,
+            "mean_ms": 0.9001681299901065,
+            "std_ms": 0.26404607410157355,
+            "min_ms": 0.4053950001434714,
+            "max_ms": 1.5438860000358545
+          },
+          "inference": {
+            "median_ms": 1.656263499967281,
+            "p95_ms": 2.0611382001447964,
+            "mean_ms": 1.742299170005784,
+            "std_ms": 0.1817148393422368,
+            "min_ms": 1.6388680001000466,
+            "max_ms": 3.241167999931349
+          },
+          "postprocess": {
+            "median_ms": 0.2441714999577016,
+            "p95_ms": 0.35498605010388934,
+            "mean_ms": 0.25440256000820227,
+            "std_ms": 0.044716165541434975,
+            "min_ms": 0.19577400007619872,
+            "max_ms": 0.4279110000879882
+          },
+          "total": {
+            "median_ms": 2.727540500018222,
+            "p95_ms": 3.49357099981944,
+            "mean_ms": 2.896869860004093,
+            "std_ms": 0.3324500734200369,
+            "min_ms": 2.330562999986796,
+            "max_ms": 4.349997999952393
+          },
+          "fps_median": 366.63066964296934,
+          "fps_mean": 345.2001809976328,
+          "fps_p95": 286.24006784224036,
+          "iterations": 300,
+          "warmup": 50,
+          "batch": 1,
+          "imgsz": 640,
+          "conf": 0.25,
+          "n_distinct_images": 50,
+          "peak_process_rss_mb": 4085.39453125,
+          "device_memory_mb": null,
+          "runtime": {
+            "backend": "cpp",
+            "device": "cuda",
+            "half": false,
+            "host_nms": true,
+            "gpu_preprocess": true,
+            "precision": "fp16",
+            "engine": "/tmp/aerotrack/weights/engine/best_e7c4c905d5e7_640_md500_b1_fp16.engine",
+            "calibration_data": null,
+            "tensorrt_headers": "10.16.1.11",
+            "tensorrt_library": "10.16.1",
+            "compiler": "GNU 13.3.0",
+            "io_dtype": [
+              "float32",
+              "float32"
+            ]
+          },
+          "end2end_head": false,
+          "env": {
+            "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+            "machine": "x86_64",
+            "cpu": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+            "python": "3.12.3",
+            "torch": "2.14.1+cu126",
+            "torch_cuda": "12.6",
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": "10.16.1.11",
+            "jetson_power_mode": null,
+            "macos_power": null,
+            "device": "cuda",
+            "device_name": "Tesla T4"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess"
+          ],
+          "tracking_included": false,
+          "budget_fps": 25,
+          "meets_budget_median": true
+        }
+      ]
+    },
+    {
+      "model": "n1280-cpp-host-pre",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261026-121849-visdrone-yolo26n-1280-88e380/weights/best.pt",
+      "run_id": "20261101-223904-w9-cpp-preprocess-n1280-cpp-host-pre-f61f90",
+      "train_run": "20261026-121849-visdrone-yolo26n-1280-88e380",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "visdrone_det/gt/test-dev.json",
+        "class_map": "visdrone",
+        "limit": null,
+        "n_images": 1610
+      },
+      "accuracy": {
+        "mAP50-95": 0.22554579320774606,
+        "mAP50": 0.3895185474702637,
+        "mAP75": 0.22463232347470197,
+        "AP_small": 0.12961001849374681,
+        "AP_medium": 0.3258116094232295,
+        "AP_large": 0.42589689074562487,
+        "AR500": 0.3558580653503094,
+        "max_det": 500,
+        "n_images": 1610,
+        "n_gt": 74687,
+        "n_dets": 560227,
+        "per_class": {
+          "pedestrian": {
+            "AP": 0.1798512936421092,
+            "AP50": 0.4280076155282312,
+            "n_gt": 20749
+          },
+          "people": {
+            "AP": 0.08935362571141002,
+            "AP50": 0.24187550817982972,
+            "n_gt": 6317
+          },
+          "bicycle": {
+            "AP": 0.07046712803064643,
+            "AP50": 0.16114664380348395,
+            "n_gt": 1294
+          },
+          "car": {
+            "AP": 0.5091074625748737,
+            "AP50": 0.7904536935942688,
+            "n_gt": 28029
+          },
+          "van": {
+            "AP": 0.24624741862727775,
+            "AP50": 0.34760595503208813,
+            "n_gt": 5762
+          },
+          "truck": {
+            "AP": 0.2870897020351784,
+            "AP50": 0.43771806336552094,
+            "n_gt": 2653
+          },
+          "tricycle": {
+            "AP": 0.14363879633353757,
+            "AP50": 0.25958623095943933,
+            "n_gt": 525
+          },
+          "awning-tricycle": {
+            "AP": 0.1382924534859088,
+            "AP50": 0.22069888691015205,
+            "n_gt": 594
+          },
+          "bus": {
+            "AP": 0.40149324475192977,
+            "AP50": 0.5640932820615966,
+            "n_gt": 2939
+          },
+          "motor": {
+            "AP": 0.18991680688458923,
+            "AP50": 0.44399959526802685,
+            "n_gt": 5825
+          }
+        },
+        "class_map": "visdrone",
+        "model_class_to_target": {
+          "pedestrian": "pedestrian",
+          "people": "people",
+          "bicycle": "bicycle",
+          "car": "car",
+          "van": "van",
+          "truck": "truck",
+          "tricycle": "tricycle",
+          "awning-tricycle": "awning-tricycle",
+          "bus": "bus",
+          "motor": "motor"
+        },
+        "excluded_classes": {},
+        "imgsz": 1280,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "cpp",
+          "device": "cuda",
+          "half": false,
+          "host_nms": true,
+          "gpu_preprocess": false,
+          "precision": "fp16",
+          "engine": "/tmp/aerotrack/weights/engine/best_5904a8e2e5b0_1280_md500_b1_fp16.engine",
+          "calibration_data": null,
+          "tensorrt_headers": "10.16.1.11",
+          "tensorrt_library": "10.16.1",
+          "compiler": "GNU 13.3.0",
+          "io_dtype": [
+            "float32",
+            "float32"
+          ]
+        }
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 7.3672825000130615,
+            "p95_ms": 9.323756450135079,
+            "mean_ms": 7.643305816659449,
+            "std_ms": 0.7835023422252374,
+            "min_ms": 5.987379000089277,
+            "max_ms": 10.260985000059009
+          },
+          "inference": {
+            "median_ms": 4.362170500144202,
+            "p95_ms": 5.081275299926347,
+            "mean_ms": 4.4911862466688035,
+            "std_ms": 0.24685606578200425,
+            "min_ms": 4.316746999847965,
+            "max_ms": 5.287097000064023
+          },
+          "postprocess": {
+            "median_ms": 0.7888659999935044,
+            "p95_ms": 1.1368568498369314,
+            "mean_ms": 0.8315439600005448,
+            "std_ms": 0.13281341756798215,
+            "min_ms": 0.6862709999495564,
+            "max_ms": 1.451137000003655
+          },
+          "total": {
+            "median_ms": 12.635091000106513,
+            "p95_ms": 14.579743800140932,
+            "mean_ms": 12.966036023328797,
+            "std_ms": 0.8535185532464236,
+            "min_ms": 11.205056999870067,
+            "max_ms": 15.771095999980389
+          },
+          "fps_median": 79.14466148218244,
+          "fps_mean": 77.12457363227871,
+          "fps_p95": 68.58831085840711,
+          "iterations": 300,
+          "warmup": 50,
+          "batch": 1,
+          "imgsz": 1280,
+          "conf": 0.25,
+          "n_distinct_images": 50,
+          "peak_process_rss_mb": 4085.39453125,
+          "device_memory_mb": null,
+          "runtime": {
+            "backend": "cpp",
+            "device": "cuda",
+            "half": false,
+            "host_nms": true,
+            "gpu_preprocess": false,
+            "precision": "fp16",
+            "engine": "/tmp/aerotrack/weights/engine/best_5904a8e2e5b0_1280_md500_b1_fp16.engine",
+            "calibration_data": null,
+            "tensorrt_headers": "10.16.1.11",
+            "tensorrt_library": "10.16.1",
+            "compiler": "GNU 13.3.0",
+            "io_dtype": [
+              "float32",
+              "float32"
+            ]
+          },
+          "end2end_head": false,
+          "env": {
+            "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+            "machine": "x86_64",
+            "cpu": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+            "python": "3.12.3",
+            "torch": "2.14.1+cu126",
+            "torch_cuda": "12.6",
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": "10.16.1.11",
+            "jetson_power_mode": null,
+            "macos_power": null,
+            "device": "cuda",
+            "device_name": "Tesla T4"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess"
+          ],
+          "tracking_included": false,
+          "budget_fps": 25,
+          "meets_budget_median": true
+        }
+      ]
+    },
+    {
+      "model": "n1280-cpp-gpu-pre",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261026-121849-visdrone-yolo26n-1280-88e380/weights/best.pt",
+      "run_id": "20261101-224631-w9-cpp-preprocess-n1280-cpp-gpu-pre-444ba1",
+      "train_run": "20261026-121849-visdrone-yolo26n-1280-88e380",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "visdrone_det/gt/test-dev.json",
+        "class_map": "visdrone",
+        "limit": null,
+        "n_images": 1610
+      },
+      "accuracy": {
+        "mAP50-95": 0.22554579320774606,
+        "mAP50": 0.3895185474702637,
+        "mAP75": 0.22463232347470197,
+        "AP_small": 0.12961001849374681,
+        "AP_medium": 0.3258116094232295,
+        "AP_large": 0.42589689074562487,
+        "AR500": 0.3558580653503094,
+        "max_det": 500,
+        "n_images": 1610,
+        "n_gt": 74687,
+        "n_dets": 560227,
+        "per_class": {
+          "pedestrian": {
+            "AP": 0.1798512936421092,
+            "AP50": 0.4280076155282312,
+            "n_gt": 20749
+          },
+          "people": {
+            "AP": 0.08935362571141002,
+            "AP50": 0.24187550817982972,
+            "n_gt": 6317
+          },
+          "bicycle": {
+            "AP": 0.07046712803064643,
+            "AP50": 0.16114664380348395,
+            "n_gt": 1294
+          },
+          "car": {
+            "AP": 0.5091074625748737,
+            "AP50": 0.7904536935942688,
+            "n_gt": 28029
+          },
+          "van": {
+            "AP": 0.24624741862727775,
+            "AP50": 0.34760595503208813,
+            "n_gt": 5762
+          },
+          "truck": {
+            "AP": 0.2870897020351784,
+            "AP50": 0.43771806336552094,
+            "n_gt": 2653
+          },
+          "tricycle": {
+            "AP": 0.14363879633353757,
+            "AP50": 0.25958623095943933,
+            "n_gt": 525
+          },
+          "awning-tricycle": {
+            "AP": 0.1382924534859088,
+            "AP50": 0.22069888691015205,
+            "n_gt": 594
+          },
+          "bus": {
+            "AP": 0.40149324475192977,
+            "AP50": 0.5640932820615966,
+            "n_gt": 2939
+          },
+          "motor": {
+            "AP": 0.18991680688458923,
+            "AP50": 0.44399959526802685,
+            "n_gt": 5825
+          }
+        },
+        "class_map": "visdrone",
+        "model_class_to_target": {
+          "pedestrian": "pedestrian",
+          "people": "people",
+          "bicycle": "bicycle",
+          "car": "car",
+          "van": "van",
+          "truck": "truck",
+          "tricycle": "tricycle",
+          "awning-tricycle": "awning-tricycle",
+          "bus": "bus",
+          "motor": "motor"
+        },
+        "excluded_classes": {},
+        "imgsz": 1280,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "cpp",
+          "device": "cuda",
+          "half": false,
+          "host_nms": true,
+          "gpu_preprocess": true,
+          "precision": "fp16",
+          "engine": "/tmp/aerotrack/weights/engine/best_5904a8e2e5b0_1280_md500_b1_fp16.engine",
+          "calibration_data": null,
+          "tensorrt_headers": "10.16.1.11",
+          "tensorrt_library": "10.16.1",
+          "compiler": "GNU 13.3.0",
+          "io_dtype": [
+            "float32",
+            "float32"
+          ]
+        }
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 0.8471744999951625,
+            "p95_ms": 1.526470500039068,
+            "mean_ms": 0.9667733133377018,
+            "std_ms": 0.28160551134733425,
+            "min_ms": 0.4829050001262658,
+            "max_ms": 1.7627049999191513
+          },
+          "inference": {
+            "median_ms": 4.626842500101702,
+            "p95_ms": 4.709585599948696,
+            "mean_ms": 4.62467112666521,
+            "std_ms": 0.049110332843908755,
+            "min_ms": 4.512965999992957,
+            "max_ms": 4.784241999914229
+          },
+          "postprocess": {
+            "median_ms": 0.7689459998800885,
+            "p95_ms": 1.072569449877392,
+            "mean_ms": 0.8058308933406503,
+            "std_ms": 0.11793819934875828,
+            "min_ms": 0.6824459999279497,
+            "max_ms": 1.3567759999659756
+          },
+          "total": {
+            "median_ms": 6.269118500085824,
+            "p95_ms": 7.117313999992803,
+            "mean_ms": 6.397275333343562,
+            "std_ms": 0.3323891101671487,
+            "min_ms": 5.790499000113414,
+            "max_ms": 7.490420999829439
+          },
+          "fps_median": 159.51205898984205,
+          "fps_mean": 156.31654851368512,
+          "fps_p95": 140.50244235409752,
+          "iterations": 300,
+          "warmup": 50,
+          "batch": 1,
+          "imgsz": 1280,
+          "conf": 0.25,
+          "n_distinct_images": 50,
+          "peak_process_rss_mb": 4085.39453125,
+          "device_memory_mb": null,
+          "runtime": {
+            "backend": "cpp",
+            "device": "cuda",
+            "half": false,
+            "host_nms": true,
+            "gpu_preprocess": true,
+            "precision": "fp16",
+            "engine": "/tmp/aerotrack/weights/engine/best_5904a8e2e5b0_1280_md500_b1_fp16.engine",
+            "calibration_data": null,
+            "tensorrt_headers": "10.16.1.11",
+            "tensorrt_library": "10.16.1",
+            "compiler": "GNU 13.3.0",
+            "io_dtype": [
+              "float32",
+              "float32"
+            ]
+          },
+          "end2end_head": false,
+          "env": {
+            "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+            "machine": "x86_64",
+            "cpu": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+            "python": "3.12.3",
+            "torch": "2.14.1+cu126",
+            "torch_cuda": "12.6",
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": "10.16.1.11",
+            "jetson_power_mode": null,
+            "macos_power": null,
+            "device": "cuda",
+            "device_name": "Tesla T4"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess"
+          ],
+          "tracking_included": false,
+          "budget_fps": 25,
+          "meets_budget_median": true
+        }
+      ]
+    }
+  ]
+}

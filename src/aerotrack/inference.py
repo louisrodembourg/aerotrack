@@ -137,7 +137,7 @@ class Detector:
         precision: str = "fp16",
         calibration_data: str | None = None,
         host_nms: bool | None = None,
-        gpu_preprocess: bool = False,
+        gpu_preprocess: bool | None = None,
     ) -> None:
         configure()
         from ultralytics.data.augment import LetterBox  # noqa: PLC0415
@@ -153,6 +153,9 @@ class Detector:
         self.host_nms = host_nms
         if gpu_preprocess and backend != "cpp":
             raise ValueError("gpu_preprocess is an option of the cpp backend")
+        # Default on for cpp: 7.4 -> 0.8 ms at 1280 on a T4, identical detections
+        # (reports/w9-cpp-preprocess/). False restores the host letterbox (reports/w9-cpp/).
+        gpu_preprocess = backend == "cpp" if gpu_preprocess is None else gpu_preprocess
 
         if backend in ("torch", "tensorrt"):
             from ultralytics.nn.autobackend import AutoBackend  # noqa: PLC0415

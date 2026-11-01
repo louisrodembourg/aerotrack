@@ -27,7 +27,7 @@ hybrid keyframe mode. Copy-paste of rare objects, tried last, brought nothing: t
 detectors are the reference. Week 8: TensorRT FP16 / INT8 on an NVIDIA T4 (hardware
 decision: DECISIONS.md). NMS moved to the host on every GPU. Week 9: the C++ runtime
 (letterbox, TensorRT, NMS in C++, `cpp/`), measured against the Python pipeline on the same
-engines. Next: preprocessing on the GPU, INT8 QAT.
+engines, then preprocessing moved to the GPU. Next: INT8 QAT, tracking in C++.
 
 | Weeks | Stage |
 |---|---|
@@ -84,6 +84,13 @@ stated.
   6.3 ms and from 30.2 to 16.5 ms. Preprocessing is now the largest stage: the hand-written
   letterbox (single-threaded, no SIMD) is slower than OpenCV's, 2.9 vs 2.2 ms and 8.2 vs
   6.7 ms ([w9-cpp](reports/w9-cpp/results.md)).
+- **Preprocessing on the GPU: n at 1280 in 6.3 ms (160 FPS) on a T4.** Uploading the
+  original frame and letterboxing it in one CUDA kernel, with the host's integer arithmetic,
+  gives identical detections (same mAP50-95 and per-class AP) and cuts preprocessing from
+  2.5 to 0.8 ms at 640 and from 7.4 to 0.8 ms at 1280: end to end 4.7 → 2.7 ms (367 FPS) and
+  12.6 → 6.3 ms, p95 3.5 and 7.1 ms. It is the C++ runtime's default
+  ([w9-cpp-preprocess](reports/w9-cpp-preprocess/results.md)). From the Python TensorRT
+  pipeline (19.5 ms at 1280), the C++ runtime is 3x faster at the same accuracy.
 - **Copy-paste of rare small objects does not help here.** Pasting objects of the five
   rarest classes into training images changes test-dev mAP by -0.1 (640) and -0.2 (1280),
   and the rare classes themselves by about a point either way
@@ -364,6 +371,22 @@ Selected tracker thresholds (MOT sequences unseen by the detector, not test-dev)
 | n640-trt-fp16-cpp | cpp fp16 | Tesla T4 | GNU 13.3.0, TRT 10.16.1.11 | 2.9 | 2.1 | 0.3 | 5.3 | 6.3 | 187.4 | yes |
 | n1280-trt-fp16-python | tensorrt fp16 | Tesla T4 | TRT 10.16.1.11 | 6.7 | 6.6 | 5.9 | 19.5 | 30.2 | 51.2 | yes |
 | n1280-trt-fp16-cpp | cpp fp16 | Tesla T4 | GNU 13.3.0, TRT 10.16.1.11 | 8.2 | 4.9 | 0.8 | 14.1 | 16.5 | 70.8 | yes |
+
+#### w9-cpp-preprocess ([full report](reports/w9-cpp-preprocess/results.md))
+
+| Model | Class map | imgsz | mAP50-95 | mAP50 | AP_small | AP_medium | AP_large | Images | Run |
+|---|---|---|---|---|---|---|---|---|---|
+| n640-cpp-host-pre | visdrone | 640 | 14.2 | 25.5 | 6.4 | 21.3 | 33.7 | 1610 | `20261101-222601-w9-cpp-preprocess-n640-cpp-host-pre-608d91` |
+| n640-cpp-gpu-pre | visdrone | 640 | 14.2 | 25.5 | 6.4 | 21.3 | 33.7 | 1610 | `20261101-223514-w9-cpp-preprocess-n640-cpp-gpu-pre-b3166f` |
+| n1280-cpp-host-pre | visdrone | 1280 | 22.6 | 39.0 | 13.0 | 32.6 | 42.6 | 1610 | `20261101-223904-w9-cpp-preprocess-n1280-cpp-host-pre-f61f90` |
+| n1280-cpp-gpu-pre | visdrone | 1280 | 22.6 | 39.0 | 13.0 | 32.6 | 42.6 | 1610 | `20261101-224631-w9-cpp-preprocess-n1280-cpp-gpu-pre-444ba1` |
+
+| Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|
+| n640-cpp-host-pre | cpp fp16 | Tesla T4 | GNU 13.3.0, TRT 10.16.1.11 | 2.5 | 1.8 | 0.2 | 4.7 | 5.6 | 213.1 | yes |
+| n640-cpp-gpu-pre | cpp fp16 | Tesla T4 | GNU 13.3.0, TRT 10.16.1.11 | 0.8 | 1.7 | 0.2 | 2.7 | 3.5 | 366.6 | yes |
+| n1280-cpp-host-pre | cpp fp16 | Tesla T4 | GNU 13.3.0, TRT 10.16.1.11 | 7.4 | 4.4 | 0.8 | 12.6 | 14.6 | 79.1 | yes |
+| n1280-cpp-gpu-pre | cpp fp16 | Tesla T4 | GNU 13.3.0, TRT 10.16.1.11 | 0.8 | 4.6 | 0.8 | 6.3 | 7.1 | 159.5 | yes |
 
 <!-- results:end -->
 

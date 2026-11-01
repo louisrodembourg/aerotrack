@@ -22,6 +22,7 @@ detection:
   max_det: 500
   half: false
   host_nms: null
+  gpu_preprocess: false  # as measured then; the cpp default is now true (w9_cpp_preprocess)
   calibration_data: visdrone_det/dataset.yaml
 latency:
   enabled: true

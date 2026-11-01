@@ -564,3 +564,16 @@ the letterbox). Median end to end 10.1 → 5.3 ms at 640, 19.5 → 14.1 ms at 12
 because the letterbox is single-threaded scalar code against OpenCV's SIMD and threads.
 That is now the largest stage at 1280 and the next target (resize on the GPU from the
 uploaded original frame, or threads), not yet a result.
+
+**Preprocessing on the GPU (`reports/w9-cpp-preprocess/`, T4, one session).** With
+`gpu_preprocess` the original 8-bit frame is uploaded (3.1 MB for a VisDrone frame,
+against 4.9 MB letterboxed at 1280) and one CUDA kernel resizes, pads and converts it. The
+resize taps come from the same `resize_taps` as the host letterbox and the arithmetic is the
+same integers, so the network input is the same: test-dev mAP50-95 and every per-class AP
+are identical in both modes. Preprocessing 2.5 → 0.8 ms (640) and 7.4 → 0.8 ms (1280); end
+to end 4.7 → 2.7 ms and 12.6 → 6.3 ms, p95 5.6 → 3.5 and 14.6 → 7.1 ms. Default on for the
+cpp backend from this commit; `gpu_preprocess: false` reproduces `reports/w9-cpp/`. The host
+mode measured 4.7 / 12.6 ms here and 5.3 / 14.1 ms in `reports/w9-cpp/`: session-to-session
+spread on a shared VM, which is why each comparison runs both settings in one session.
+Rejected: threading or vectorising the host letterbox, which would still upload a
+letterboxed frame larger than the original at 1280.
