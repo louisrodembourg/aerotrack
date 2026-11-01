@@ -137,6 +137,7 @@ class Detector:
         precision: str = "fp16",
         calibration_data: str | None = None,
         host_nms: bool | None = None,
+        gpu_preprocess: bool = False,
     ) -> None:
         configure()
         from ultralytics.data.augment import LetterBox  # noqa: PLC0415
@@ -150,6 +151,8 @@ class Detector:
         self.batch = (self.tiles[0] * self.tiles[1] + int(tile_full)) if self.tiles else 1
         self._crops: list[tuple[int, int, int, int]] = []  # set by preprocess, read by postprocess
         self.host_nms = host_nms
+        if gpu_preprocess and backend != "cpp":
+            raise ValueError("gpu_preprocess is an option of the cpp backend")
 
         if backend in ("torch", "tensorrt"):
             from ultralytics.nn.autobackend import AutoBackend  # noqa: PLC0415
@@ -195,13 +198,17 @@ class Detector:
                 raise RuntimeError("the C++ runtime was built without TensorRT")
             path = export_engine(self.weights, imgsz, max_det, 1, precision, calibration_data)
             index = int(self.device.partition(":")[2] or torch.cuda.current_device())
-            self.engine = cpp.TrtDetector(str(path), imgsz, conf, iou, max_det, index)
+            # gpu_preprocess: upload the original frame and letterbox it on the GPU (same
+            # pixels as the host letterbox) instead of uploading the letterboxed frame.
+            self.engine = cpp.TrtDetector(str(path), imgsz, conf, iou, max_det, index,
+                                          gpu_preprocess)
             self.half = False  # network I/O; the engine's own precision is `precision`
             self.end2end = False  # the C++ runtime refuses an NMS-free head
             self.names = {int(k): v for k, v in engine_metadata(path)["names"].items()}
             lib = cpp.tensorrt_library()
             self.runtime = {"backend": "cpp", "device": self.device, "half": False,
-                            "host_nms": True, "precision": precision, "engine": str(path),
+                            "host_nms": True, "gpu_preprocess": gpu_preprocess,
+                            "precision": precision, "engine": str(path),
                             "calibration_data": calibration_data
                             if precision == "int8" else None,
                             "tensorrt_headers": cpp.tensorrt_headers,

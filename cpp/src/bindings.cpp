@@ -63,9 +63,9 @@ PYBIND11_MODULE(aerotrack_cpp, m) {
   });
 
   py::class_<aerotrack::TrtDetector>(m, "TrtDetector")
-      .def(py::init<const std::string&, int, float, double, int, int>(), py::arg("engine"),
-           py::arg("imgsz"), py::arg("conf"), py::arg("iou"), py::arg("max_det"),
-           py::arg("device") = 0)
+      .def(py::init<const std::string&, int, float, double, int, int, bool>(),
+           py::arg("engine"), py::arg("imgsz"), py::arg("conf"), py::arg("iou"),
+           py::arg("max_det"), py::arg("device") = 0, py::arg("gpu_preprocess") = false)
       .def("preprocess", [](aerotrack::TrtDetector& d, const Image& img) {
         check_bgr(img);
         d.preprocess(img.data(), static_cast<int>(img.shape(0)), static_cast<int>(img.shape(1)));

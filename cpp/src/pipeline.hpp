@@ -19,6 +19,27 @@ struct Letterbox {
 // Ultralytics LetterBox(new_shape=(size, size), auto=False, center=True, scaleup=True).
 Letterbox letterbox_params(int h, int w, int size);
 
+constexpr int kCoefBits = 11;  // OpenCV INTER_RESIZE_COEF_BITS
+constexpr int kCoefScale = 1 << kCoefBits;
+
+// Bilinear taps of a sh x sw -> dh x dw resize: per output column the two source columns
+// and their weights, per output row the same; weights carry kCoefBits fractional bits.
+// Shared by the host resize and the CUDA one, so both give the same pixels.
+struct ResizeTaps {
+  std::vector<int> x0, x1, y0, y1;
+  std::vector<int16_t> ax0, ax1, by0, by1;
+};
+ResizeTaps resize_taps(int sh, int sw, int dh, int dw);
+
+// Vertical pass on two horizontal sums, both weights fixed point: round off 2 x kCoefBits.
+#ifdef __CUDACC__
+__host__ __device__
+#endif
+inline int resize_round(int v) {
+  v = (v + (1 << (2 * kCoefBits - 1))) >> (2 * kCoefBits);
+  return v < 0 ? 0 : (v > 255 ? 255 : v);
+}
+
 // cv2.resize(src, (dw, dh), interpolation=INTER_LINEAR_EXACT) for 3-channel 8-bit images:
 // bilinear, 11-bit fixed-point weights, bit-exact on every platform. Ultralytics' LetterBox
 // uses INTER_LINEAR, whose rounding depends on the build (SIMD path, vendor HAL): on an

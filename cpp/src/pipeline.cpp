@@ -9,8 +9,6 @@ namespace aerotrack {
 
 namespace {
 
-constexpr int kCoefBits = 11;  // OpenCV INTER_RESIZE_COEF_BITS
-constexpr int kCoefScale = 1 << kCoefBits;
 constexpr float kMaxWh = 7680.f;  // Ultralytics: class offset for class-aware NMS
 constexpr int kMaxNms = 30000;    // Ultralytics: candidates kept before NMS
 constexpr uint8_t kPad = 114;
@@ -35,25 +33,38 @@ Letterbox letterbox_params(int h, int w, int size) {
   return lb;
 }
 
-void resize_linear(const uint8_t* src, int sh, int sw, uint8_t* dst, int dh, int dw) {
-  constexpr int cn = 3;
+// Same taps as OpenCV's resizeGeneric. A column past the last one is clamped with a zero
+// weight, which reproduces OpenCV's own border handling (it then uses the last column alone).
+ResizeTaps resize_taps(int sh, int sw, int dh, int dw) {
   // cv::resize: inv_scale = dsize / ssize, scale = 1 / inv_scale.
   double scale_x = 1. / (static_cast<double>(dw) / sw);
   double scale_y = 1. / (static_cast<double>(dh) / sh);
-
-  // Horizontal taps: source column and two fixed-point weights per output column.
-  std::vector<int> xofs(dw);
-  std::vector<int16_t> ax(2 * dw);
+  ResizeTaps t;
+  t.x0.resize(dw), t.x1.resize(dw), t.ax0.resize(dw), t.ax1.resize(dw);
   for (int dx = 0; dx < dw; ++dx) {
     float fx = static_cast<float>((dx + 0.5) * scale_x - 0.5);
     int sx = static_cast<int>(std::floor(fx));
     fx -= sx;
     if (sx < 0) fx = 0, sx = 0;
     if (sx >= sw - 1) fx = 0, sx = sw - 1;
-    xofs[dx] = sx;
-    ax[2 * dx] = coef(1.f - fx);
-    ax[2 * dx + 1] = coef(fx);
+    t.x0[dx] = sx, t.x1[dx] = std::min(sx + 1, sw - 1);
+    t.ax0[dx] = coef(1.f - fx), t.ax1[dx] = coef(fx);
   }
+  t.y0.resize(dh), t.y1.resize(dh), t.by0.resize(dh), t.by1.resize(dh);
+  for (int dy = 0; dy < dh; ++dy) {
+    float fy = static_cast<float>((dy + 0.5) * scale_y - 0.5);
+    int sy = static_cast<int>(std::floor(fy));
+    fy -= sy;
+    // Rows are clamped to the image; the weights are not (OpenCV's resizeGeneric).
+    t.y0[dy] = std::clamp(sy, 0, sh - 1), t.y1[dy] = std::clamp(sy + 1, 0, sh - 1);
+    t.by0[dy] = coef(1.f - fy), t.by1[dy] = coef(fy);
+  }
+  return t;
+}
+
+void resize_linear(const uint8_t* src, int sh, int sw, uint8_t* dst, int dh, int dw) {
+  constexpr int cn = 3;
+  const ResizeTaps t = resize_taps(sh, sw, dh, dw);
 
   // Each horizontally resized source row is computed once and kept while rows need it.
   std::vector<int> rows(2 * dw * cn);
@@ -62,24 +73,14 @@ void resize_linear(const uint8_t* src, int sh, int sw, uint8_t* dst, int dh, int
     if (cached[slot] == sy) return;
     const uint8_t* s = src + sy * sw * cn;
     int* d = rows.data() + slot * dw * cn;
-    for (int dx = 0; dx < dw; ++dx) {
-      int sx = xofs[dx] * cn;
-      for (int c = 0; c < cn; ++c) {
-        d[dx * cn + c] = xofs[dx] == sw - 1
-                             ? s[sx + c] * kCoefScale
-                             : s[sx + c] * ax[2 * dx] + s[sx + cn + c] * ax[2 * dx + 1];
-      }
-    }
+    for (int dx = 0; dx < dw; ++dx)
+      for (int c = 0; c < cn; ++c)
+        d[dx * cn + c] = s[t.x0[dx] * cn + c] * t.ax0[dx] + s[t.x1[dx] * cn + c] * t.ax1[dx];
     cached[slot] = sy;
   };
 
   for (int dy = 0; dy < dh; ++dy) {
-    float fy = static_cast<float>((dy + 0.5) * scale_y - 0.5);
-    int sy = static_cast<int>(std::floor(fy));
-    fy -= sy;
-    // Rows are clamped to the image; the weights are not (OpenCV's resizeGeneric).
-    int y0 = std::clamp(sy, 0, sh - 1), y1 = std::clamp(sy + 1, 0, sh - 1);
-    int16_t b0 = coef(1.f - fy), b1 = coef(fy);
+    int y0 = t.y0[dy], y1 = t.y1[dy];
     // Two slots; swap rather than recompute when the previous bottom row becomes the top.
     if (cached[1] == y0 && cached[0] != y0) {
       std::swap_ranges(rows.begin(), rows.begin() + dw * cn, rows.begin() + dw * cn);
@@ -90,10 +91,8 @@ void resize_linear(const uint8_t* src, int sh, int sw, uint8_t* dst, int dh, int
     const int* s0 = rows.data();
     const int* s1 = rows.data() + dw * cn;
     uint8_t* d = dst + dy * dw * cn;
-    for (int x = 0; x < dw * cn; ++x) {
-      // Both weights carry 11 fractional bits: round off 22.
-      d[x] = static_cast<uint8_t>(std::clamp((s0[x] * b0 + s1[x] * b1 + (1 << 21)) >> 22, 0, 255));
-    }
+    for (int x = 0; x < dw * cn; ++x)
+      d[x] = static_cast<uint8_t>(resize_round(s0[x] * t.by0[dy] + s1[x] * t.by1[dy]));
   }
 }
 

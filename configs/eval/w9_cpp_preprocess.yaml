@@ -1,0 +1,34 @@
+# Week 9: preprocessing on the GPU in the C++ runtime. reports/w9-cpp/ left the host
+# letterbox as the largest C++ stage (2.9 ms at 640, 8.2 ms at 1280). With
+# gpu_preprocess the original frame is uploaded and resized, padded and converted in one
+# CUDA kernel, with the host's taps and integer arithmetic: the network input, hence the
+# detections, must be identical. Same engines, both modes, one session. Kaggle only:
+#   uv run aerotrack kaggle push configs/eval/w9_cpp_preprocess.yaml --slug aerotrack-w9-cpp-pre
+name: w9-cpp-preprocess
+seed: 0
+device: auto
+dataset:
+  gt: visdrone_det/gt/test-dev.json
+  class_map: visdrone
+  limit: null
+models:
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-cpp-host-pre, backend: cpp, precision: fp16, gpu_preprocess: false}
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-cpp-gpu-pre, backend: cpp, precision: fp16, gpu_preprocess: true}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-cpp-host-pre, backend: cpp, precision: fp16, gpu_preprocess: false}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-cpp-gpu-pre, backend: cpp, precision: fp16, gpu_preprocess: true}
+detection:
+  imgsz: 640
+  conf: 0.001
+  iou: 0.7
+  max_det: 500
+  half: false
+  host_nms: null
+  gpu_preprocess: false
+  calibration_data: visdrone_det/dataset.yaml
+latency:
+  enabled: true
+  backends: [cpp]
+  conf: 0.25
+  n_images: 50
+  warmup: 50
+  iters: 300

@@ -61,8 +61,9 @@ std::vector<char> read_engine(const std::string& path, size_t& offset) {
 }  // namespace
 
 TrtDetector::TrtDetector(const std::string& engine_path, int imgsz, float conf, double iou,
-                         int max_det, int device)
-    : imgsz_(imgsz), max_det_(max_det), device_(device), conf_(conf), iou_(iou) {
+                         int max_det, int device, bool gpu_preprocess)
+    : imgsz_(imgsz), max_det_(max_det), device_(device), gpu_pre_(gpu_preprocess), conf_(conf),
+      iou_(iou) {
   check(cudaSetDevice(device_), "cudaSetDevice");
   size_t offset;
   std::vector<char> blob = read_engine(engine_path, offset);
@@ -113,6 +114,9 @@ TrtDetector::TrtDetector(const std::string& engine_path, int imgsz, float conf, 
 
 TrtDetector::~TrtDetector() {
   context_.reset();  // before the buffers it points to
+  cudaFree(dev_taps_);
+  cudaFree(dev_src_);
+  cudaFreeHost(host_src_);
   cudaFreeHost(host_out_);
   cudaFree(dev_out_);
   cudaFree(dev_in_);
@@ -124,12 +128,57 @@ TrtDetector::~TrtDetector() {
 std::string TrtDetector::input_dtype() const { return dtype_name(in_type_); }
 std::string TrtDetector::output_dtype() const { return dtype_name(out_type_); }
 
+void TrtDetector::upload_taps(int h, int w) {
+  lb_ = letterbox_params(h, w, imgsz_);
+  ResizeTaps t = resize_taps(h, w, lb_.new_h, lb_.new_w);
+  const size_t ni = 2 * (t.x0.size() + t.y0.size()) * sizeof(int);
+  const size_t ns = 2 * (t.x0.size() + t.y0.size()) * sizeof(int16_t);
+  std::vector<char> blob(ni + ns);
+  char* p = blob.data();
+  auto put = [&](const auto& v) {
+    size_t n = v.size() * sizeof(v[0]);
+    std::memcpy(p, v.data(), n);
+    p += n;
+    return static_cast<size_t>(p - blob.data()) - n;  // offset of v in the blob
+  };
+  size_t o[8] = {put(t.x0), put(t.x1), put(t.y0), put(t.y1),
+                 put(t.ax0), put(t.ax1), put(t.by0), put(t.by1)};
+  cudaFree(dev_taps_);
+  check(cudaMalloc(&dev_taps_, blob.size()), "cudaMalloc");
+  check(cudaMemcpy(dev_taps_, blob.data(), blob.size(), cudaMemcpyHostToDevice), "taps");
+  const char* d = static_cast<const char*>(dev_taps_);
+  taps_ = {reinterpret_cast<const int*>(d + o[0]), reinterpret_cast<const int*>(d + o[1]),
+           reinterpret_cast<const int*>(d + o[2]), reinterpret_cast<const int*>(d + o[3]),
+           reinterpret_cast<const int16_t*>(d + o[4]), reinterpret_cast<const int16_t*>(d + o[5]),
+           reinterpret_cast<const int16_t*>(d + o[6]), reinterpret_cast<const int16_t*>(d + o[7])};
+  taps_h_ = h, taps_w_ = w;
+}
+
 void TrtDetector::preprocess(const uint8_t* bgr, int h, int w) {
   h0_ = h, w0_ = w;
+  const bool half = in_type_ == nvinfer1::DataType::kHALF;
+  if (gpu_pre_) {
+    const size_t bytes = static_cast<size_t>(h) * w * 3;
+    if (bytes > src_capacity_) {
+      cudaFreeHost(host_src_);
+      cudaFree(dev_src_);
+      check(cudaMallocHost(reinterpret_cast<void**>(&host_src_), bytes), "cudaMallocHost");
+      check(cudaMalloc(reinterpret_cast<void**>(&dev_src_), bytes), "cudaMalloc");
+      src_capacity_ = bytes;
+    }
+    if (h != taps_h_ || w != taps_w_) upload_taps(h, w);
+    std::memcpy(host_src_, bgr, bytes);  // pinned, so the upload is a single DMA
+    check(cudaMemcpyAsync(dev_src_, host_src_, bytes, cudaMemcpyHostToDevice, stream_),
+          "upload");
+    launch_letterbox_chw(dev_src_, w, taps_, lb_, dev_in_, half, imgsz_, stream_);
+    check(cudaGetLastError(), "letterbox_chw kernel");
+    check(cudaStreamSynchronize(stream_), "preprocess");
+    return;
+  }
   letterbox(bgr, h, w, imgsz_, host_img_);
   check(cudaMemcpyAsync(dev_img_, host_img_, static_cast<size_t>(imgsz_) * imgsz_ * 3,
                         cudaMemcpyHostToDevice, stream_), "upload");
-  launch_to_chw(dev_img_, dev_in_, in_type_ == nvinfer1::DataType::kHALF, imgsz_, stream_);
+  launch_to_chw(dev_img_, dev_in_, half, imgsz_, stream_);
   check(cudaGetLastError(), "to_chw kernel");
   check(cudaStreamSynchronize(stream_), "preprocess");
 }
