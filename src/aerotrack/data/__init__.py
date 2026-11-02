@@ -18,13 +18,31 @@ def dataset_config(name: str) -> dict:
     return yaml.safe_load(Path(CONFIGS_DIR / "data" / f"{name}.yaml").read_text())
 
 
-def download(name: str, keep_archives: bool = True) -> Path:
+def _only(cfg: dict, splits: list[str] | None) -> dict:
+    """The dataset config restricted to `splits` (all of them when None)."""
+    if not splits:
+        return cfg
+    unknown = set(splits) - set(cfg["splits"])
+    if unknown:
+        raise KeyError(f"{cfg['name']}: unknown split(s) {sorted(unknown)}")
+    return {**cfg, "splits": {k: v for k, v in cfg["splits"].items() if k in splits}}
+
+
+def download(name: str, keep_archives: bool = True, splits: list[str] | None = None) -> Path:
+    """Fetch and extract the dataset's archives; with `splits`, only the archives holding
+    them (an archive is named after the split directory it extracts to)."""
     from aerotrack.data.download import Source, ensure_raw  # noqa: PLC0415
 
     cfg = dataset_config(name)
-    return ensure_raw(name, [Source(**s) for s in cfg["sources"]], keep_archives=keep_archives)
+    sources = cfg["sources"]
+    if splits:
+        dirs = {v["dir"] for v in _only(cfg, splits)["splits"].values()}
+        sources = [s for s in sources if Path(s["filename"]).stem in dirs]
+        if len(sources) != len(dirs):
+            raise KeyError(f"{name}: no archive per split for {splits}")
+    return ensure_raw(name, [Source(**s) for s in sources], keep_archives=keep_archives)
 
 
-def convert(name: str) -> dict:
+def convert(name: str, splits: list[str] | None = None) -> dict:
     module = importlib.import_module(f"aerotrack.data.{name}")
-    return module.convert(dataset_config(name))
+    return module.convert(_only(dataset_config(name), splits))

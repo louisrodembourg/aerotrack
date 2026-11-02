@@ -12,6 +12,8 @@ data_app = typer.Typer(no_args_is_help=True, help="Download, convert and check d
 app.add_typer(data_app, name="data")
 
 DatasetArg = Annotated[list[str], typer.Argument(help="visdrone_det | visdrone_mot | uavdt")]
+SplitOpt = Annotated[list[str] | None, typer.Option(
+    "--split", help="Only this split (repeatable); default: every split")]
 SetOpt = Annotated[list[str] | None, typer.Option("--set", help="Override a config key: a.b=value")]
 
 
@@ -19,19 +21,20 @@ SetOpt = Annotated[list[str] | None, typer.Option("--set", help="Override a conf
 def data_download(
     datasets: DatasetArg,
     keep_archives: Annotated[bool, typer.Option(help="Keep verified archives after extraction")] = True,
+    split: SplitOpt = None,
 ) -> None:
     from aerotrack import data  # noqa: PLC0415
 
     for name in datasets:
-        data.download(name, keep_archives=keep_archives)
+        data.download(name, keep_archives=keep_archives, splits=split)
 
 
 @data_app.command("convert")
-def data_convert(datasets: DatasetArg) -> None:
+def data_convert(datasets: DatasetArg, split: SplitOpt = None) -> None:
     from aerotrack import data  # noqa: PLC0415
 
     for name in datasets:
-        data.convert(name)
+        data.convert(name, splits=split)
 
 
 @data_app.command("viz")

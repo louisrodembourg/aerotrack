@@ -101,7 +101,11 @@ def make_jobs(configs: list[Path], overrides: list[str], suffix: str | None) -> 
             continue
         ds = cfg["dataset"]
         dataset = ds["mot"] if "mot" in ds else ds["gt"].split("/")[0]
+        # A tracking evaluation needs one MOT split only: the others are ~9 GB of downloads
+        # from a Google Drive whose per-file quota runs out.
+        splits = [ds["split"]] if "mot" in ds else None
         jobs.append({"kind": "evaluate", "config": str(rel), "name": name, "dataset": dataset,
+                     "splits": splits,
                      "overrides": [*overrides, *extra, f"report_dir={KAGGLE_REPORTS}/{name}"],
                      "inputs": eval_inputs(cfg), "cpp": uses_cpp(cfg)})
     return jobs

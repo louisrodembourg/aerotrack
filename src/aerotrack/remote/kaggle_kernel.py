@@ -142,8 +142,13 @@ def main() -> int:
         sh([*uv, "aerotrack", "build-cpp", "--tensorrt"], cwd=REPO, env=env)
 
     for dataset in sorted({j["dataset"] for j in JOBS}):
-        sh([*uv, "aerotrack", "data", "download", dataset, "--no-keep-archives"], cwd=REPO, env=env)
-        sh([*uv, "aerotrack", "data", "convert", dataset], cwd=REPO, env=env)
+        # Only the splits the jobs name; every split if one job needs them all (training).
+        wanted = [j.get("splits") for j in JOBS if j["dataset"] == dataset]
+        only = [] if None in wanted else sorted({s for w in wanted for s in w})
+        opts = [x for s in only for x in ("--split", s)]
+        sh([*uv, "aerotrack", "data", "download", dataset, "--no-keep-archives", *opts],
+           cwd=REPO, env=env)
+        sh([*uv, "aerotrack", "data", "convert", dataset, *opts], cwd=REPO, env=env)
 
     restored = restore_inputs()
 

@@ -85,6 +85,7 @@ def test_eval_job_names_its_input_runs_and_redirects_its_report(monkeypatch):
     assert job["inputs"] == ["id-visdrone-yolo26n-640", "id-visdrone-yolo26n-1280"]
     assert f"report_dir={kaggle.KAGGLE_REPORTS}/w6-keyframe" in job["overrides"]
     assert not job["cpp"]
+    assert job["splits"] == ["test-dev"]  # not the 9 GB of train + val
 
 
 def test_eval_job_with_the_cpp_backend_builds_the_cpp_runtime(monkeypatch):
