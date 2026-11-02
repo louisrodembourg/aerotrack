@@ -39,7 +39,17 @@ TRACKERS = {"bytetrack": ByteTrack}
 
 def make_tracker_factory(cfg: dict):
     params = {k: v for k, v in cfg.items() if k != "type"}
+    if cfg["type"] == "bytetrack-cpp":  # the C++ port (cpp/), same parameters and output
+        from aerotrack import cpp_runtime  # noqa: PLC0415
+
+        cls = cpp_runtime.load().ByteTrack
+        return lambda: cls(**params)
     return lambda: TRACKERS[cfg["type"]](**params)
+
+
+def _engine(model: dict, backend: str) -> dict:
+    """Engine options of a TensorRT-backed detector (tensorrt, cpp)."""
+    return {"precision": model.get("precision", "fp16")} if backend in ("tensorrt", "cpp") else {}
 
 
 def evaluate_tracking_model(model: dict, cfg: dict, split_dir: Path, budget: float) -> dict:
@@ -59,9 +69,11 @@ def evaluate_tracking_model(model: dict, cfg: dict, split_dir: Path, budget: flo
                    seed=cfg.get("seed"), device=device, tags=(cfg["name"],)) as run:
         # The detector keeps everything down to the tracker's low threshold: ByteTrack's
         # second association needs the weak detections.
-        detector = Detector(weights, backend="torch", device=device, imgsz=det_cfg["imgsz"],
+        # A model may name its detector backend (tensorrt, cpp): accuracy then goes through it.
+        acc_backend = model.get("backend", "torch")
+        detector = Detector(weights, backend=acc_backend, device=device, imgsz=det_cfg["imgsz"],
                             conf=det_cfg["conf"], iou=det_cfg["iou"], max_det=det_cfg["max_det"],
-                            **tiling)
+                            **tiling, **_engine(model, acc_backend))
         kf = model.get("keyframe", {})
         interval = kf.get("interval", 1)
         light_w = find_train_run(kf["light"]["run"])["summary"]["weights"] if kf.get("light") \
@@ -121,11 +133,12 @@ def evaluate_tracking_model(model: dict, cfg: dict, split_dir: Path, budget: flo
             # The first sequence unless one is named: the frames only need to be consecutive.
             seq = next((s for s in seqs if s["name"] == lat_cfg.get("sequence")), seqs[0])
             frames = [cv2.imread(str(p)) for p in seq["frames"][: lat_cfg["n_frames"]]]
-            for backend in lat_cfg["backends"]:
-                bdev = device if backend == "torch" else "cpu"
+            for backend in model.get("latency_backends", lat_cfg["backends"]):
+                bdev = "cpu" if backend == "onnxruntime" else device
                 d = Detector(weights, backend=backend, device=bdev, imgsz=det_cfg["imgsz"],
                              conf=det_cfg["conf"], iou=det_cfg["iou"], max_det=det_cfg["max_det"],
-                             ort_threads=lat_cfg.get("ort_threads"), **tiling)
+                             ort_threads=lat_cfg.get("ort_threads"), **tiling,
+                             **_engine(model, backend))
                 print(f"[{name}] end-to-end latency backend={backend} device={bdev}", flush=True)
                 pipe = TrackingPipeline(d, make_tracker, keep, interval,
                                         light_detector(backend, bdev))

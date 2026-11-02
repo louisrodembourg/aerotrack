@@ -1,0 +1,39 @@
+# Week 10: detection + tracking end to end in C++ (cpp/: letterbox on the GPU, TensorRT,
+# NMS, ByteTrack), against the Python pipeline (TensorRT through AutoBackend, Python
+# ByteTrack) on the same FP16 engines, one session, on the T4. Tracker thresholds are the
+# ones tuned per model in week 6 (reports/w6-tracker-tuning/, never on test-dev).
+# Kaggle only (TensorRT); the kernel builds cpp/ first:
+#   uv run aerotrack kaggle push configs/eval/w10_cpp_tracking.yaml --slug aerotrack-w10-cpp-track
+name: w10-cpp-tracking
+seed: 0
+device: auto
+dataset:
+  mot: visdrone_mot
+  split: test-dev
+models:
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-python, backend: tensorrt,
+     precision: fp16, latency_backends: [tensorrt],
+     tracker: {type: bytetrack, high: 0.5, new: 0.5, low: 0.1, match: 0.9}}
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-cpp, backend: cpp,
+     precision: fp16, latency_backends: [cpp],
+     tracker: {type: bytetrack-cpp, high: 0.5, new: 0.5, low: 0.1, match: 0.9}}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-python, backend: tensorrt,
+     precision: fp16, latency_backends: [tensorrt],
+     tracker: {type: bytetrack, high: 0.5, new: 0.6, low: 0.05, match: 0.9}}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-cpp, backend: cpp,
+     precision: fp16, latency_backends: [cpp],
+     tracker: {type: bytetrack-cpp, high: 0.5, new: 0.6, low: 0.05, match: 0.9}}
+detection:
+  imgsz: 640
+  conf: 0.05         # the lowest `low` above; each tracker discards what it does not use
+  iou: 0.7
+  max_det: 500
+tracker:
+  type: bytetrack
+  buffer: 30
+latency:
+  enabled: true
+  backends: [tensorrt]
+  n_frames: 100
+  warmup: 50
+  iters: 300

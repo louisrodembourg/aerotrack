@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "bytetrack.hpp"
 #include "pipeline.hpp"
 #ifdef AEROTRACK_WITH_TRT
 #include <NvInferVersion.h>
@@ -18,6 +19,7 @@
 namespace py = pybind11;
 using Image = py::array_t<uint8_t, py::array::c_style | py::array::forcecast>;
 using Raw = py::array_t<float, py::array::c_style | py::array::forcecast>;
+using Doubles = py::array_t<double, py::array::c_style | py::array::forcecast>;
 
 namespace {
 
@@ -27,6 +29,12 @@ void check_bgr(const Image& img) {
 
 py::array_t<float> detections(const std::vector<float>& rows) {
   py::array_t<float> out({static_cast<py::ssize_t>(rows.size() / 6), py::ssize_t{6}});
+  std::copy(rows.begin(), rows.end(), out.mutable_data());
+  return out;
+}
+
+py::array_t<double> tracks(const std::vector<double>& rows) {
+  py::array_t<double> out({static_cast<py::ssize_t>(rows.size() / 7), py::ssize_t{7}});
   std::copy(rows.begin(), rows.end(), out.mutable_data());
   return out;
 }
@@ -50,6 +58,28 @@ PYBIND11_MODULE(aerotrack_cpp, m) {
                                              conf, iou, max_det));
   }, py::arg("raw"), py::arg("size"), py::arg("h0"), py::arg("w0"), py::arg("conf"),
      py::arg("iou"), py::arg("max_det"));
+
+  m.def("linear_sum_assignment", [](const Doubles& cost) {
+    if (cost.ndim() != 2) throw std::invalid_argument("expected a 2-D cost matrix");
+    int r = static_cast<int>(cost.shape(0)), c = static_cast<int>(cost.shape(1));
+    std::vector<double> v(cost.data(), cost.data() + cost.size());
+    std::vector<int> rows, cols;
+    for (auto [i, j] : aerotrack::linear_sum_assignment(v, r, c)) rows.push_back(i), cols.push_back(j);
+    return py::make_tuple(py::array_t<int>(rows.size(), rows.data()),
+                          py::array_t<int>(cols.size(), cols.data()));
+  }, py::arg("cost"));
+
+  // Same constructor and methods as aerotrack.track.bytetrack.ByteTrack.
+  py::class_<aerotrack::ByteTrack>(m, "ByteTrack")
+      .def(py::init<double, double, double, int, double, bool>(), py::arg("high") = 0.25,
+           py::arg("low") = 0.1, py::arg("new") = 0.25, py::arg("buffer") = 30,
+           py::arg("match") = 0.8, py::arg("fuse_score") = true)
+      .def("update", [](aerotrack::ByteTrack& t, const Doubles& dets) {
+        if (dets.size() && (dets.ndim() != 2 || dets.shape(1) != 6))
+          throw std::invalid_argument("expected N x 6 detections");
+        return tracks(t.update(dets.data(), static_cast<int>(dets.size() / 6)));
+      }, py::arg("dets"))
+      .def("predict_only", [](aerotrack::ByteTrack& t) { return tracks(t.predict_only()); });
 
   m.attr("compiler") = AEROTRACK_COMPILER;
 #ifdef AEROTRACK_WITH_TRT

@@ -2,8 +2,8 @@
 # `make cpp`), which passes the Python interpreter and, on Linux + NVIDIA, the TensorRT
 # library directory of the `tensorrt-cu12-libs` wheel.
 #
-# Without AEROTRACK_WITH_TRT only the host stages are built (letterbox, NMS): that is what
-# runs on a Mac, for the tests against the Python stages.
+# Without AEROTRACK_WITH_TRT only the host parts are built (letterbox, NMS, ByteTrack):
+# that is what runs on a Mac, for the tests against the Python ones.
 cmake_minimum_required(VERSION 3.19)
 project(aerotrack_cpp LANGUAGES CXX)
 
@@ -22,7 +22,7 @@ execute_process(COMMAND ${Python_EXECUTABLE} -m pybind11 --cmakedir
                 COMMAND_ERROR_IS_FATAL ANY)
 find_package(pybind11 CONFIG REQUIRED)
 
-pybind11_add_module(aerotrack_cpp src/bindings.cpp src/pipeline.cpp)
+pybind11_add_module(aerotrack_cpp src/bindings.cpp src/pipeline.cpp src/bytetrack.cpp)
 target_compile_definitions(aerotrack_cpp PRIVATE
   AEROTRACK_COMPILER="${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 

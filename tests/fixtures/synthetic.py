@@ -64,3 +64,24 @@ def make_visdrone_mot(root: Path, n_frames: int = 6) -> Path:
     ann.parent.mkdir(parents=True, exist_ok=True)
     ann.write_text("\n".join(rows) + "\n")
     return base
+
+
+def tracking_scene(seed: int, frames: int = 60, n: int = 12) -> list[np.ndarray]:
+    """Boxes moving at constant speed with jitter, missed detections, low-score frames,
+    class flips and clutter: every branch of ByteTrack gets exercised."""
+    rng = np.random.default_rng(seed)
+    start = rng.uniform(50, 900, (n, 2))
+    size = rng.uniform(10, 60, (n, 2))
+    vel = rng.uniform(-4, 4, (n, 2))
+    cls = rng.integers(0, 3, n)
+    out = []
+    for f in range(frames):
+        xy = start + vel * f + rng.normal(0, 1.0, (n, 2))
+        dets = np.c_[xy, xy + size, rng.uniform(0.3, 0.95, n), cls]
+        dets[rng.random(n) < 0.15, 4] = rng.uniform(0.11, 0.24)  # occluded: weak score
+        dets[rng.random(n) < 0.05, 5] = (cls[0] + 1) % 3          # class flip
+        keep = rng.random(n) > 0.1                                # missed detections
+        clutter = np.c_[rng.uniform(0, 900, (2, 2)), rng.uniform(0, 900, (2, 2)) + 20,
+                        rng.uniform(0.05, 0.4, 2), rng.integers(0, 3, 2)]
+        out.append(np.r_[dets[keep], clutter])
+    return out

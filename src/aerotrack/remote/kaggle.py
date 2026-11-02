@@ -81,7 +81,9 @@ def uses_cpp(cfg: dict) -> bool:
     backends = {m.get("backend") for m in cfg.get("models", [])}
     backends |= {b for m in cfg.get("models", []) for b in m.get("latency_backends", [])}
     backends |= set(cfg.get("latency", {}).get("backends", []))
-    return "cpp" in backends
+    trackers = {cfg.get("tracker", {}).get("type")}
+    trackers |= {m.get("tracker", {}).get("type") for m in cfg.get("models", [])}
+    return "cpp" in backends or "bytetrack-cpp" in trackers
 
 
 def make_jobs(configs: list[Path], overrides: list[str], suffix: str | None) -> list[dict]:

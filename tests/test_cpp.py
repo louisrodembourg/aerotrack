@@ -119,3 +119,38 @@ def test_cpp_stages_around_torch_match_the_python_pipeline(cpp):
     assert len(ref) > 0
     # Pixels within 1 of cv2's INTER_LINEAR move a box by about a pixel.
     _assert_same_detections(out, ref, atol=2.0)
+
+
+def test_linear_sum_assignment_matches_scipy(cpp):
+    from scipy.optimize import linear_sum_assignment
+
+    rng = np.random.default_rng(0)
+    for shape in [(1, 1), (5, 5), (3, 7), (7, 3), (20, 35), (40, 12)]:
+        for _ in range(20):
+            cost = rng.uniform(0, 1, shape)
+            cost[rng.random(shape) < 0.3] = 1.0  # ties, as 1 - IoU of disjoint boxes
+            rows, cols = linear_sum_assignment(cost)
+            r, c = cpp.linear_sum_assignment(cost)
+            np.testing.assert_array_equal(r, rows)
+            np.testing.assert_array_equal(c, cols)
+
+
+@pytest.mark.parametrize("seed", range(4))
+@pytest.mark.parametrize("params", [{}, {"high": 0.5, "new": 0.6, "low": 0.05, "match": 0.9}])
+def test_bytetrack_matches_python(cpp, seed, params):
+    """Same detections in, same tracks out: ids, classes, scores, boxes; with frames
+    without detections in between (keyframe mode)."""
+    from aerotrack.track.bytetrack import ByteTrack
+    from tests.fixtures.synthetic import tracking_scene
+
+    py, cc = ByteTrack(**params), cpp.ByteTrack(**params)
+    for f, dets in enumerate(tracking_scene(seed, frames=120, n=25)):
+        if f % 4 == 3:
+            a, b = py.predict_only(), cc.predict_only()
+        else:
+            a, b = py.update(dets), cc.update(dets)
+        assert a.shape == b.shape, f"frame {f}"
+        np.testing.assert_array_equal(b[:, 4], a[:, 4])  # track ids
+        np.testing.assert_array_equal(b[:, 5], a[:, 5])  # scores
+        np.testing.assert_array_equal(b[:, 6], a[:, 6])  # classes
+        np.testing.assert_allclose(b[:, :4], a[:, :4], rtol=0, atol=1e-6)
