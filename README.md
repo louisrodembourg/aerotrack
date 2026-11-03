@@ -467,6 +467,25 @@ same locked environment, downloads and converts the data, and trains. For live W
 logging, add a `WANDB_API_KEY` secret to the kernel once in Kaggle's editor; otherwise
 the runs come back offline and `wandb sync` uploads them.
 
+**TensorRT and the C++ runtime (weeks 8-10) run on Kaggle only** (never on the Mac): the
+kernel installs the TensorRT headers matching the wheel and builds `cpp/` before the data.
+
+```bash
+uv run aerotrack kaggle push configs/eval/w8_tensorrt.yaml --slug aerotrack-w8-trt
+uv run aerotrack kaggle push configs/eval/w8_postprocess.yaml --slug aerotrack-w8-post
+uv run aerotrack kaggle push configs/eval/w9_cpp.yaml --slug aerotrack-w9-cpp
+uv run aerotrack kaggle push configs/eval/w9_cpp_preprocess.yaml --slug aerotrack-w9-cpp-pre
+uv run aerotrack kaggle push configs/eval/w10_cpp_tracking.yaml --slug aerotrack-w10-cpp-track
+uv run aerotrack kaggle pull <slug>   # then `uv run aerotrack readme-table`
+uv run aerotrack build-cpp            # locally: host stages + ByteTrack only, for the tests
+```
+
+Kaggle jobs download only the splits they need (`aerotrack data download <dataset>
+--split <split>`). When Google Drive refuses an archive ("Quota exceeded"),
+`uv run aerotrack kaggle mirror visdrone_mot --split test-dev` uploads a private mirror
+rebuilt from `data/raw/`, which kernels accept only if its content matches the digest
+pinned in `configs/data/<dataset>.yaml` (DECISIONS.md).
+
 **Any CUDA box with Docker** (or `--no-docker` on the host):
 
 ```bash
