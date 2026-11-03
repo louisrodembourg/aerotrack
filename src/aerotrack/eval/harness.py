@@ -12,6 +12,8 @@ import yaml
 
 from aerotrack.data.classes import get_class_map
 from aerotrack.data.gt import SplitGT
+from aerotrack.eval.degrade import degrade
+from aerotrack.eval.degrade import label as degrade_label
 from aerotrack.eval.detection import evaluate_detection
 from aerotrack.eval.latency import benchmark
 from aerotrack.eval.report import render_markdown
@@ -38,7 +40,23 @@ def _progress(label: str):
     return report
 
 
-def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float) -> dict:
+def attribute_groups(gt: SplitGT, path: Path) -> dict[str, set]:
+    """Image ids per sequence attribute value (UAVDT: weather, altitude, view, long_term),
+    `attribute=value` -> ids. A sequence with several values (views) is in each group."""
+    attrs = json.loads(path.read_text())
+    groups: dict[str, set] = {}
+    for im in gt.images:
+        seq = attrs[Path(im.file).parent.name]
+        for key, values in seq.items():
+            if key == "split":
+                continue
+            for v in values if isinstance(values, list) else [values]:
+                groups.setdefault(f"{key}={str(v).lower()}", set()).add(im.id)
+    return dict(sorted(groups.items()))
+
+
+def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float,
+                   groups: dict[str, set] | None = None) -> dict:
     lat_cfg = cfg.get("latency", {})
     # A model may override detection keys, e.g. a resolution sweep scores each model at
     # the input size it was trained at; the value used is recorded in its accuracy row.
@@ -79,11 +97,26 @@ def evaluate_model(model: dict, cfg: dict, gt: SplitGT, budget_fps: float) -> di
                             **tiling, **engine)
         print(f"[{name}] accuracy on {len(gt.images)} images, device={device}", flush=True)
         acc = evaluate_detection(gt, cmap, detector, detector.names, det_cfg["max_det"],
-                                 _progress(name))
+                                 _progress(name), groups=groups, iou=det_cfg["iou"])
         acc.update({"imgsz": det_cfg["imgsz"], "conf": det_cfg["conf"], "iou": det_cfg["iou"],
                     "runtime": detector.runtime})
         result["accuracy"] = acc
         run.log({k: v for k, v in acc.items() if isinstance(v, float)})
+
+        # Robustness: the same detector on degraded copies of the same frames.
+        result["robustness"] = []
+        for d in cfg.get("degradations", []):
+            for level in d["levels"]:
+                tag = degrade_label(d["kind"], level)
+                print(f"[{name}] accuracy under {tag}", flush=True)
+                m = evaluate_detection(
+                    gt, cmap, lambda img, k=d["kind"], lv=level: detector(degrade(img, k, lv)),
+                    detector.names, det_cfg["max_det"], _progress(f"{name} {tag}"),
+                    iou=det_cfg["iou"])
+                result["robustness"].append({"kind": d["kind"], "level": level, "label": tag,
+                                             **{k: m[k] for k in ("mAP50-95", "mAP50",
+                                                                  "AP_small", "per_class")}})
+                run.log({f"robustness/{tag}/mAP50-95": m["mAP50-95"]})
 
         result["latency"] = []
         if lat_cfg.get("enabled", True):
@@ -137,7 +170,8 @@ def run_evaluation(cfg: dict) -> Path:
     ds = cfg["dataset"]
     gt = SplitGT.load(PROCESSED_DIR / ds["gt"]).subset(ds.get("limit"), seed=cfg.get("seed", 0))
     budget = project_config()["budget_fps"]
-    results = [evaluate_model(m, cfg, gt, budget) for m in cfg["models"]]
+    groups = attribute_groups(gt, PROCESSED_DIR / ds["groups"]) if ds.get("groups") else None
+    results = [evaluate_model(m, cfg, gt, budget, groups) for m in cfg["models"]]
 
     out_dir = REPO_ROOT / cfg.get("report_dir", f"reports/{cfg['name']}")
     out_dir.mkdir(parents=True, exist_ok=True)

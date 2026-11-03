@@ -70,11 +70,23 @@ maps:
     ignore: []
 
   # UAVDT ground truth expressed in VisDrone class names, for VisDrone -> UAVDT transfer
-  # (week 11). VisDrone `van` predictions must then be merged into `car`, since UAVDT
-  # has no van class; that merge is applied on the prediction side and is documented
-  # in DECISIONS.md. To be re-checked on the UAVDT visualisations.
+  # (week 11). UAVDT has no van class (its vans are labelled car, checked on the
+  # visualisations): VisDrone `van` predictions are scored as `car`, and duplicates a
+  # car and a van box make of one vehicle are suppressed (merge_nms, DECISIONS.md).
   uavdt_to_visdrone:
     source: uavdt
     mapping: {1: car, 2: truck, 3: bus}
     excluded: {}
     ignore: []
+    predictions: {van: car}
+    merge_nms: true
+
+  # UAVDT's own protocol: one class-agnostic `vehicle` category. Every vehicle class of
+  # a model (VisDrone or COCO names) is scored as `vehicle`, duplicates suppressed.
+  uavdt_vehicle:
+    source: uavdt
+    mapping: {1: vehicle, 2: vehicle, 3: vehicle}
+    excluded: {}
+    ignore: []
+    predictions: {car: vehicle, van: vehicle, truck: vehicle, bus: vehicle}
+    merge_nms: true

@@ -21,6 +21,11 @@ class ClassMap:
     mapping: dict[int, str]
     excluded: dict[int, str]
     ignore: tuple[int, ...]
+    # Model class NAME -> target, for model classes the target vocabulary lacks (VisDrone
+    # `van` scored on UAVDT, whose vans are labelled `car`). Several model classes then
+    # feed one target, and `merge_nms` suppresses their duplicates (DECISIONS.md).
+    predictions: tuple[tuple[str, str], ...] = ()
+    merge_nms: bool = False
 
     @property
     def targets(self) -> list[str]:
@@ -73,6 +78,8 @@ def get_class_map(name: str) -> ClassMap:
         mapping={int(k): v for k, v in raw["mapping"].items()},
         excluded={int(k): v for k, v in (raw.get("excluded") or {}).items()},
         ignore=tuple(int(x) for x in raw.get("ignore") or ()),
+        predictions=tuple((raw.get("predictions") or {}).items()),
+        merge_nms=bool(raw.get("merge_nms", False)),
     )
     cm.validate()
     return cm

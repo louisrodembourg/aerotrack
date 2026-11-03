@@ -1,0 +1,26 @@
+# Week 11: VisDrone -> UAVDT transfer, by sequence attribute. Detectors fine-tuned on
+# VisDrone-DET, never trained on UAVDT, scored on the 20 UAVDT test sequences (16 592
+# frames) with UAVDT's own protocol: one class-agnostic `vehicle` category, ignore regions
+# by its rule (fully inside). The COCO model is the no-fine-tuning reference. Each
+# attribute (weather, altitude, view, long-term) scores the same detections on its frames.
+# Accuracy only: runs on the Mac (`make w11-transfer-eval`).
+name: w11-uavdt-transfer
+seed: 0
+device: auto
+dataset:
+  gt: uavdt/det/gt/test.json
+  class_map: uavdt_vehicle
+  groups: uavdt/attributes.json
+  limit: null
+models:
+  - {weights: yolo26n.pt, imgsz: 640, name: yolo26n-coco-640}
+  - {run: visdrone-yolo26n-640, imgsz: 640, name: n640-visdrone}
+  - {run: visdrone-yolo26n-1280, imgsz: 1280, name: n1280-visdrone}
+detection:
+  imgsz: 640
+  conf: 0.001
+  iou: 0.7
+  max_det: 500
+  half: false
+latency:
+  enabled: false

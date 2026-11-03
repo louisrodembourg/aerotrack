@@ -37,8 +37,11 @@ def prediction_class_map(model_names: dict[int, str], cmap: ClassMap) -> dict[in
     ground truth. Fine-tuned and zero-shot COCO models are then scored on identical classes."""
     cat_ids = {name: i + 1 for i, name in enumerate(cmap.targets)}
     source_ids = {name: sid for sid, name in cmap.vocabulary.items()}
+    explicit = dict(cmap.predictions)
 
     def target(name: str) -> str | None:
+        if name in explicit:
+            return explicit[name]
         if name in cat_ids:
             return name
         return cmap.mapping.get(source_ids.get(name, -1))
@@ -58,7 +61,13 @@ def predictions_to_coco(
     detect: Callable[[np.ndarray], np.ndarray],
     class_mapping: dict[int, int],
     progress: Callable[[int, int], None] | None = None,
+    merge_iou: float | None = None,
 ) -> list[dict]:
+    """COCO detections of every image. With `merge_iou`, boxes that several model classes
+    put on one target class (car and van -> car) go through NMS within that target class."""
+    import torch  # noqa: PLC0415
+    from torchvision.ops import batched_nms  # noqa: PLC0415
+
     dets = []
     for i, im in enumerate(gt.images):
         img = cv2.imread(str(from_data_relative(im.file)))
@@ -68,6 +77,12 @@ def predictions_to_coco(
         cls = out[:, 5].astype(int)
         known = np.isin(cls, list(class_mapping))
         out, cls = out[known], cls[known]
+        if merge_iou is not None and len(out):
+            target = np.array([class_mapping[int(c)] for c in cls])
+            keep = batched_nms(torch.from_numpy(out[:, :4]).float(),
+                               torch.from_numpy(out[:, 4]).float(),
+                               torch.from_numpy(target), merge_iou).numpy()
+            out, cls = out[np.sort(keep)], cls[np.sort(keep)]
         xywh = np.column_stack([out[:, 0], out[:, 1], out[:, 2] - out[:, 0], out[:, 3] - out[:, 1]])
         keep = keep_outside(xywh, masks[im.id], gt.drop_coverage)
         for box, score, c in zip(xywh[keep], out[keep, 4], cls[keep], strict=True):
@@ -89,7 +104,7 @@ def coco_metrics(coco_gt: dict, dets: list[dict], max_det: int = 500) -> dict:
         gt.dataset = coco_gt
         gt.createIndex()
         if not dets:
-            return _empty(names, n_gt)
+            return _empty(names, n_gt, len(coco_gt["images"]))
         dt = gt.loadRes(dets)
         ev = COCOeval(gt, dt, iouType="bbox")
         ev.params.maxDets = [1, 10, 100, max_det]
@@ -116,6 +131,7 @@ def coco_metrics(coco_gt: dict, dets: list[dict], max_det: int = 500) -> dict:
     return {
         "mAP50-95": ap(),
         "mAP50": ap(iou=0.5),
+        "mAP70": ap(iou=0.7),  # UAVDT's DET threshold
         "mAP75": ap(iou=0.75),
         "AP_small": ap("small"),
         "AP_medium": ap("medium"),
@@ -129,21 +145,41 @@ def coco_metrics(coco_gt: dict, dets: list[dict], max_det: int = 500) -> dict:
     }
 
 
-def _empty(names: dict, n_gt: dict) -> dict:
-    zero = {k: 0.0 for k in ("mAP50-95", "mAP50", "mAP75", "AP_small", "AP_medium", "AP_large")}
-    return {**zero, "n_dets": 0, "n_gt": int(sum(n_gt.values())),
+def _empty(names: dict, n_gt: dict, n_images: int) -> dict:
+    zero = {k: 0.0 for k in ("mAP50-95", "mAP50", "mAP70", "mAP75", "AP_small", "AP_medium",
+                             "AP_large")}
+    return {**zero, "n_dets": 0, "n_images": n_images, "n_gt": int(sum(n_gt.values())),
             "per_class": {n: {"AP": 0.0, "AP50": 0.0, "n_gt": n_gt[n]} for n in names.values()}}
+
+
+def subset_coco(coco_gt: dict, dets: list[dict], image_ids: set) -> tuple[dict, list[dict]]:
+    """Ground truth and detections restricted to some images (one attribute's frames)."""
+    return ({**coco_gt, "images": [im for im in coco_gt["images"] if im["id"] in image_ids],
+             "annotations": [a for a in coco_gt["annotations"] if a["image_id"] in image_ids]},
+            [d for d in dets if d["image_id"] in image_ids])
 
 
 def evaluate_detection(
     gt: SplitGT, cmap: ClassMap, detect: Callable[[np.ndarray], np.ndarray],
     model_names: dict[int, str], max_det: int,
     progress: Callable[[int, int], None] | None = None,
+    groups: dict[str, set] | None = None, iou: float = 0.7,
 ) -> dict:
+    """COCO metrics of `detect` on `gt`; with `groups` (label -> image ids), the same
+    detections also scored on each group (UAVDT attributes). `iou` is the NMS threshold
+    used to merge model classes that share a target (class maps with merge_nms)."""
     coco_gt, masks = to_coco(gt, cmap)
     mapping = prediction_class_map(model_names, cmap)
-    dets = predictions_to_coco(gt, masks, detect, mapping, progress)
+    dets = predictions_to_coco(gt, masks, detect, mapping, progress,
+                               merge_iou=iou if cmap.merge_nms else None)
     metrics = coco_metrics(coco_gt, dets, max_det=max_det)
+    if groups:
+        metrics["groups"] = {}
+        for label, ids in groups.items():
+            sub_gt, sub_dets = subset_coco(coco_gt, dets, ids)
+            m = coco_metrics(sub_gt, sub_dets, max_det=max_det)
+            metrics["groups"][label] = {k: m[k] for k in ("mAP50-95", "mAP50", "mAP70",
+                                                          "n_images", "n_gt")}
     metrics["class_map"] = cmap.name
     metrics["model_class_to_target"] = {model_names[k]: cmap.targets[v - 1]
                                         for k, v in sorted(mapping.items())}
