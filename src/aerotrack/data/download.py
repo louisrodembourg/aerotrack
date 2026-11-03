@@ -3,6 +3,12 @@
 Each source declares a sha256. Extraction writes a `.complete` marker so re-running
 `make data` is a no-op, and the extracted files are made read-only: converters can only
 read raw data, and an accidental write fails loudly instead of corrupting it.
+
+Mirrors: when the official host refuses (Google Drive's per-file quota), a source may be
+served from a private mirror, an archive rebuilt from an extraction of the verified
+official archive (`build_mirror`). It is found under $AEROTRACK_MIRRORS as
+`<archive stem>.mirror.zip` and accepted only if the extracted content matches the
+source's `content_sha256` (see DECISIONS.md).
 """
 
 from __future__ import annotations
@@ -32,6 +38,10 @@ class Source(BaseModel):
     official_page: str | None = None
     # Directory, relative to the dataset's raw dir, the archive is extracted into.
     extract_to: str = "."
+    # Digest of the extracted content (`content_digest`), which is what a mirror can match.
+    content_sha256: str | None = None
+    # Private Kaggle dataset holding the mirror (`aerotrack kaggle mirror`).
+    kaggle_mirror: str | None = None
 
 
 class ManualDownloadRequired(RuntimeError):
@@ -139,6 +149,43 @@ def _extract(archive: Path, target: Path) -> None:
         raise ValueError(f"unsupported archive format: {archive}")
 
 
+def content_digest(root: Path) -> str:
+    """sha256 over every file under `root`: its path relative to root.parent (so the
+    top directory's name counts) and its own sha256, in sorted order."""
+    lines = sorted(f"{p.relative_to(root.parent).as_posix()}\t{sha256sum(p)}"
+                   for p in root.rglob("*") if p.is_file())
+    if not lines:
+        raise FileNotFoundError(f"nothing under {root}")
+    return hashlib.sha256("\n".join(lines).encode()).hexdigest()
+
+
+def build_mirror(dataset: str, src: Source, out_dir: Path) -> tuple[Path, str]:
+    """Rebuild `src`'s archive from its extraction under data/raw (whose marker proves the
+    official sha256 was checked), as `<stem>.mirror.zip`; returns it and its content digest."""
+    raw = RAW_DIR / dataset / src.extract_to
+    stem = Path(src.filename).stem
+    marker = RAW_DIR / dataset / f".{src.filename}.complete"
+    if not marker.exists():
+        raise FileNotFoundError(f"{src.filename} was never extracted from a verified archive")
+    root = raw / stem
+    out = out_dir / f"{stem}.mirror.zip"
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_STORED) as z:  # JPEGs: nothing to deflate
+        for p in sorted(root.rglob("*")):
+            if p.is_file():
+                z.write(p, p.relative_to(raw).as_posix())
+    return out, content_digest(root)
+
+
+def _mirror(src: Source) -> Path | None:
+    """The mirror archive, or the directory it became: Kaggle may unzip uploaded archives."""
+    base = os.environ.get("AEROTRACK_MIRRORS")
+    if not base or not src.content_sha256:
+        return None
+    stem = Path(src.filename).stem
+    found = next(Path(base).rglob(f"{stem}.mirror.zip"), None)
+    return found or next((p for p in Path(base).rglob(stem) if p.is_dir()), None)
+
+
 def make_read_only(root: Path) -> None:
     """Files only: directories stay writable so `rm -rf data/raw/x` still works."""
     for dirpath, _, filenames in os.walk(root):
@@ -152,6 +199,19 @@ def ensure_raw(dataset: str, sources: list[Source], keep_archives: bool = True) 
     for src in sources:
         marker = raw / f".{src.filename}.complete"
         if marker.exists():
+            continue
+        if (mirror := _mirror(src)) is not None:
+            target = raw / src.extract_to
+            print(f"mirror {mirror} -> {target}", flush=True)
+            if mirror.is_dir():
+                shutil.copytree(mirror, target / mirror.name)
+            else:
+                _extract(mirror, target)
+            digest = content_digest(target / Path(src.filename).stem)
+            if digest != src.content_sha256:
+                raise RuntimeError(f"mirror {mirror} content {digest} != {src.content_sha256}")
+            make_read_only(target)
+            marker.write_text(json.dumps({"mirror": mirror.name, "content_sha256": digest}))
             continue
         archive = fetch(src)
         target = raw / src.extract_to

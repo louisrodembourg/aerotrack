@@ -3,7 +3,10 @@
 import base64
 import io
 import json
+import shutil
 import tarfile
+
+import pytest
 
 from aerotrack.paths import CONFIGS_DIR
 from aerotrack.remote import kaggle
@@ -104,3 +107,40 @@ def test_merge_output_brings_reports_back_relocated(tmp_path):
     assert kaggle.merge_output(out, "aerotrack-w8", runs, reports) == ["reports/w8"]
     rec = json.loads((reports / "w8" / "results.json").read_text())
     assert rec["results"][0]["weights"] == f"{runs}/ultralytics/x/weights/best.pt"
+
+
+def test_a_mirror_replaces_the_download_only_if_its_content_matches(tmp_path, monkeypatch):
+    import importlib
+
+    from aerotrack.data.download import Source, build_mirror, ensure_raw
+
+    download = importlib.import_module("aerotrack.data.download")  # not the function
+
+    src = Source(filename="Seq-test.zip", gdrive_id="never-used")
+    made = tmp_path / "made" / "raw"
+    (made / "ds" / "Seq-test" / "sequences").mkdir(parents=True)
+    (made / "ds" / "Seq-test" / "sequences" / "0001.jpg").write_bytes(b"frame")
+    (made / "ds" / ".Seq-test.zip.complete").write_text("{}")  # extracted from a verified archive
+    monkeypatch.setattr(download, "RAW_DIR", made)
+    mirrors = tmp_path / "input"
+    mirrors.mkdir()
+    archive, digest = build_mirror("ds", src, mirrors)
+
+    fresh = tmp_path / "fresh" / "raw"
+    monkeypatch.setattr(download, "RAW_DIR", fresh)
+    monkeypatch.setenv("AEROTRACK_MIRRORS", str(mirrors))
+    monkeypatch.setattr(download, "fetch", lambda s: pytest.fail("downloaded despite a mirror"))
+    ensure_raw("ds", [src.model_copy(update={"content_sha256": digest})])
+    assert (fresh / "ds" / "Seq-test" / "sequences" / "0001.jpg").read_bytes() == b"frame"
+
+    # Kaggle may unzip an uploaded archive: the extracted directory is accepted too.
+    unzipped = tmp_path / "unzipped"
+    shutil.unpack_archive(archive, unzipped / "x")
+    monkeypatch.setenv("AEROTRACK_MIRRORS", str(unzipped))
+    ensure_raw("again", [src.model_copy(update={"content_sha256": digest})])
+    assert (fresh / "again" / "Seq-test" / "sequences" / "0001.jpg").exists()
+    monkeypatch.setenv("AEROTRACK_MIRRORS", str(mirrors))
+
+    with pytest.raises(RuntimeError, match="mirror"):
+        ensure_raw("other", [src.model_copy(update={"content_sha256": "0" * 64})])
+    assert archive.name == "Seq-test.mirror.zip"

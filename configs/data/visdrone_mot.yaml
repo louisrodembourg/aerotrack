@@ -13,6 +13,10 @@ sources:
     gdrive_id: 14z8Acxopj1d86-qhsF1NwS4Bv3KYa4Wu
     official_page: https://github.com/VisDrone/VisDrone-Dataset
     sha256: 758abe40bf20246e7e778ac61eaa557cf004b034b6e68e85006e5add68e17eb5
+    # Google Drive answered "Quota exceeded" twice from Kaggle (November 2026): private
+    # mirror, accepted only if its extracted content matches (DECISIONS.md).
+    kaggle_mirror: aerotrack-visdrone-mot-test-dev
+    content_sha256: d07566751121073dff7fe38fa0f163e0669d44fcc5fa339f3759c138c32a0564
 splits:
   # Sequence counts from the VisDrone-Dataset README (56 train, 7 val).
   val: {dir: VisDrone2019-MOT-val, expected_sequences: 7}

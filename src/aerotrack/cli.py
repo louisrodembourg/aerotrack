@@ -143,6 +143,20 @@ def kaggle_push(
     kaggle.push(configs, overrides or [], suffix, slug, dry_run=dry_run, resume=resume)
 
 
+@kaggle_app.command("mirror")
+def kaggle_mirror(
+    dataset: Annotated[str, typer.Argument(help="visdrone_det | visdrone_mot | uavdt")],
+    split: SplitOpt = None,
+) -> None:
+    """Upload archives rebuilt from data/raw as private Kaggle datasets, for when the
+    official host refuses (Google Drive quota). Pin the printed content_sha256 in
+    configs/data/<dataset>.yaml: kernels use a mirror only if its content matches."""
+    from aerotrack.remote import kaggle  # noqa: PLC0415
+
+    for ref in kaggle.upload_mirror(dataset, split or []):
+        typer.echo(f"mirror ready: {ref}")
+
+
 @kaggle_app.command("status")
 def kaggle_status(slug: str) -> None:
     from aerotrack.remote import kaggle  # noqa: PLC0415

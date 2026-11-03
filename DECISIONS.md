@@ -577,3 +577,22 @@ mode measured 4.7 / 12.6 ms here and 5.3 / 14.1 ms in `reports/w9-cpp/`: session
 spread on a shared VM, which is why each comparison runs both settings in one session.
 Rejected: threading or vectorising the host letterbox, which would still upload a
 letterboxed frame larger than the original at 1280.
+
+## Private data mirror for Kaggle (week 10)
+
+**Why.** From Kaggle, Google Drive refused both VisDrone-MOT archives an evaluation needed
+("Quota exceeded": Drive caps downloads per file per day, and these files are popular).
+Data downloads now fetch only the splits a job needs (`--split`; a tracking job needs
+test-dev, 2.2 GB, not the 11 GB of all three), which helps but did not suffice.
+
+**What.** `aerotrack kaggle mirror <dataset> --split <split>` rebuilds an archive from the
+extraction under `data/raw/` and uploads it as a PRIVATE Kaggle dataset, named per source
+(`kaggle_mirror`). The extraction it starts from carries the marker proving the official
+archive's sha256 was checked. The official archive itself is gone (extracted without
+keeping archives), so the mirror cannot match that sha256; it is pinned instead by
+`content_sha256`, a digest of every extracted file (path + sha256). A kernel extracts a
+mirror only when the source pins that digest, and refuses it if the extracted content
+differs. Rejected: retrying Drive the next day (the quota came back on two files in a row);
+uploading without a digest (no way to tell a stale or partial mirror). The mirror stays
+private, used only by this project's kernels; VisDrone's terms (academic, non-commercial
+use) are unchanged by it, and it is never made public.

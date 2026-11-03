@@ -115,7 +115,9 @@ def main() -> int:
            "AEROTRACK_WEIGHTS": str(ROOT / "weights"),
            "AEROTRACK_GIT_COMMIT": GIT_COMMIT, "AEROTRACK_GIT_DIRTY": GIT_DIRTY,
            "UV_PYTHON_INSTALL_DIR": str(ROOT / "python"), "UV_LINK_MODE": "copy",
-           "WANDB_PROJECT": os.environ.get("WANDB_PROJECT", "aerotrack")}
+           "WANDB_PROJECT": os.environ.get("WANDB_PROJECT", "aerotrack"),
+           # Private mirrors of archives the official host refuses (`kaggle mirror`).
+           "AEROTRACK_MIRRORS": "/kaggle/input"}
     if key := wandb_key():
         env["WANDB_API_KEY"] = key
     else:

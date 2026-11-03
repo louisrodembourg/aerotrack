@@ -172,6 +172,47 @@ def render(jobs: list[dict], commit: str, bundle_b64: str) -> str:
     return src
 
 
+def _sources(dataset: str, splits: list[str] | None) -> list[dict]:
+    """The dataset config's archive sources for `splits` (all when None)."""
+    from aerotrack.data import _only, dataset_config  # noqa: PLC0415
+
+    cfg = _only(dataset_config(dataset), splits)
+    dirs = {v["dir"] for v in cfg["splits"].values()}
+    return [s for s in cfg["sources"] if Path(s["filename"]).stem in dirs]
+
+
+def upload_mirror(dataset: str, splits: list[str]) -> list[str]:
+    """Rebuild the archives of `splits` from data/raw and upload each as the private Kaggle
+    dataset its source names (`kaggle_mirror`); print the content digests to pin."""
+    from aerotrack.data.download import Source, build_mirror  # noqa: PLC0415
+
+    refs = []
+    for s in _sources(dataset, splits):
+        src = Source(**s)
+        if not src.kaggle_mirror:
+            raise SystemExit(f"{src.filename}: no kaggle_mirror slug in configs/data/{dataset}.yaml")
+        out = Path(tempfile.mkdtemp(prefix="aerotrack-mirror-"))
+        try:
+            archive, digest = build_mirror(dataset, src, out)
+            print(f"{archive.name}: content_sha256 {digest}", flush=True)
+            if src.content_sha256 and digest != src.content_sha256:
+                raise SystemExit(f"local content differs from the pinned {src.content_sha256}")
+            refs.append(upload_dataset({archive.name: archive}, src.kaggle_mirror))
+        finally:
+            shutil.rmtree(out, ignore_errors=True)
+    return refs
+
+
+def mirror_refs(jobs: list[dict]) -> list[str]:
+    """Mirror datasets to attach: those of the archives the jobs' splits come from."""
+    refs = set()
+    for job in jobs:
+        for s in _sources(job["dataset"], job.get("splits")):
+            if s.get("kaggle_mirror") and s.get("content_sha256"):
+                refs.add(kernel_ref(s["kaggle_mirror"]))
+    return sorted(refs)
+
+
 def kernel_ref(slug: str) -> str:
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]{3,48}", slug):
         raise SystemExit(f"invalid kernel slug {slug!r}: lowercase letters, digits, dashes")
@@ -194,6 +235,8 @@ def push(configs: list[Path], overrides: list[str], suffix: str | None, slug: st
     inputs = sorted({r for j in jobs for r in j.get("inputs", [])})
     if inputs and not dry_run:
         datasets.append(upload_runs(inputs, slug))
+    if not dry_run:
+        datasets += mirror_refs(jobs)
     ref = kernel_ref(slug) if not dry_run else f"dry-run/{slug}"
     folder = Path(tempfile.mkdtemp(prefix="aerotrack-kaggle-"))
     (folder / "kernel.py").write_text(render(jobs, commit, b64))
