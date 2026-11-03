@@ -27,7 +27,9 @@ hybrid keyframe mode. Copy-paste of rare objects, tried last, brought nothing: t
 detectors are the reference. Week 8: TensorRT FP16 / INT8 on an NVIDIA T4 (hardware
 decision: DECISIONS.md). NMS moved to the host on every GPU. Week 9: the C++ runtime
 (letterbox, TensorRT, NMS in C++, `cpp/`), measured against the Python pipeline on the same
-engines, then preprocessing moved to the GPU. Next: INT8 QAT, tracking in C++.
+engines, then preprocessing moved to the GPU. Week 10: ByteTrack in C++, the whole
+detection + tracking pipeline measured end to end. Next: an embedded target (Jetson),
+robustness (week 11).
 
 | Weeks | Stage |
 |---|---|
@@ -91,6 +93,13 @@ stated.
   12.6 → 6.3 ms, p95 3.5 and 7.1 ms. It is the C++ runtime's default
   ([w9-cpp-preprocess](reports/w9-cpp-preprocess/results.md)). From the Python TensorRT
   pipeline (19.5 ms at 1280), the C++ runtime is 3x faster at the same accuracy.
+- **Detection + tracking end to end in C++: n at 1280 tracks in 6.9 ms per frame (145 FPS)
+  on a T4.** ByteTrack and its Kalman filter ported to C++ give the same tracks as the
+  Python ones (tested on identical detections) and the same scores on VisDrone-MOT test-dev:
+  HOTA 46.8 vs 46.7 at 1280, 39.1 vs 39.2 at 640, on the 12 sequences unseen by the detector.
+  With tracking inside the timed loop, the frame goes from 23.8 to 6.9 ms at 1280 and from
+  14.2 to 2.9 ms at 640, p95 from 40.7 to 7.5 ms; the tracker itself from 3.8 to 0.2 ms
+  ([w10-cpp-tracking](reports/w10-cpp-tracking/results.md)).
 - **Copy-paste of rare small objects does not help here.** Pasting objects of the five
   rarest classes into training images changes test-dev mAP by -0.1 (640) and -0.2 (1280),
   and the rare classes themselves by about a point either way
@@ -142,6 +151,24 @@ stated.
 
 | Model | Backend | Device | Versions | Pre | Infer | Post | Total median | Total p95 | FPS (median) | ≥ budget |
 |---|---|---|---|---|---|---|---|---|---|---|
+
+#### w10-cpp-tracking ([full report](reports/w10-cpp-tracking/results.md))
+
+HOTA, MOTA, IDF1, IDSW on the 12 sequences unseen by the detector:
+
+| Model | Tracker | imgsz | HOTA | MOTA | IDF1 | IDSW | HOTA, all 17 seq. | Run |
+|---|---|---|---|---|---|---|---|---|
+| n640-python | bytetrack | 640 | 39.2 | 8.4 | 45.9 | 1162 | 39.0 | `20261103-203853-w10-cpp-tracking-n640-python-4be1e7` |
+| n640-cpp | bytetrack-cpp | 640 | 39.1 | 8.6 | 45.8 | 1163 | 38.8 | `20261103-205304-w10-cpp-tracking-n640-cpp-7af2b5` |
+| n1280-python | bytetrack | 1280 | 46.7 | 29.3 | 56.9 | 1253 | 47.1 | `20261103-205818-w10-cpp-tracking-n1280-python-ffddba` |
+| n1280-cpp | bytetrack-cpp | 1280 | 46.8 | 30.3 | 57.1 | 1274 | 47.2 | `20261103-211246-w10-cpp-tracking-n1280-cpp-56119f` |
+
+| Model | Backend | Device | Versions | Track | Total median | Total mean | Total p95 | Total max | FPS | ≥ budget |
+|---|---|---|---|---|---|---|---|---|---|---|
+| n640-python | tensorrt fp16 | Tesla T4 | TRT 10.16.1.11 | 3.5 | 14.2 | 16.4 | 29.4 | 46.3 | 70.4 (median) | yes |
+| n640-cpp | cpp fp16 | Tesla T4 | GNU 13.3.0, TRT 10.16.1.11 | 0.1 | 2.9 | 3.0 | 4.4 | 4.6 | 347.8 (median) | yes |
+| n1280-python | tensorrt fp16 | Tesla T4 | TRT 10.16.1.11 | 3.8 | 23.8 | 26.6 | 40.7 | 70.3 | 42.0 (median) | yes |
+| n1280-cpp | cpp fp16 | Tesla T4 | GNU 13.3.0, TRT 10.16.1.11 | 0.2 | 6.9 | 7.0 | 7.5 | 9.1 | 145.5 (median) | yes |
 
 #### w3-reference ([full report](reports/w3-reference/results.md))
 

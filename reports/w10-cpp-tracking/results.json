@@ -1,0 +1,1103 @@
+{
+  "name": "w10-cpp-tracking",
+  "kind": "tracking",
+  "config": {
+    "name": "w10-cpp-tracking",
+    "seed": 0,
+    "device": "auto",
+    "dataset": {
+      "mot": "visdrone_mot",
+      "split": "test-dev"
+    },
+    "models": [
+      {
+        "run": "visdrone-yolo26n-640",
+        "imgsz": 640,
+        "name": "n640-python",
+        "backend": "tensorrt",
+        "precision": "fp16",
+        "latency_backends": [
+          "tensorrt"
+        ],
+        "tracker": {
+          "type": "bytetrack",
+          "high": 0.5,
+          "new": 0.5,
+          "low": 0.1,
+          "match": 0.9
+        }
+      },
+      {
+        "run": "visdrone-yolo26n-640",
+        "imgsz": 640,
+        "name": "n640-cpp",
+        "backend": "cpp",
+        "precision": "fp16",
+        "latency_backends": [
+          "cpp"
+        ],
+        "tracker": {
+          "type": "bytetrack-cpp",
+          "high": 0.5,
+          "new": 0.5,
+          "low": 0.1,
+          "match": 0.9
+        }
+      },
+      {
+        "run": "visdrone-yolo26n-1280",
+        "imgsz": 1280,
+        "name": "n1280-python",
+        "backend": "tensorrt",
+        "precision": "fp16",
+        "latency_backends": [
+          "tensorrt"
+        ],
+        "tracker": {
+          "type": "bytetrack",
+          "high": 0.5,
+          "new": 0.6,
+          "low": 0.05,
+          "match": 0.9
+        }
+      },
+      {
+        "run": "visdrone-yolo26n-1280",
+        "imgsz": 1280,
+        "name": "n1280-cpp",
+        "backend": "cpp",
+        "precision": "fp16",
+        "latency_backends": [
+          "cpp"
+        ],
+        "tracker": {
+          "type": "bytetrack-cpp",
+          "high": 0.5,
+          "new": 0.6,
+          "low": 0.05,
+          "match": 0.9
+        }
+      }
+    ],
+    "detection": {
+      "imgsz": 640,
+      "conf": 0.05,
+      "iou": 0.7,
+      "max_det": 500
+    },
+    "tracker": {
+      "type": "bytetrack",
+      "buffer": 30
+    },
+    "latency": {
+      "enabled": true,
+      "backends": [
+        "tensorrt"
+      ],
+      "n_frames": 100,
+      "warmup": 50,
+      "iters": 300
+    },
+    "report_dir": "/kaggle/working/reports/w10-cpp-tracking",
+    "_source": "configs/eval/w10_cpp_tracking.yaml"
+  },
+  "budget_fps": 25,
+  "results": [
+    {
+      "model": "n640-python",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261025-192839-visdrone-yolo26n-640-540b95/weights/best.pt",
+      "run_id": "20261103-203853-w10-cpp-tracking-n640-python-4be1e7",
+      "train_run": "20261025-192839-visdrone-yolo26n-640-540b95",
+      "accuracy": {
+        "HOTA": 0.3917454264412427,
+        "MOTA": 0.08385258898200125,
+        "IDF1": 0.4591457669342283,
+        "IDSW": 1162,
+        "per_class": {
+          "bus": {
+            "HOTA": 0.38474592605200225,
+            "MOTA": -0.8795180722891566,
+            "IDF1": 0.38817480719794345,
+            "IDSW": 2
+          },
+          "car": {
+            "HOTA": 0.5297426542656992,
+            "MOTA": 0.5896955041208113,
+            "IDF1": 0.6720964890999203,
+            "IDSW": 472
+          },
+          "pedestrian": {
+            "HOTA": 0.2526976337488593,
+            "MOTA": 0.19546758014304683,
+            "IDF1": 0.31399333726509077,
+            "IDSW": 621
+          },
+          "truck": {
+            "HOTA": 0.3646403019335713,
+            "MOTA": 0.2622204630912329,
+            "IDF1": 0.44549253731343286,
+            "IDSW": 30
+          },
+          "van": {
+            "HOTA": 0.42690061620608144,
+            "MOTA": 0.2513974698440718,
+            "IDF1": 0.475971663794754,
+            "IDSW": 37
+          }
+        },
+        "all_sequences": {
+          "HOTA": 0.3895123904397591,
+          "MOTA": 0.2661668306009072,
+          "IDF1": 0.4812147967745413,
+          "IDSW": 1812,
+          "per_class": {
+            "bus": {
+              "HOTA": 0.42421338078329873,
+              "MOTA": 0.06845637583892618,
+              "IDF1": 0.5309417040358745,
+              "IDSW": 17
+            },
+            "car": {
+              "HOTA": 0.5059834435623248,
+              "MOTA": 0.518848955754716,
+              "IDF1": 0.6452762740243865,
+              "IDSW": 940
+            },
+            "pedestrian": {
+              "HOTA": 0.2644949698785519,
+              "MOTA": 0.21129570655718835,
+              "IDF1": 0.33429822508941404,
+              "IDSW": 761
+            },
+            "truck": {
+              "HOTA": 0.39044155563982147,
+              "MOTA": 0.3330888823701965,
+              "IDF1": 0.48505363108844735,
+              "IDSW": 44
+            },
+            "van": {
+              "HOTA": 0.3624286023347984,
+              "MOTA": 0.19914423248350865,
+              "IDF1": 0.4105041496345844,
+              "IDSW": 50
+            }
+          }
+        },
+        "sequences": {
+          "all": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000201_00000_v",
+            "uav0000249_00001_v",
+            "uav0000249_02688_v",
+            "uav0000297_00000_v",
+            "uav0000297_02761_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ],
+          "unseen": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ]
+        },
+        "classes": [
+          "bus",
+          "car",
+          "pedestrian",
+          "truck",
+          "van"
+        ],
+        "split": "/tmp/aerotrack/data/processed/visdrone_mot/test-dev",
+        "imgsz": 640,
+        "conf": 0.05,
+        "tracker": {
+          "type": "bytetrack",
+          "buffer": 30,
+          "high": 0.5,
+          "new": 0.5,
+          "low": 0.1,
+          "match": 0.9
+        },
+        "runtime": {
+          "backend": "tensorrt",
+          "device": "cuda",
+          "half": false,
+          "host_nms": true,
+          "precision": "fp16",
+          "engine": "/tmp/aerotrack/weights/engine/best_e7c4c905d5e7_640_md500_b1_fp16.engine",
+          "calibration_data": null
+        },
+        "keyframe": null
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 2.2344045000863844,
+            "p95_ms": 2.452229699929376,
+            "mean_ms": 2.2530564566644293,
+            "std_ms": 0.11086318594776655,
+            "min_ms": 2.0805079998353904,
+            "max_ms": 2.6742469999589957
+          },
+          "inference": {
+            "median_ms": 3.591902499920252,
+            "p95_ms": 3.6144223501196393,
+            "mean_ms": 3.595182236660245,
+            "std_ms": 0.011106786267787676,
+            "min_ms": 3.5823550001623516,
+            "max_ms": 3.6683230000562617
+          },
+          "postprocess": {
+            "median_ms": 4.83961150007417,
+            "p95_ms": 15.791983300164251,
+            "mean_ms": 6.507842250016438,
+            "std_ms": 4.5532583402843265,
+            "min_ms": 3.3487149999018584,
+            "max_ms": 31.46894599967709
+          },
+          "tracking": {
+            "median_ms": 3.512937000095917,
+            "p95_ms": 7.977441849902789,
+            "mean_ms": 4.0499929566749415,
+            "std_ms": 1.5470306500347633,
+            "min_ms": 1.5394940000987845,
+            "max_ms": 8.969653000349354
+          },
+          "total": {
+            "median_ms": 14.205479499878493,
+            "p95_ms": 29.433360499797345,
+            "mean_ms": 16.406073900016054,
+            "std_ms": 5.999664964860113,
+            "min_ms": 11.464968999916891,
+            "max_ms": 46.2917469999411
+          },
+          "fps_median": 70.39537102626866,
+          "fps_mean": 60.95303520478605,
+          "fps_p95": 33.97505357931811,
+          "iterations": 300,
+          "budget_basis": "median",
+          "by_kind": {
+            "key": {
+              "frames": 300,
+              "mean_ms": 16.406073900016054
+            }
+          },
+          "warmup": 50,
+          "batch": 1,
+          "imgsz": 640,
+          "conf": 0.05,
+          "sequence": "uav0000009_03358_v",
+          "n_distinct_frames": 100,
+          "runtime": {
+            "backend": "tensorrt",
+            "device": "cuda",
+            "half": false,
+            "host_nms": true,
+            "precision": "fp16",
+            "engine": "/tmp/aerotrack/weights/engine/best_e7c4c905d5e7_640_md500_b1_fp16.engine",
+            "calibration_data": null
+          },
+          "peak_process_rss_mb": 2975.71484375,
+          "device_memory_mb": 75.75390625,
+          "env": {
+            "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+            "machine": "x86_64",
+            "cpu": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+            "python": "3.12.3",
+            "torch": "2.14.1+cu126",
+            "torch_cuda": "12.6",
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": "10.16.1.11",
+            "jetson_power_mode": null,
+            "macos_power": null,
+            "device": "cuda",
+            "device_name": "Tesla T4"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess",
+            "tracking"
+          ],
+          "tracking_included": true,
+          "budget_fps": 25,
+          "meets_budget": true
+        }
+      ]
+    },
+    {
+      "model": "n640-cpp",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261025-192839-visdrone-yolo26n-640-540b95/weights/best.pt",
+      "run_id": "20261103-205304-w10-cpp-tracking-n640-cpp-7af2b5",
+      "train_run": "20261025-192839-visdrone-yolo26n-640-540b95",
+      "accuracy": {
+        "HOTA": 0.3910044621916354,
+        "MOTA": 0.08592145607350085,
+        "IDF1": 0.45828182803535783,
+        "IDSW": 1163,
+        "per_class": {
+          "bus": {
+            "HOTA": 0.38588225958170164,
+            "MOTA": -0.8634538152610441,
+            "IDF1": 0.39018087855297157,
+            "IDSW": 2
+          },
+          "car": {
+            "HOTA": 0.5291215281335152,
+            "MOTA": 0.5898764579117932,
+            "IDF1": 0.670631480389777,
+            "IDSW": 473
+          },
+          "pedestrian": {
+            "HOTA": 0.24990202848435844,
+            "MOTA": 0.1951216790707535,
+            "IDF1": 0.3104643656909701,
+            "IDSW": 609
+          },
+          "truck": {
+            "HOTA": 0.3652820715329483,
+            "MOTA": 0.2606372452008708,
+            "IDF1": 0.4467551093581929,
+            "IDSW": 32
+          },
+          "van": {
+            "HOTA": 0.42483442322565357,
+            "MOTA": 0.24742571344513092,
+            "IDF1": 0.47337730618487717,
+            "IDSW": 47
+          }
+        },
+        "all_sequences": {
+          "HOTA": 0.3884882631348177,
+          "MOTA": 0.26730469431540393,
+          "IDF1": 0.4803925476305434,
+          "IDSW": 1834,
+          "per_class": {
+            "bus": {
+              "HOTA": 0.42460264504296036,
+              "MOTA": 0.07785234899328859,
+              "IDF1": 0.5338526063511084,
+              "IDSW": 18
+            },
+            "car": {
+              "HOTA": 0.5051921413530039,
+              "MOTA": 0.519424882036152,
+              "IDF1": 0.6441221350514034,
+              "IDSW": 950
+            },
+            "pedestrian": {
+              "HOTA": 0.2630758645075804,
+              "MOTA": 0.21163143153128958,
+              "IDF1": 0.3329924265212131,
+              "IDSW": 758
+            },
+            "truck": {
+              "HOTA": 0.39108356468487016,
+              "MOTA": 0.33176884716925786,
+              "IDF1": 0.48631764188297405,
+              "IDSW": 48
+            },
+            "van": {
+              "HOTA": 0.35848710008567347,
+              "MOTA": 0.19584596184703157,
+              "IDF1": 0.4046779283460182,
+              "IDSW": 60
+            }
+          }
+        },
+        "sequences": {
+          "all": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000201_00000_v",
+            "uav0000249_00001_v",
+            "uav0000249_02688_v",
+            "uav0000297_00000_v",
+            "uav0000297_02761_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ],
+          "unseen": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ]
+        },
+        "classes": [
+          "bus",
+          "car",
+          "pedestrian",
+          "truck",
+          "van"
+        ],
+        "split": "/tmp/aerotrack/data/processed/visdrone_mot/test-dev",
+        "imgsz": 640,
+        "conf": 0.05,
+        "tracker": {
+          "type": "bytetrack-cpp",
+          "buffer": 30,
+          "high": 0.5,
+          "new": 0.5,
+          "low": 0.1,
+          "match": 0.9
+        },
+        "runtime": {
+          "backend": "cpp",
+          "device": "cuda",
+          "half": false,
+          "host_nms": true,
+          "gpu_preprocess": true,
+          "precision": "fp16",
+          "engine": "/tmp/aerotrack/weights/engine/best_e7c4c905d5e7_640_md500_b1_fp16.engine",
+          "calibration_data": null,
+          "tensorrt_headers": "10.16.1.11",
+          "tensorrt_library": "10.16.1",
+          "compiler": "GNU 13.3.0",
+          "io_dtype": [
+            "float32",
+            "float32"
+          ]
+        },
+        "keyframe": null
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 0.7363175000136835,
+            "p95_ms": 0.7985885999005404,
+            "mean_ms": 0.7391295133341677,
+            "std_ms": 0.0322009607893312,
+            "min_ms": 0.6684119998681126,
+            "max_ms": 0.8687579997967987
+          },
+          "inference": {
+            "median_ms": 1.697586999853229,
+            "p95_ms": 3.269680200332914,
+            "mean_ms": 1.8356278266567945,
+            "std_ms": 0.37161123802294965,
+            "min_ms": 1.6431710000688327,
+            "max_ms": 3.310022999812645
+          },
+          "postprocess": {
+            "median_ms": 0.27970049995929,
+            "p95_ms": 0.42760175003877526,
+            "mean_ms": 0.3031976866729262,
+            "std_ms": 0.06831045000095949,
+            "min_ms": 0.2474460002304113,
+            "max_ms": 0.7048119996397872
+          },
+          "tracking": {
+            "median_ms": 0.13750850007454574,
+            "p95_ms": 0.2786739002203831,
+            "mean_ms": 0.15912575667092219,
+            "std_ms": 0.05644822270795941,
+            "min_ms": 0.10239899984298972,
+            "max_ms": 0.42939600007230183
+          },
+          "total": {
+            "median_ms": 2.8754999998454878,
+            "p95_ms": 4.444480449956245,
+            "mean_ms": 3.0370807833348104,
+            "std_ms": 0.3995065504528315,
+            "min_ms": 2.705880000576144,
+            "max_ms": 4.558271999940189
+          },
+          "fps_median": 347.7656060002553,
+          "fps_mean": 329.2635498822552,
+          "fps_p95": 224.99817723573173,
+          "iterations": 300,
+          "budget_basis": "median",
+          "by_kind": {
+            "key": {
+              "frames": 300,
+              "mean_ms": 3.0370807833348104
+            }
+          },
+          "warmup": 50,
+          "batch": 1,
+          "imgsz": 640,
+          "conf": 0.05,
+          "sequence": "uav0000009_03358_v",
+          "n_distinct_frames": 100,
+          "runtime": {
+            "backend": "cpp",
+            "device": "cuda",
+            "half": false,
+            "host_nms": true,
+            "gpu_preprocess": true,
+            "precision": "fp16",
+            "engine": "/tmp/aerotrack/weights/engine/best_e7c4c905d5e7_640_md500_b1_fp16.engine",
+            "calibration_data": null,
+            "tensorrt_headers": "10.16.1.11",
+            "tensorrt_library": "10.16.1",
+            "compiler": "GNU 13.3.0",
+            "io_dtype": [
+              "float32",
+              "float32"
+            ]
+          },
+          "peak_process_rss_mb": 2995.94140625,
+          "device_memory_mb": 75.75390625,
+          "env": {
+            "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+            "machine": "x86_64",
+            "cpu": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+            "python": "3.12.3",
+            "torch": "2.14.1+cu126",
+            "torch_cuda": "12.6",
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": "10.16.1.11",
+            "jetson_power_mode": null,
+            "macos_power": null,
+            "device": "cuda",
+            "device_name": "Tesla T4"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess",
+            "tracking"
+          ],
+          "tracking_included": true,
+          "budget_fps": 25,
+          "meets_budget": true
+        }
+      ]
+    },
+    {
+      "model": "n1280-python",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261026-121849-visdrone-yolo26n-1280-88e380/weights/best.pt",
+      "run_id": "20261103-205818-w10-cpp-tracking-n1280-python-ffddba",
+      "train_run": "20261026-121849-visdrone-yolo26n-1280-88e380",
+      "accuracy": {
+        "HOTA": 0.46658790318517146,
+        "MOTA": 0.293354598420565,
+        "IDF1": 0.5693185803332506,
+        "IDSW": 1253,
+        "per_class": {
+          "bus": {
+            "HOTA": 0.49512486597740657,
+            "MOTA": -0.18072289156626506,
+            "IDF1": 0.5676470588235294,
+            "IDSW": 0
+          },
+          "car": {
+            "HOTA": 0.5681867884680927,
+            "MOTA": 0.6551185247330932,
+            "IDF1": 0.718318208003206,
+            "IDSW": 404
+          },
+          "pedestrian": {
+            "HOTA": 0.35077756884603173,
+            "MOTA": 0.31495966347173093,
+            "IDF1": 0.45454484176468607,
+            "IDSW": 757
+          },
+          "truck": {
+            "HOTA": 0.4418658146943648,
+            "MOTA": 0.35305758955076194,
+            "IDF1": 0.5255115390653619,
+            "IDSW": 49
+          },
+          "van": {
+            "HOTA": 0.47698447793996135,
+            "MOTA": 0.32436010591350395,
+            "IDF1": 0.58057125400947,
+            "IDSW": 43
+          }
+        },
+        "all_sequences": {
+          "HOTA": 0.4714733642771044,
+          "MOTA": 0.4308439099385836,
+          "IDF1": 0.5934502335737921,
+          "IDSW": 1891,
+          "per_class": {
+            "bus": {
+              "HOTA": 0.5719635235923581,
+              "MOTA": 0.538255033557047,
+              "IDF1": 0.724157955865273,
+              "IDSW": 18
+            },
+            "car": {
+              "HOTA": 0.5538016309530049,
+              "MOTA": 0.5946388335977205,
+              "IDF1": 0.7100473207799093,
+              "IDSW": 801
+            },
+            "pedestrian": {
+              "HOTA": 0.35517644715895463,
+              "MOTA": 0.3092890304262748,
+              "IDF1": 0.4645318838867226,
+              "IDSW": 949
+            },
+            "truck": {
+              "HOTA": 0.44669244298444666,
+              "MOTA": 0.4360516280434145,
+              "IDF1": 0.5369586327442222,
+              "IDSW": 69
+            },
+            "van": {
+              "HOTA": 0.4297327766967576,
+              "MOTA": 0.2759850240684614,
+              "IDF1": 0.5315553745928339,
+              "IDSW": 54
+            }
+          }
+        },
+        "sequences": {
+          "all": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000201_00000_v",
+            "uav0000249_00001_v",
+            "uav0000249_02688_v",
+            "uav0000297_00000_v",
+            "uav0000297_02761_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ],
+          "unseen": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ]
+        },
+        "classes": [
+          "bus",
+          "car",
+          "pedestrian",
+          "truck",
+          "van"
+        ],
+        "split": "/tmp/aerotrack/data/processed/visdrone_mot/test-dev",
+        "imgsz": 1280,
+        "conf": 0.05,
+        "tracker": {
+          "type": "bytetrack",
+          "buffer": 30,
+          "high": 0.5,
+          "new": 0.6,
+          "low": 0.05,
+          "match": 0.9
+        },
+        "runtime": {
+          "backend": "tensorrt",
+          "device": "cuda",
+          "half": false,
+          "host_nms": true,
+          "precision": "fp16",
+          "engine": "/tmp/aerotrack/weights/engine/best_5904a8e2e5b0_1280_md500_b1_fp16.engine",
+          "calibration_data": null
+        },
+        "keyframe": null
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 6.697439500157998,
+            "p95_ms": 7.170479600335966,
+            "mean_ms": 6.756603223334423,
+            "std_ms": 0.38432943045416296,
+            "min_ms": 6.336918999750196,
+            "max_ms": 10.898736999934044
+          },
+          "inference": {
+            "median_ms": 8.100773500018477,
+            "p95_ms": 8.316004099901875,
+            "mean_ms": 8.116690620011772,
+            "std_ms": 0.10836635134842229,
+            "min_ms": 7.923347000087233,
+            "max_ms": 8.335814000020036
+          },
+          "postprocess": {
+            "median_ms": 5.301438000287817,
+            "p95_ms": 16.347983949913214,
+            "mean_ms": 7.256981566653546,
+            "std_ms": 5.65953043093986,
+            "min_ms": 4.075737000221125,
+            "max_ms": 44.42291999976078
+          },
+          "tracking": {
+            "median_ms": 3.7726864998148812,
+            "p95_ms": 9.606955249978455,
+            "mean_ms": 4.487857400005548,
+            "std_ms": 2.0038567588271303,
+            "min_ms": 1.6332709997186612,
+            "max_ms": 10.881601000164665
+          },
+          "total": {
+            "median_ms": 23.8372139999683,
+            "p95_ms": 40.686280199793146,
+            "mean_ms": 26.61813281000529,
+            "std_ms": 7.497998168373606,
+            "min_ms": 21.418980999442283,
+            "max_ms": 70.30821499984086
+          },
+          "fps_median": 41.951211244792695,
+          "fps_mean": 37.56837518009969,
+          "fps_p95": 24.578309815727124,
+          "iterations": 300,
+          "budget_basis": "median",
+          "by_kind": {
+            "key": {
+              "frames": 300,
+              "mean_ms": 26.61813281000529
+            }
+          },
+          "warmup": 50,
+          "batch": 1,
+          "imgsz": 1280,
+          "conf": 0.05,
+          "sequence": "uav0000009_03358_v",
+          "n_distinct_frames": 100,
+          "runtime": {
+            "backend": "tensorrt",
+            "device": "cuda",
+            "half": false,
+            "host_nms": true,
+            "precision": "fp16",
+            "engine": "/tmp/aerotrack/weights/engine/best_5904a8e2e5b0_1280_md500_b1_fp16.engine",
+            "calibration_data": null
+          },
+          "peak_process_rss_mb": 2995.94140625,
+          "device_memory_mb": 149.1337890625,
+          "env": {
+            "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+            "machine": "x86_64",
+            "cpu": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+            "python": "3.12.3",
+            "torch": "2.14.1+cu126",
+            "torch_cuda": "12.6",
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": "10.16.1.11",
+            "jetson_power_mode": null,
+            "macos_power": null,
+            "device": "cuda",
+            "device_name": "Tesla T4"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess",
+            "tracking"
+          ],
+          "tracking_included": true,
+          "budget_fps": 25,
+          "meets_budget": true
+        }
+      ]
+    },
+    {
+      "model": "n1280-cpp",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261026-121849-visdrone-yolo26n-1280-88e380/weights/best.pt",
+      "run_id": "20261103-211246-w10-cpp-tracking-n1280-cpp-56119f",
+      "train_run": "20261026-121849-visdrone-yolo26n-1280-88e380",
+      "accuracy": {
+        "HOTA": 0.4681580144774574,
+        "MOTA": 0.3027055600785477,
+        "IDF1": 0.5714099485687197,
+        "IDSW": 1274,
+        "per_class": {
+          "bus": {
+            "HOTA": 0.5049991028633727,
+            "MOTA": -0.13654618473895583,
+            "IDF1": 0.5794947994056464,
+            "IDSW": 0
+          },
+          "car": {
+            "HOTA": 0.5676166835000244,
+            "MOTA": 0.6546085640494168,
+            "IDF1": 0.717673475179673,
+            "IDSW": 401
+          },
+          "pedestrian": {
+            "HOTA": 0.35066127586644186,
+            "MOTA": 0.3159750504903985,
+            "IDF1": 0.4533709153191547,
+            "IDSW": 777
+          },
+          "truck": {
+            "HOTA": 0.4394608016110735,
+            "MOTA": 0.35454185632297647,
+            "IDF1": 0.5248560962846677,
+            "IDSW": 53
+          },
+          "van": {
+            "HOTA": 0.47805220854637465,
+            "MOTA": 0.32494851426890264,
+            "IDF1": 0.5816544566544567,
+            "IDSW": 43
+          }
+        },
+        "all_sequences": {
+          "HOTA": 0.47152412082558187,
+          "MOTA": 0.4330460853409107,
+          "IDF1": 0.5935611100264557,
+          "IDSW": 1906,
+          "per_class": {
+            "bus": {
+              "HOTA": 0.5739579839390228,
+              "MOTA": 0.5456375838926174,
+              "IDF1": 0.7265852239674229,
+              "IDSW": 17
+            },
+            "car": {
+              "HOTA": 0.553754728057842,
+              "MOTA": 0.5964070283214274,
+              "IDF1": 0.7102621921563426,
+              "IDSW": 793
+            },
+            "pedestrian": {
+              "HOTA": 0.3546086385454971,
+              "MOTA": 0.31002762536929745,
+              "IDF1": 0.46293179630640724,
+              "IDSW": 970
+            },
+            "truck": {
+              "HOTA": 0.4454160119022408,
+              "MOTA": 0.43663831035494277,
+              "IDF1": 0.5369528913744223,
+              "IDSW": 71
+            },
+            "van": {
+              "HOTA": 0.4298832416833065,
+              "MOTA": 0.2765198787662685,
+              "IDF1": 0.5310734463276836,
+              "IDSW": 55
+            }
+          }
+        },
+        "sequences": {
+          "all": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000201_00000_v",
+            "uav0000249_00001_v",
+            "uav0000249_02688_v",
+            "uav0000297_00000_v",
+            "uav0000297_02761_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ],
+          "unseen": [
+            "uav0000009_03358_v",
+            "uav0000073_00600_v",
+            "uav0000073_04464_v",
+            "uav0000077_00720_v",
+            "uav0000088_00290_v",
+            "uav0000119_02301_v",
+            "uav0000120_04775_v",
+            "uav0000161_00000_v",
+            "uav0000188_00000_v",
+            "uav0000306_00230_v",
+            "uav0000355_00001_v",
+            "uav0000370_00001_v"
+          ]
+        },
+        "classes": [
+          "bus",
+          "car",
+          "pedestrian",
+          "truck",
+          "van"
+        ],
+        "split": "/tmp/aerotrack/data/processed/visdrone_mot/test-dev",
+        "imgsz": 1280,
+        "conf": 0.05,
+        "tracker": {
+          "type": "bytetrack-cpp",
+          "buffer": 30,
+          "high": 0.5,
+          "new": 0.6,
+          "low": 0.05,
+          "match": 0.9
+        },
+        "runtime": {
+          "backend": "cpp",
+          "device": "cuda",
+          "half": false,
+          "host_nms": true,
+          "gpu_preprocess": true,
+          "precision": "fp16",
+          "engine": "/tmp/aerotrack/weights/engine/best_5904a8e2e5b0_1280_md500_b1_fp16.engine",
+          "calibration_data": null,
+          "tensorrt_headers": "10.16.1.11",
+          "tensorrt_library": "10.16.1",
+          "compiler": "GNU 13.3.0",
+          "io_dtype": [
+            "float32",
+            "float32"
+          ]
+        },
+        "keyframe": null
+      },
+      "latency": [
+        {
+          "preprocess": {
+            "median_ms": 0.8452370000213705,
+            "p95_ms": 0.9495940498936761,
+            "mean_ms": 0.8620708133412336,
+            "std_ms": 0.11034135186359204,
+            "min_ms": 0.7804729998497351,
+            "max_ms": 2.250959000321018
+          },
+          "inference": {
+            "median_ms": 4.991088999986459,
+            "p95_ms": 5.119036850010161,
+            "mean_ms": 4.9888389966524,
+            "std_ms": 0.08548769546907152,
+            "min_ms": 4.756008999720507,
+            "max_ms": 5.205006999858597
+          },
+          "postprocess": {
+            "median_ms": 0.8215815000767179,
+            "p95_ms": 1.334196299717405,
+            "mean_ms": 0.9158811366736094,
+            "std_ms": 0.19906612573355198,
+            "min_ms": 0.772289999986242,
+            "max_ms": 2.205211000273266
+          },
+          "tracking": {
+            "median_ms": 0.16125899992402992,
+            "p95_ms": 0.3420926499302368,
+            "mean_ms": 0.19699684666647954,
+            "std_ms": 0.09741803040466365,
+            "min_ms": 0.12159299967606785,
+            "max_ms": 0.9598790002200985
+          },
+          "total": {
+            "median_ms": 6.874401000004582,
+            "p95_ms": 7.491069899651848,
+            "mean_ms": 6.963787793333722,
+            "std_ms": 0.33202982551303584,
+            "min_ms": 6.492238999726396,
+            "max_ms": 9.051426000496576
+          },
+          "fps_median": 145.4672196165649,
+          "fps_mean": 143.6000104651778,
+          "fps_p95": 133.49227992739404,
+          "iterations": 300,
+          "budget_basis": "median",
+          "by_kind": {
+            "key": {
+              "frames": 300,
+              "mean_ms": 6.963787793333722
+            }
+          },
+          "warmup": 50,
+          "batch": 1,
+          "imgsz": 1280,
+          "conf": 0.05,
+          "sequence": "uav0000009_03358_v",
+          "n_distinct_frames": 100,
+          "runtime": {
+            "backend": "cpp",
+            "device": "cuda",
+            "half": false,
+            "host_nms": true,
+            "gpu_preprocess": true,
+            "precision": "fp16",
+            "engine": "/tmp/aerotrack/weights/engine/best_5904a8e2e5b0_1280_md500_b1_fp16.engine",
+            "calibration_data": null,
+            "tensorrt_headers": "10.16.1.11",
+            "tensorrt_library": "10.16.1",
+            "compiler": "GNU 13.3.0",
+            "io_dtype": [
+              "float32",
+              "float32"
+            ]
+          },
+          "peak_process_rss_mb": 3001.47265625,
+          "device_memory_mb": 149.1337890625,
+          "env": {
+            "platform": "Linux-6.18.55+-x86_64-with-glibc2.39",
+            "machine": "x86_64",
+            "cpu": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+            "python": "3.12.3",
+            "torch": "2.14.1+cu126",
+            "torch_cuda": "12.6",
+            "ultralytics": "8.4.187",
+            "onnxruntime": "1.31.0",
+            "tensorrt": "10.16.1.11",
+            "jetson_power_mode": null,
+            "macos_power": null,
+            "device": "cuda",
+            "device_name": "Tesla T4"
+          },
+          "stages_measured": [
+            "preprocess",
+            "inference",
+            "postprocess",
+            "tracking"
+          ],
+          "tracking_included": true,
+          "budget_fps": 25,
+          "meets_budget": true
+        }
+      ]
+    }
+  ]
+}

@@ -596,3 +596,29 @@ differs. Rejected: retrying Drive the next day (the quota came back on two files
 uploading without a digest (no way to tell a stale or partial mirror). The mirror stays
 private, used only by this project's kernels; VisDrone's terms (academic, non-commercial
 use) are unchanged by it, and it is never made public.
+
+## ByteTrack in C++ (week 10)
+
+**Port.** `cpp/src/bytetrack.cpp` follows `aerotrack/track/bytetrack.py` and `kalman.py`
+step for step: thresholds, pool order, the end-of-frame merge, and the assignment, which is
+scipy's `linear_sum_assignment` algorithm (shortest augmenting path, Crouse 2016) rewritten
+in C++ rather than a different solver (lapjv, auction), so that ties resolve the same way.
+On synthetic sequences (occlusions, weak detections, class flips, frames without
+detections) the two trackers give the same ids, classes and scores and boxes within 1e-6
+(`tests/test_cpp.py`); the Kalman covariance step is exact, the gain solve (LU) differs from
+LAPACK's by rounding only.
+
+**Measured (`reports/w10-cpp-tracking/`, T4, one session, tuned thresholds of week 6).**
+On the 12 test-dev sequences unseen by the detector: HOTA 39.2 (Python) / 39.1 (C++) at
+640, 46.7 / 46.8 at 1280, matching week 6's 39.2 and 46.8 obtained with torch: the
+residual differences come from the detectors (TensorRT through AutoBackend vs the C++
+runtime, whose letterbox pixels differ by 1), not the trackers. End to end, tracking
+included, median 14.2 → 2.9 ms (640) and 23.8 → 6.9 ms (1280), p95 29.4 → 4.4 and 40.7 →
+7.5 ms; ByteTrack 3.5 → 0.1 and 3.8 → 0.2 ms.
+
+**Leakage list committed.** The first run of this config scored "unseen" on all 17
+sequences: which sequences the detector saw was derived from the DET images on the machine,
+and a Kaggle tracking job downloads none, so nothing looked seen, silently. The DET
+train + val video ids are now committed (`configs/data/visdrone_det_videos.txt`, 260
+videos), checked against the data by a test where it is present, and deriving them from
+missing data raises. The bad run was not published.
