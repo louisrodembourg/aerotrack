@@ -94,16 +94,33 @@ def test_write_tracks_drops_ignored_regions_per_frame(tmp_path):
 
 
 def test_seen_by_detector_matches_the_source_video(tmp_path):
-    from aerotrack.eval.tracking import seen_by_detector
+    from aerotrack.eval.tracking import det_videos, seen_by_detector
 
     for split, name in (("train", "0000201_00412_d_0000045.jpg"),
                         ("test-dev", "0000073_00600_d_0000001.jpg")):
         (tmp_path / "images" / split).mkdir(parents=True)
         (tmp_path / "images" / split / name).touch()
+    with pytest.raises(FileNotFoundError):  # never silently "nothing seen"
+        det_videos(tmp_path)
     (tmp_path / "images" / "val").mkdir()
-    assert seen_by_detector("uav0000201_00000_v", tmp_path) == ["train/0000201_00412_d_0000045.jpg"]
-    assert seen_by_detector("uav0000073_00600_v", tmp_path) == []  # DET test-dev: never trained on
-    assert seen_by_detector("uav0000020_00000_v", tmp_path) == []  # 0000020_ is not 0000201_
+    videos = det_videos(tmp_path)
+    assert videos == ["0000201"]
+    assert seen_by_detector("uav0000201_00000_v", videos)
+    assert not seen_by_detector("uav0000073_00600_v", videos)  # DET test-dev: never trained on
+    assert not seen_by_detector("uav0000020_00000_v", videos)  # 0000020 is not 0000201
+
+
+def test_committed_detector_videos_match_the_data():
+    """The committed list is what the harness uses on any machine, data or not."""
+    from aerotrack.eval.tracking import committed_det_videos, det_videos, seen_by_detector
+    from tests.conftest import REAL_DATA
+
+    root = REAL_DATA / "processed" / "visdrone_det"
+    if not (root / "images" / "train").is_dir():
+        pytest.skip("VisDrone-DET not converted on this machine")
+    assert det_videos(root) == committed_det_videos()
+    # The leakage found in week 6: 5 of the 17 test-dev sequences come from seen videos.
+    assert seen_by_detector("uav0000201_00000_v") and not seen_by_detector("uav0000009_03358_v")
 
 
 def test_grid_sets_new_from_high():

@@ -21,7 +21,7 @@ import cv2
 import numpy as np
 
 from aerotrack.data.ignore import ignore_mask, keep_outside
-from aerotrack.paths import PROCESSED_DIR
+from aerotrack.paths import CONFIGS_DIR, PROCESSED_DIR
 
 MOT_ROOTS = {"visdrone_mot": PROCESSED_DIR / "visdrone_mot", "uavdt": PROCESSED_DIR / "uavdt" / "mot"}
 
@@ -91,14 +91,33 @@ def gt_self_check(dataset: str, split: str, root: Path | None = None) -> dict[st
     return out
 
 
-def seen_by_detector(seq_name: str, det_root: Path = PROCESSED_DIR / "visdrone_det",
-                     splits: tuple[str, ...] = ("train", "val")) -> list[str]:
-    """DET images taken from the same source video as a MOT sequence, in the splits a
-    detector is trained or selected on. VisDrone names both after the video:
-    uav0000201_00000_v (MOT) and 0000201_00412_d_0000045.jpg (DET)."""
-    video = f"{int(seq_name.removeprefix('uav').split('_')[0]):07d}_"
-    return [f"{sp}/{p.name}" for sp in splits
-            for p in sorted((det_root / "images" / sp).glob(f"{video}*"))]
+# Video ids of the VisDrone-DET train + val images (`det_videos`), committed: whether a MOT
+# sequence was seen by the detector must not depend on which data a machine holds (a
+# Kaggle tracking job has no DET images; computed there, every sequence looked unseen).
+DETECTOR_VIDEOS = CONFIGS_DIR / "data" / "visdrone_det_videos.txt"
+
+
+def det_videos(det_root: Path = PROCESSED_DIR / "visdrone_det",
+               splits: tuple[str, ...] = ("train", "val")) -> list[str]:
+    """Source video ids of the DET images in the splits a detector is trained or selected
+    on. VisDrone names both datasets after the video: 0000201_00412_d_0000045.jpg (DET),
+    uav0000201_00000_v (MOT)."""
+    dirs = [det_root / "images" / sp for sp in splits]
+    if missing := [str(d) for d in dirs if not d.is_dir()]:
+        raise FileNotFoundError(f"no DET images in {missing}")
+    return sorted({p.name.split("_")[0] for d in dirs for p in d.iterdir()})
+
+
+def committed_det_videos() -> list[str]:
+    return [line.strip() for line in DETECTOR_VIDEOS.read_text().splitlines()
+            if line.strip() and not line.startswith("#")]
+
+
+def seen_by_detector(seq_name: str, videos: list[str] | None = None) -> bool:
+    """Whether the MOT sequence's source video also gave DET train/val images."""
+    if videos is None:
+        videos = committed_det_videos()
+    return f"{int(seq_name.removeprefix('uav').split('_')[0]):07d}" in set(videos)
 
 
 def sequences(split_dir: Path, names: list[str] | None = None) -> list[dict]:
