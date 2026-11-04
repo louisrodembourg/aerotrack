@@ -1,61 +1,90 @@
 # aerotrack
 
-Real-time vehicle and pedestrian **detection + tracking on drone video**, optimised for
-embedded hardware. The deliverable is not a model but an analysis: **how much accuracy
-does each optimisation cost or buy, under a fixed latency budget on a given device?**
+**Real-time detection and tracking of vehicles and pedestrians in drone video, under an
+embedded latency budget.** The deliverable is not a model but a measured trade-off: how
+much accuracy each optimisation costs or buys at 25 FPS, batch 1, on a given device.
 
 https://github.com/user-attachments/assets/7ec07dcf-b21e-43b1-808b-7e57c6d5f282
 
-45 s demo: YOLO26n @ 1280 + ByteTrack on four VisDrone-MOT test-dev clips the detector
-never saw, with the per-frame latency measured on an Apple M3 Pro (MPS), then the headline
-numbers from [`reports/`](reports). Rendered by `make demo` ([DECISIONS.md](DECISIONS.md#demo-video-week-12)).
+*45 s demo: YOLO26n @ 1280 + ByteTrack on four VisDrone-MOT test-dev clips the detector
+never saw. The per-frame latency is measured on an Apple M3 Pro (MPS), and the closing
+numbers come from [`reports/`](reports). Rendered by `make demo`
+([how](DECISIONS.md#demo-video-week-12)).*
 
-## Reference constraint
+## Highlights
+
+- **145 FPS end to end on an NVIDIA T4, detection and tracking included:** 6.9 ms per frame
+  (p95 7.5 ms) for YOLO26n @ 1280 + ByteTrack in C++, 5.8× inside the 25 FPS budget
+  ([w10](reports/w10-cpp-tracking/results.md)).
+- **3.5× faster than the Python TensorRT pipeline at the same accuracy:** a C++ runtime
+  (CUDA letterbox kernel, TensorRT FP16, NMS, ByteTrack) gives HOTA 46.8 against 46.7,
+  going from 23.8 ms to 6.9 ms per frame.
+- **Fine-tuning on drone images is the first-order gain:** mAP50-95 goes from 4.1
+  (COCO weights, zero-shot) to 19.1 on VisDrone-DET test-dev
+  ([w3](reports/w3-vs-zero-shot/results.md)).
+- **Small objects are won with resolution:** 640 → 1280 lifts mAP from 14.2 to 22.5 and
+  doubles AP_small. Training at 1280 beats SAHI-style tiling at 640, and costs less latency
+  ([w4](reports/w4-resolution/results.md), [w5](reports/w5-sahi/results.md)).
+- **It transfers to another dataset:** on UAVDT, never used for training, the
+  VisDrone-trained detector nearly doubles the COCO baseline (30.3 vs 15.9 mAP). Its
+  failure modes are measured by attribute: high altitude (9.1) and fog (11.4)
+  ([w11](reports/w11-uavdt-transfer/results.md)).
+
+## What I built
+
+| Area | Work |
+|---|---|
+| Detection | YOLO26 fine-tuned on VisDrone-DET (resolution sweep, P2 head, SAHI tiling, copy-paste augmentation), with ignored regions masked at training |
+| Tracking | ByteTrack with a Kalman filter written from scratch, checked against Ultralytics; tracker thresholds tuned on sequences held out from both training and test; hybrid keyframe mode for CPU |
+| Deployment | ONNX Runtime, TensorRT FP16 / INT8 (PTQ), a C++ runtime with a CUDA preprocessing kernel and ByteTrack ported to C++ (pybind11), tested equal to the Python reference |
+| Evaluation | COCO mAP and TrackEval (HOTA, MOTA, IDF1); per-stage latency, device-synchronised, with the device, runtime versions and power state recorded |
+| Infrastructure | Every number from a tracked run (config, commit + diff, seed, environment); remote training and benchmarks on Kaggle's free T4s driven from the CLI; locked environment shared by macOS (MPS) and Linux (CUDA); 88 offline tests |
+
+```mermaid
+flowchart LR
+    A[Drone frame] --> B["Letterbox<br/>CUDA kernel<br/>0.9 ms"]
+    B --> C["YOLO26n @ 1280<br/>TensorRT FP16<br/>5.0 ms"]
+    C --> D["NMS<br/>0.8 ms"]
+    D --> E["ByteTrack +<br/>Kalman filter<br/>0.2 ms"]
+    E --> F[Tracks:<br/>id, box, class]
+```
+
+<sub>Median stage times of the C++ pipeline on a T4, from
+[w10-cpp-tracking](reports/w10-cpp-tracking/results.md).</sub>
+
+## Why the numbers can be trusted
+
+- **No leakage:** fine-tuned models are reported on VisDrone-DET **test-dev**, never on
+  val, which selects the checkpoint. Tracking is scored on the MOT sequences whose source
+  video gave no training image, from a committed list.
+- **No hand-typed results:** the tables are generated from `reports/*/results.json`, and
+  each row names the tracked run (`runs/<id>/run.json`) that produced it.
+- **Latency with context:** batch 1, images pre-decoded, a device sync after each stage.
+  Each figure carries its device, its torch / ONNX Runtime / TensorRT versions and its
+  power state; a throttled Mac is refused.
+- **One pipeline for accuracy and latency** (`aerotrack.inference.Detector`): a backend
+  can never be timed with one preprocessing and scored with another.
+- **Every non-trivial choice is written down with the alternative rejected:**
+  [DECISIONS.md](DECISIONS.md).
+
+## Budget and hardware
 
 Every variant is judged against one budget (`configs/project.yaml`):
 
-> End-to-end pipeline (preprocess → detection → NMS → tracking) **≥ 25 FPS, batch 1**,
-> on the target device.
+> End-to-end pipeline (preprocess → detection → NMS → tracking) **≥ 25 FPS, batch 1**.
 
-The target device will be decided at week 6: a Jetson Orin Nano (JetPack 6.x), or a cloud
-NVIDIA GPU with TensorRT compared against a CPU running ONNX Runtime. Every latency figure
-in this repository states its device, its runtime versions and, on Jetson, its power mode.
+Development and the CPU / MPS figures run on an Apple M3 Pro. TensorRT and the C++ runtime
+are measured on Kaggle's NVIDIA T4, stated as such and never as embedded. A Jetson Orin Nano
+would give the embedded figure through the same `Detector`; buying one is still open
+([DECISIONS.md](DECISIONS.md#hardware-for-weeks-8-10-end-of-week-6)).
 
-## Status
-
-Week 4: resolution sweep. YOLO26n was chosen as the primary axis (it alone keeps margin
-under the budget on CPU) and fine-tuned at 640, 960 and 1280 on VisDrone-DET (100 epochs,
-on Kaggle's free T4s), evaluated on test-dev with latency on the Mac; a P2 (stride-4) head
-was then compared at 640 and 960. Week 5: tiled (SAHI-style) inference, measured against
-training at the higher resolution. Week 6: ByteTrack with a from-scratch Kalman filter,
-end to end on VisDrone-MOT test-dev, thresholds tuned on unseen MOT sequences, and the
-hybrid keyframe mode. Copy-paste of rare objects, tried last, brought nothing: the plain
-detectors are the reference. Week 8: TensorRT FP16 / INT8 on an NVIDIA T4 (hardware
-decision: DECISIONS.md). NMS moved to the host on every GPU. Week 9: the C++ runtime
-(letterbox, TensorRT, NMS in C++, `cpp/`), measured against the Python pipeline on the same
-engines, then preprocessing moved to the GPU. Week 10: ByteTrack in C++, the whole
-detection + tracking pipeline measured end to end. Next: an embedded target (Jetson),
-robustness (week 11).
-
-| Weeks | Stage |
-|---|---|
-| 1–2 | foundations + baseline |
-| 3–5 | fine-tuning on VisDrone-DET: resolution, P2 head, SAHI, hybrid keyframe mode, copy-paste augmentation → reference detector frozen |
-| 6–7 | ByteTrack / BoT-SORT on VisDrone-MOT (TrackEval: HOTA, MOTA, IDF1, IDSW), Kalman filter from scratch, hardware decision |
-| 8–10 ← *here* | ONNX → TensorRT FP16 → INT8 PTQ → INT8 QAT, C++ runtime |
-| 11 | robustness: VisDrone → UAVDT transfer by attribute, synthetic degradations |
-| 12 | write-up, demo |
-
-## Results
-
-All numbers below are generated by `make readme` from tracked runs (`reports/`); each
-row names its run id. Methodology: [DECISIONS.md](DECISIONS.md).
-
-### Findings so far
+## Findings
 
 Detection on VisDrone-DET test-dev (1610 images never used for training or checkpoint
-selection), mAP50-95 in %; latency on an Apple M3 Pro on AC power, detection only unless
-stated.
+selection), mAP50-95 in %. Latency is measured on an Apple M3 Pro on AC power unless
+stated, detection only unless stated.
+
+### Accuracy
 
 - **Fine-tuning is the first-order gain.** On the six classes COCO can name, YOLO26n goes
   from 4.1 zero-shot to 19.1 fine-tuned, YOLO26s from 7.9 to 23.3
@@ -75,42 +104,14 @@ stated.
   more.** Cutting each frame into 2x2 tiles plus the whole frame lifts the 640 model from
   14.2 to 18.1 mAP (27.9 ms on MPS); the model trained at 1280 reaches 22.5 in a single
   pass for 23.5 ms ([w5-sahi](reports/w5-sahi/results.md)).
-- **TensorRT FP16 is free accuracy-wise and halves inference; INT8 is not worth it here.**
-  On an NVIDIA T4, TensorRT FP16 matches torch FP32 exactly and runs the network 2.0-2.4x
-  faster (640: 8.4 → 3.5 ms; 1280: 12.1 → 6.2 ms). INT8 post-training quantisation adds
-  under 10 % speed for -1.4 / -1.9 mAP ([w8-tensorrt](reports/w8-tensorrt/results.md)).
-- **Then NMS was the bottleneck, and moving it to the host fixed it.** On the GPU, NMS took
-  13.8-17.7 ms, more than the network. Copying the raw output to the CPU first cuts it to
-  4.6-6.2 ms with identical detections: end to end, TensorRT FP16 runs n at 640 in 10.6 ms
-  (95 FPS) and n at 1280 in 19.8 ms (51 FPS) on a T4
-  ([w8-postprocess](reports/w8-postprocess/results.md)).
-- **The C++ runtime halves the 640 pipeline at identical accuracy.** Same TensorRT FP16
-  engines, same stages, one session on the T4: test-dev mAP50-95 is unchanged (14.2 and
-  22.6), and end to end goes from 10.1 to 5.3 ms at 640 (99 → 187 FPS) and from 19.5 to
-  14.1 ms at 1280 (51 → 71 FPS). The gain is Python overhead: inference 3.7 → 2.1 ms and
-  6.6 → 4.9 ms (same engine), NMS 4.2 → 0.3 ms and 5.9 → 0.8 ms. p95 drops from 17.1 to
-  6.3 ms and from 30.2 to 16.5 ms. Preprocessing is now the largest stage: the hand-written
-  letterbox (single-threaded, no SIMD) is slower than OpenCV's, 2.9 vs 2.2 ms and 8.2 vs
-  6.7 ms ([w9-cpp](reports/w9-cpp/results.md)).
-- **Preprocessing on the GPU: n at 1280 in 6.3 ms (160 FPS) on a T4.** Uploading the
-  original frame and letterboxing it in one CUDA kernel, with the host's integer arithmetic,
-  gives identical detections (same mAP50-95 and per-class AP) and cuts preprocessing from
-  2.5 to 0.8 ms at 640 and from 7.4 to 0.8 ms at 1280: end to end 4.7 → 2.7 ms (367 FPS) and
-  12.6 → 6.3 ms, p95 3.5 and 7.1 ms. It is the C++ runtime's default
-  ([w9-cpp-preprocess](reports/w9-cpp-preprocess/results.md)). From the Python TensorRT
-  pipeline (19.5 ms at 1280), the C++ runtime is 3x faster at the same accuracy.
-- **Detection + tracking end to end in C++: n at 1280 tracks in 6.9 ms per frame (145 FPS)
-  on a T4.** ByteTrack and its Kalman filter ported to C++ give the same tracks as the
-  Python ones (tested on identical detections) and the same scores on VisDrone-MOT test-dev:
-  HOTA 46.8 vs 46.7 at 1280, 39.1 vs 39.2 at 640, on the 12 sequences unseen by the detector.
-  With tracking inside the timed loop, the frame goes from 23.8 to 6.9 ms at 1280 and from
-  14.2 to 2.9 ms at 640, p95 from 40.7 to 7.5 ms; the tracker itself from 3.8 to 0.2 ms
-  ([w10-cpp-tracking](reports/w10-cpp-tracking/results.md)).
 - **Copy-paste of rare small objects does not help here.** Pasting objects of the five
   rarest classes into training images changes test-dev mAP by -0.1 (640) and -0.2 (1280),
   and the rare classes themselves by about a point either way
   ([w5-copy-paste](reports/w5-copy-paste/results.md)). The reference detector stays the
   plain one.
+
+### Tracking
+
 - **Tracking follows detection, and costs little.** ByteTrack (Kalman filter written from
   scratch, checked against Ultralytics' implementation) on VisDrone-MOT test-dev, scored on
   the 12 sequences whose videos the detector never saw. With thresholds tuned on separate
@@ -126,6 +127,66 @@ stated.
   keyframes close together, Kalman prediction between them beats running the 640 model
   there; five frames apart, it drifts. On GPU, the 1280 model on every frame already fits
   the budget ([w6-keyframe](reports/w6-keyframe/results.md)).
+
+### Speed on GPU (NVIDIA T4)
+
+- **TensorRT FP16 is free accuracy-wise and halves inference; INT8 is not worth it here.**
+  TensorRT FP16 matches torch FP32 exactly and runs the network 2.0-2.4x faster (640:
+  8.4 → 3.5 ms; 1280: 12.1 → 6.2 ms). INT8 post-training quantisation adds under 10 %
+  speed for -1.4 / -1.9 mAP ([w8-tensorrt](reports/w8-tensorrt/results.md)).
+- **Then NMS was the bottleneck, and moving it to the host fixed it.** On the GPU, NMS took
+  13.8-17.7 ms, more than the network. Copying the raw output to the CPU first cuts it to
+  4.6-6.2 ms with identical detections: end to end, TensorRT FP16 runs n at 640 in 10.6 ms
+  (95 FPS) and n at 1280 in 19.8 ms (51 FPS)
+  ([w8-postprocess](reports/w8-postprocess/results.md)).
+- **The C++ runtime halves the 640 pipeline at identical accuracy.** Same TensorRT FP16
+  engines, same stages, one session: test-dev mAP50-95 is unchanged (14.2 and 22.6), and
+  end to end goes from 10.1 to 5.3 ms at 640 (99 → 187 FPS) and from 19.5 to 14.1 ms at
+  1280 (51 → 71 FPS). The gain is Python overhead: inference 3.7 → 2.1 ms and 6.6 → 4.9 ms
+  (same engine), NMS 4.2 → 0.3 ms and 5.9 → 0.8 ms. p95 drops from 17.1 to 6.3 ms and from
+  30.2 to 16.5 ms. Preprocessing is then the largest stage: the hand-written letterbox
+  (single-threaded, no SIMD) is slower than OpenCV's, 2.9 vs 2.2 ms and 8.2 vs 6.7 ms
+  ([w9-cpp](reports/w9-cpp/results.md)).
+- **Preprocessing on the GPU: n at 1280 in 6.3 ms (160 FPS).** Uploading the original frame
+  and letterboxing it in one CUDA kernel, with the host's integer arithmetic, gives
+  identical detections (same mAP50-95 and per-class AP) and cuts preprocessing from 2.5 to
+  0.8 ms at 640 and from 7.4 to 0.8 ms at 1280: end to end 4.7 → 2.7 ms (367 FPS) and
+  12.6 → 6.3 ms, p95 3.5 and 7.1 ms. It is the C++ runtime's default
+  ([w9-cpp-preprocess](reports/w9-cpp-preprocess/results.md)).
+- **Detection + tracking end to end in C++: n at 1280 tracks in 6.9 ms per frame (145
+  FPS).** ByteTrack and its Kalman filter ported to C++ give the same tracks as the Python
+  ones (tested on identical detections) and the same scores on VisDrone-MOT test-dev: HOTA
+  46.8 vs 46.7 at 1280, 39.1 vs 39.2 at 640, on the 12 sequences unseen by the detector.
+  With tracking inside the timed loop, the frame goes from 23.8 to 6.9 ms at 1280 and from
+  14.2 to 2.9 ms at 640, p95 from 40.7 to 7.5 ms; the tracker itself from 3.8 to 0.2 ms
+  ([w10-cpp-tracking](reports/w10-cpp-tracking/results.md)).
+
+### Robustness
+
+- **The detectors transfer to UAVDT, except from high up and in fog.** On UAVDT test
+  (16 592 frames, vehicles only, never used for training), mAP50-95 is 15.9 for COCO
+  YOLO26n, 28.4 for the VisDrone model at 640 and 30.3 at 1280. By attribute, the 1280
+  model reaches 47.0 at low altitude but 9.1 at high altitude, and 43.8 at night but 11.4
+  in fog ([w11-uavdt-transfer](reports/w11-uavdt-transfer/results.md)).
+
+## Roadmap
+
+| Weeks | Stage | |
+|---|---|---|
+| 1–2 | foundations, data pipeline, COCO baseline | done |
+| 3–5 | fine-tuning on VisDrone-DET: resolution, P2 head, SAHI, copy-paste → reference detector frozen | done |
+| 6–7 | ByteTrack on VisDrone-MOT (TrackEval), Kalman filter from scratch, keyframe mode, hardware decision | done |
+| 8–10 | TensorRT FP16 / INT8, NMS placement, C++ runtime, CUDA preprocessing, ByteTrack in C++ | done |
+| 11 | robustness: VisDrone → UAVDT transfer by attribute, synthetic degradations | in progress |
+| 12 | demo video, write-up | demo done |
+
+## Full results
+
+Generated by `uv run aerotrack readme-table` from `reports/*/results.json`; each row names
+its tracked run. Methodology: [DECISIONS.md](DECISIONS.md).
+
+<details>
+<summary><b>Every table, per experiment</b> (accuracy, per-stage latency, tracking)</summary>
 
 <!-- results:start -->
 #### baseline ([full report](reports/baseline/results.md))
@@ -175,6 +236,15 @@ HOTA, MOTA, IDF1, IDSW on the 12 sequences unseen by the detector:
 | n640-cpp | cpp fp16 | Tesla T4 | GNU 13.3.0, TRT 10.16.1.11 | 0.1 | 2.9 | 3.0 | 4.4 | 4.6 | 347.8 (median) | yes |
 | n1280-python | tensorrt fp16 | Tesla T4 | TRT 10.16.1.11 | 3.8 | 23.8 | 26.6 | 40.7 | 70.3 | 42.0 (median) | yes |
 | n1280-cpp | cpp fp16 | Tesla T4 | GNU 13.3.0, TRT 10.16.1.11 | 0.2 | 6.9 | 7.0 | 7.5 | 9.1 | 145.5 (median) | yes |
+
+#### w11-uavdt-transfer ([full report](reports/w11-uavdt-transfer/results.md))
+
+| Model | all | altitude=high | altitude=low | altitude=medium | long_term=false | long_term=true | view=bird | view=front | view=side | weather=daylight | weather=fog | weather=night |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| yolo26n-coco-640 | 15.9 | 0.7 | 32.6 | 14.1 | 15.1 | 22.0 | 4.3 | 17.6 | 25.9 | 22.0 | 0.7 | 25.2 |
+| n640-visdrone | 28.4 | 8.6 | 44.8 | 30.8 | 27.3 | 38.5 | 15.9 | 32.1 | 38.7 | 35.1 | 10.7 | 41.7 |
+| n1280-visdrone | 30.3 | 9.1 | 47.0 | 33.6 | 28.9 | 42.4 | 16.5 | 34.3 | 41.5 | 37.6 | 11.4 | 43.8 |
+| *frames* | 16592 | 1680 | 6987 | 7925 | 13157 | 3435 | 3217 | 10464 | 7611 | 9376 | 2181 | 5035 |
 
 #### w3-reference ([full report](reports/w3-reference/results.md))
 
@@ -423,6 +493,26 @@ Selected tracker thresholds (MOT sequences unseen by the detector, not test-dev)
 
 <!-- results:end -->
 
+
+</details>
+
+## Repository layout
+
+```
+configs/      project.yaml (budget), data/ (sources, class maps), train/, eval/, demo/
+src/aerotrack/
+  data/       download, per-dataset converters, ignore rule, class maps, visualisation
+  inference.py  Detector (torch | onnxruntime | tensorrt | cpp): one pipeline for accuracy and latency
+  eval/       detection (COCO), latency, tracking (TrackEval), harnesses, reports
+  track/      Kalman filter (from scratch), ByteTrack, TrackingPipeline (keyframe mode)
+  train.py    Ultralytics training with masked ignored regions, as a tracked run
+  remote/     Kaggle launcher (push, status, pull, data mirror)
+  demo.py     export for the demo video
+cpp/          C++ runtime: CUDA letterbox, TensorRT, NMS, ByteTrack (pybind11 module)
+demo/         Remotion project rendering the demo video
+reports/      generated reports, one per experiment
+```
+
 ## Reproduce
 
 Requirements: [uv](https://docs.astral.sh/uv/). Development happens on macOS Apple
@@ -433,18 +523,18 @@ make setup        # locked environment
 make data-min     # VisDrone-DET (~2 GB): enough for the two commands below
 make smoke        # ~1 min: short training + evaluation on 100 images, local device
 make baseline     # zero-shot COCO YOLO on VisDrone-DET val, accuracy + latency
-make w3-eval      # each week's evaluation on test-dev (after pulling its runs), then README
-make w4-eval
-make w4-p2-eval
-make w5-sahi-eval
-make w6-track-eval
-make w6-track-tune
-make w6-track-tuned-eval
-make w6-keyframe-eval
-make w5-cp-eval
 make data         # everything: + VisDrone-MOT, UAVDT, visualisations, TrackEval checks
 make test
+make demo         # demo video: tracked export + Remotion render -> demo/out/ (needs Node)
 ```
+
+Each week's evaluation runs on test-dev after its training runs are pulled, then
+regenerates the README tables: `make w3-eval`, `w4-eval`, `w4-p2-eval`, `w5-sahi-eval`,
+`w5-cp-eval`, `w6-track-eval`, `w6-track-tune`, `w6-track-tuned-eval`, `w6-keyframe-eval`,
+`w11-transfer-eval`, `w11-degrade-eval`.
+
+<details>
+<summary><b>Training and GPU benchmarks on Kaggle or a CUDA box</b></summary>
 
 Training runs on a remote NVIDIA GPU. Two ways, same tracked run at the end
 (`runs/<id>/run.json`: config, commit, seed, device, environment, metrics, weights):
@@ -499,6 +589,8 @@ export WANDB_API_KEY=...        # optional: without it, W&B runs stay offline
 scripts/remote_train.sh configs/train/visdrone_yolo26s_640.yaml
 ```
 
+</details>
+
 ## Data
 
 | Dataset | Use | Format produced |
@@ -520,4 +612,5 @@ are explicit in `configs/data/class_maps.yaml`.
 - **UAVDT:** "for research purpose only" (official site). Please cite Du et al.,
   *The Unmanned Aerial Vehicle Benchmark: Object Detection and Tracking*, ECCV 2018.
 
-Dataset images and annotations are never committed to this repository.
+Dataset images and annotations are never committed to this repository; the demo video
+shows VisDrone frames under the same academic, non-commercial terms.

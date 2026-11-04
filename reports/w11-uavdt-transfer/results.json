@@ -1,0 +1,443 @@
+{
+  "name": "w11-uavdt-transfer",
+  "config": {
+    "name": "w11-uavdt-transfer",
+    "seed": 0,
+    "device": "auto",
+    "dataset": {
+      "gt": "uavdt/det/gt/test.json",
+      "class_map": "uavdt_vehicle",
+      "groups": "uavdt/attributes.json",
+      "limit": null
+    },
+    "models": [
+      {
+        "weights": "yolo26n.pt",
+        "imgsz": 640,
+        "name": "yolo26n-coco-640"
+      },
+      {
+        "run": "visdrone-yolo26n-640",
+        "imgsz": 640,
+        "name": "n640-visdrone"
+      },
+      {
+        "run": "visdrone-yolo26n-1280",
+        "imgsz": 1280,
+        "name": "n1280-visdrone"
+      }
+    ],
+    "detection": {
+      "imgsz": 640,
+      "conf": 0.001,
+      "iou": 0.7,
+      "max_det": 500,
+      "half": false
+    },
+    "latency": {
+      "enabled": false
+    },
+    "_source": "configs/eval/w11_uavdt_transfer.yaml"
+  },
+  "budget_fps": 25,
+  "results": [
+    {
+      "model": "yolo26n-coco-640",
+      "weights": "yolo26n.pt",
+      "run_id": "20261104-212430-w11-uavdt-transfer-yolo26n-coco-640-6faa78",
+      "train_run": null,
+      "wandb_url": null,
+      "dataset": {
+        "gt": "uavdt/det/gt/test.json",
+        "class_map": "uavdt_vehicle",
+        "groups": "uavdt/attributes.json",
+        "limit": null,
+        "n_images": 16592
+      },
+      "accuracy": {
+        "mAP50-95": 0.15942571410574297,
+        "mAP50": 0.34919084597048183,
+        "mAP70": 0.17750267188418153,
+        "mAP75": 0.11753757272200613,
+        "AP_small": 0.0859317437081441,
+        "AP_medium": 0.3606527054511039,
+        "AP_large": 0.32729173902257547,
+        "AR500": 0.29300565293987524,
+        "max_det": 500,
+        "n_images": 16592,
+        "n_gt": 375203,
+        "n_dets": 3859473,
+        "per_class": {
+          "vehicle": {
+            "AP": 0.15942571410574297,
+            "AP50": 0.34919084597048183,
+            "n_gt": 375203
+          }
+        },
+        "groups": {
+          "altitude=high": {
+            "mAP50-95": 0.0070560698018396,
+            "mAP50": 0.019663364341521394,
+            "mAP70": 0.007454129682737331,
+            "n_images": 1680,
+            "n_gt": 104445
+          },
+          "altitude=low": {
+            "mAP50-95": 0.3264843628748796,
+            "mAP50": 0.6399054166819165,
+            "mAP70": 0.3992465495892914,
+            "n_images": 6987,
+            "n_gt": 99832
+          },
+          "altitude=medium": {
+            "mAP50-95": 0.1405431144932533,
+            "mAP50": 0.36443658010078317,
+            "mAP70": 0.13537660308858676,
+            "n_images": 7925,
+            "n_gt": 170926
+          },
+          "long_term=false": {
+            "mAP50-95": 0.1512439082320577,
+            "mAP50": 0.3312777513481107,
+            "mAP70": 0.17164684406957156,
+            "n_images": 13157,
+            "n_gt": 334548
+          },
+          "long_term=true": {
+            "mAP50-95": 0.21960695186024087,
+            "mAP50": 0.5044969448106891,
+            "mAP70": 0.23339473380095246,
+            "n_images": 3435,
+            "n_gt": 40655
+          },
+          "view=bird": {
+            "mAP50-95": 0.04273727708400085,
+            "mAP50": 0.0721296564040377,
+            "mAP70": 0.05789902421056783,
+            "n_images": 3217,
+            "n_gt": 114254
+          },
+          "view=front": {
+            "mAP50-95": 0.17566530812313233,
+            "mAP50": 0.40581418434543626,
+            "mAP70": 0.1856667396940821,
+            "n_images": 10464,
+            "n_gt": 191741
+          },
+          "view=side": {
+            "mAP50-95": 0.2589825206991756,
+            "mAP50": 0.5582925354539862,
+            "mAP70": 0.295680443000332,
+            "n_images": 7611,
+            "n_gt": 154762
+          },
+          "weather=daylight": {
+            "mAP50-95": 0.22030995579742818,
+            "mAP50": 0.4960599981683574,
+            "mAP70": 0.24113355499503347,
+            "n_images": 9376,
+            "n_gt": 219659
+          },
+          "weather=fog": {
+            "mAP50-95": 0.007295441441684149,
+            "mAP50": 0.016390672172288463,
+            "mAP70": 0.007324020239670625,
+            "n_images": 2181,
+            "n_gt": 109467
+          },
+          "weather=night": {
+            "mAP50-95": 0.2520649711572307,
+            "mAP50": 0.5179948334889819,
+            "mAP70": 0.29971254636915057,
+            "n_images": 5035,
+            "n_gt": 46077
+          }
+        },
+        "class_map": "uavdt_vehicle",
+        "model_class_to_target": {
+          "car": "vehicle",
+          "bus": "vehicle",
+          "truck": "vehicle"
+        },
+        "excluded_classes": {},
+        "imgsz": 640,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false,
+          "host_nms": true
+        }
+      },
+      "robustness": [],
+      "latency": []
+    },
+    {
+      "model": "n640-visdrone",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261025-192839-visdrone-yolo26n-640-540b95/weights/best.pt",
+      "run_id": "20261104-215213-w11-uavdt-transfer-n640-visdrone-dccc9b",
+      "train_run": "20261025-192839-visdrone-yolo26n-640-540b95",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "uavdt/det/gt/test.json",
+        "class_map": "uavdt_vehicle",
+        "groups": "uavdt/attributes.json",
+        "limit": null,
+        "n_images": 16592
+      },
+      "accuracy": {
+        "mAP50-95": 0.2839502560131098,
+        "mAP50": 0.6026872397041294,
+        "mAP70": 0.33100418292805583,
+        "mAP75": 0.23241058487470445,
+        "AP_small": 0.18325337942942826,
+        "AP_medium": 0.5494204717400228,
+        "AP_large": 0.5030577322140637,
+        "AR500": 0.3912945792011258,
+        "max_det": 500,
+        "n_images": 16592,
+        "n_gt": 375203,
+        "n_dets": 3611274,
+        "per_class": {
+          "vehicle": {
+            "AP": 0.2839502560131098,
+            "AP50": 0.6026872397041294,
+            "n_gt": 375203
+          }
+        },
+        "groups": {
+          "altitude=high": {
+            "mAP50-95": 0.0859799746985904,
+            "mAP50": 0.3331581251797354,
+            "mAP70": 0.03035039155614735,
+            "n_images": 1680,
+            "n_gt": 104445
+          },
+          "altitude=low": {
+            "mAP50-95": 0.4477026490548692,
+            "mAP50": 0.7983192959503534,
+            "mAP70": 0.5922740873290555,
+            "n_images": 6987,
+            "n_gt": 99832
+          },
+          "altitude=medium": {
+            "mAP50-95": 0.3084582593847059,
+            "mAP50": 0.657671639958757,
+            "mAP70": 0.36563235881792855,
+            "n_images": 7925,
+            "n_gt": 170926
+          },
+          "long_term=false": {
+            "mAP50-95": 0.2726553460085395,
+            "mAP50": 0.5867349204221108,
+            "mAP70": 0.313638293388374,
+            "n_images": 13157,
+            "n_gt": 334548
+          },
+          "long_term=true": {
+            "mAP50-95": 0.3846217924013961,
+            "mAP50": 0.7417868331125316,
+            "mAP70": 0.48763838251236685,
+            "n_images": 3435,
+            "n_gt": 40655
+          },
+          "view=bird": {
+            "mAP50-95": 0.15920953425677872,
+            "mAP50": 0.43860639818943215,
+            "mAP70": 0.1350922549189848,
+            "n_images": 3217,
+            "n_gt": 114254
+          },
+          "view=front": {
+            "mAP50-95": 0.3206409226422671,
+            "mAP50": 0.6503634035727677,
+            "mAP70": 0.39104110286068433,
+            "n_images": 10464,
+            "n_gt": 191741
+          },
+          "view=side": {
+            "mAP50-95": 0.38677901005822396,
+            "mAP50": 0.7470727064238383,
+            "mAP70": 0.49101777660296064,
+            "n_images": 7611,
+            "n_gt": 154762
+          },
+          "weather=daylight": {
+            "mAP50-95": 0.3510076199458999,
+            "mAP50": 0.7184476562562773,
+            "mAP70": 0.4292115770796075,
+            "n_images": 9376,
+            "n_gt": 219659
+          },
+          "weather=fog": {
+            "mAP50-95": 0.1068386127968777,
+            "mAP50": 0.38639037916095886,
+            "mAP70": 0.0481173174825186,
+            "n_images": 2181,
+            "n_gt": 109467
+          },
+          "weather=night": {
+            "mAP50-95": 0.41709840666746695,
+            "mAP50": 0.717715992347797,
+            "mAP70": 0.5496768367166278,
+            "n_images": 5035,
+            "n_gt": 46077
+          }
+        },
+        "class_map": "uavdt_vehicle",
+        "model_class_to_target": {
+          "car": "vehicle",
+          "van": "vehicle",
+          "truck": "vehicle",
+          "bus": "vehicle"
+        },
+        "excluded_classes": {},
+        "imgsz": 640,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false,
+          "host_nms": true
+        }
+      },
+      "robustness": [],
+      "latency": []
+    },
+    {
+      "model": "n1280-visdrone",
+      "weights": "/Users/louisrodembourg/Desktop/Developpement/aerotrack/runs/ultralytics/20261026-121849-visdrone-yolo26n-1280-88e380/weights/best.pt",
+      "run_id": "20261104-222129-w11-uavdt-transfer-n1280-visdrone-8d6bee",
+      "train_run": "20261026-121849-visdrone-yolo26n-1280-88e380",
+      "wandb_url": null,
+      "dataset": {
+        "gt": "uavdt/det/gt/test.json",
+        "class_map": "uavdt_vehicle",
+        "groups": "uavdt/attributes.json",
+        "limit": null,
+        "n_images": 16592
+      },
+      "accuracy": {
+        "mAP50-95": 0.30264314600634,
+        "mAP50": 0.6389972808339472,
+        "mAP70": 0.3571773746135659,
+        "mAP75": 0.2568281318757174,
+        "AP_small": 0.20048276084967961,
+        "AP_medium": 0.557336542396151,
+        "AP_large": 0.5403075584493189,
+        "AR500": 0.4107395196733501,
+        "max_det": 500,
+        "n_images": 16592,
+        "n_gt": 375203,
+        "n_dets": 3238412,
+        "per_class": {
+          "vehicle": {
+            "AP": 0.30264314600634,
+            "AP50": 0.6389972808339472,
+            "n_gt": 375203
+          }
+        },
+        "groups": {
+          "altitude=high": {
+            "mAP50-95": 0.09102539056761698,
+            "mAP50": 0.36685216019637645,
+            "mAP70": 0.03292871050046157,
+            "n_images": 1680,
+            "n_gt": 104445
+          },
+          "altitude=low": {
+            "mAP50-95": 0.4697147867441404,
+            "mAP50": 0.8249794902945312,
+            "mAP70": 0.6314874175727034,
+            "n_images": 6987,
+            "n_gt": 99832
+          },
+          "altitude=medium": {
+            "mAP50-95": 0.33631148534491234,
+            "mAP50": 0.6941486259279551,
+            "mAP70": 0.40736220514854826,
+            "n_images": 7925,
+            "n_gt": 170926
+          },
+          "long_term=false": {
+            "mAP50-95": 0.28874185824606063,
+            "mAP50": 0.6204412498197381,
+            "mAP70": 0.33628187202195525,
+            "n_images": 13157,
+            "n_gt": 334548
+          },
+          "long_term=true": {
+            "mAP50-95": 0.4239483704492419,
+            "mAP50": 0.7978191475903857,
+            "mAP70": 0.5431329869740428,
+            "n_images": 3435,
+            "n_gt": 40655
+          },
+          "view=bird": {
+            "mAP50-95": 0.16513151242332277,
+            "mAP50": 0.47847966585002616,
+            "mAP70": 0.13753085510521554,
+            "n_images": 3217,
+            "n_gt": 114254
+          },
+          "view=front": {
+            "mAP50-95": 0.34269998275453495,
+            "mAP50": 0.6788875976295363,
+            "mAP70": 0.4234284104154796,
+            "n_images": 10464,
+            "n_gt": 191741
+          },
+          "view=side": {
+            "mAP50-95": 0.41517424031410394,
+            "mAP50": 0.7778693869418443,
+            "mAP70": 0.5358287084089036,
+            "n_images": 7611,
+            "n_gt": 154762
+          },
+          "weather=daylight": {
+            "mAP50-95": 0.37616328852287195,
+            "mAP50": 0.7552005383388644,
+            "mAP70": 0.46721030586885265,
+            "n_images": 9376,
+            "n_gt": 219659
+          },
+          "weather=fog": {
+            "mAP50-95": 0.11423437838990347,
+            "mAP50": 0.4287031739224121,
+            "mAP70": 0.05208889619351769,
+            "n_images": 2181,
+            "n_gt": 109467
+          },
+          "weather=night": {
+            "mAP50-95": 0.437815389568504,
+            "mAP50": 0.7413130155345075,
+            "mAP70": 0.5869468246855012,
+            "n_images": 5035,
+            "n_gt": 46077
+          }
+        },
+        "class_map": "uavdt_vehicle",
+        "model_class_to_target": {
+          "car": "vehicle",
+          "van": "vehicle",
+          "truck": "vehicle",
+          "bus": "vehicle"
+        },
+        "excluded_classes": {},
+        "imgsz": 1280,
+        "conf": 0.001,
+        "iou": 0.7,
+        "runtime": {
+          "backend": "torch",
+          "device": "mps",
+          "half": false,
+          "host_nms": true
+        }
+      },
+      "robustness": [],
+      "latency": []
+    }
+  ]
+}
