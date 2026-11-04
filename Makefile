@@ -1,4 +1,4 @@
-.PHONY: w11-transfer-eval w11-degrade-eval cpp w5-cp-eval w3-eval w4-eval w4-p2-eval w5-sahi-eval w6-track-eval w6-track-tune w6-track-tuned-eval w6-keyframe-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
+.PHONY: demo w11-transfer-eval w11-degrade-eval cpp w5-cp-eval w3-eval w4-eval w4-p2-eval w5-sahi-eval w6-track-eval w6-track-tune w6-track-tuned-eval w6-keyframe-eval setup data data-det data-mot data-uavdt data-min viz check-data test lint smoke baseline readme docker-build help
 
 RUN := uv run
 CLI := $(RUN) aerotrack
@@ -45,6 +45,10 @@ w11-transfer-eval:  ## week 11: VisDrone detectors on UAVDT test, by attribute, 
 w11-degrade-eval:  ## week 11: synthetic degradations on VisDrone-DET test-dev, then README
 	$(EVAL) configs/eval/w11_degradations.yaml
 	$(CLI) readme-table
+
+demo:  ## README demo video: tracked export of the clips, then Remotion render -> demo/out/
+	$(KEEP_AWAKE) $(CLI) demo-export configs/demo/video.yaml
+	cd demo && npm ci && npm run render && npm run render:github
 
 cpp:  ## build the C++ runtime (cpp/build/); TensorRT only where its wheel is installed
 	$(CLI) build-cpp

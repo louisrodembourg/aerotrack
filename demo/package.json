@@ -1,0 +1,22 @@
+{
+  "name": "aerotrack-demo",
+  "private": true,
+  "description": "45 s demo video of aerotrack, rendered with Remotion from a tracked export (aerotrack demo-export)",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render Demo out/aerotrack-demo.mp4 --codec h264 --crf 20",
+    "typecheck": "tsc --noEmit",
+    "render:github": "remotion ffmpeg -y -loglevel error -i out/aerotrack-demo.mp4 -vf scale=1280:720 -c:v libx264 -preset slow -crf 27 -pix_fmt yuv420p -movflags +faststart out/aerotrack-demo-github.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.540",
+    "@remotion/google-fonts": "4.0.540",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.540"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "typescript": "7.0.2"
+  }
+}

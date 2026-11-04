@@ -111,6 +111,18 @@ def tune_tracker(
     run_tuning(load_config(config, overrides or []))
 
 
+@app.command("demo-export")
+def demo_export(
+    config: Annotated[Path, typer.Argument(help="configs/demo/*.yaml")],
+    overrides: SetOpt = None,
+) -> None:
+    """Track the demo clips and gather the headline numbers -> demo/public/ (Remotion)."""
+    from aerotrack.config import load_config  # noqa: PLC0415
+    from aerotrack.demo import export_demo  # noqa: PLC0415
+
+    export_demo(load_config(config, overrides or []))
+
+
 @app.command("build-cpp")
 def build_cpp(
     tensorrt: Annotated[bool | None, typer.Option(

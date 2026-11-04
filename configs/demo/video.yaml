@@ -1,0 +1,33 @@
+# 45 s demo video (README): the reference pipeline on four clips of VisDrone-MOT test-dev,
+# all from sequences the detector never saw, then the headline numbers from reports/.
+#   uv run aerotrack demo-export configs/demo/video.yaml   # tracked run -> demo/public/
+#   cd demo && npm run render                              # Remotion -> demo/out/*.mp4
+# Same detector and tracker settings as w6-bytetrack-tuned (thresholds tuned on separate
+# unseen sequences, never on test-dev). Played back at the 25 FPS budget: the dataset does
+# not publish the capture frame rate (seqinfo.ini), so the video does not claim one.
+name: demo-video
+seed: 0
+device: auto
+fps: 25
+dataset:
+  mot: visdrone_mot
+  split: test-dev
+model: {run: visdrone-yolo26n-1280, imgsz: 1280, label: "YOLO26n @ 1280 + ByteTrack"}
+detection:
+  conf: 0.05
+  iou: 0.7
+  max_det: 500
+tracker: {type: bytetrack, buffer: 30, high: 0.5, new: 0.6, low: 0.05, match: 0.9}
+warmup: 30           # untimed frames before each clip (MPS / CUDA kernels compiled, caches warm)
+jpeg_quality: 88
+clips:               # tracker runs from frame 1; only [start, start + frames) is shown
+  - {sequence: uav0000120_04775_v, start: 1, frames: 150, caption: "Night intersection"}
+  - {sequence: uav0000073_04464_v, start: 1, frames: 150, caption: "Dense pedestrian street"}
+  - {sequence: uav0000355_00001_v, start: 1, frames: 150, caption: "Roundabout"}
+  - {sequence: uav0000188_00000_v, start: 1, frames: 150, caption: "High altitude, tiny objects",
+     zoom: true}     # zoom on the smallest object tracked through the whole clip
+# Headline numbers: read from these reports (never typed), each with its run id and device.
+reports:
+  zero_shot: reports/w3-vs-zero-shot/results.json
+  tracking: reports/w10-cpp-tracking/results.json
+out_dir: demo/public

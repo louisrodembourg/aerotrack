@@ -622,3 +622,36 @@ and a Kaggle tracking job downloads none, so nothing looked seen, silently. The 
 train + val video ids are now committed (`configs/data/visdrone_det_videos.txt`, 260
 videos), checked against the data by a test where it is present, and deriving them from
 missing data raises. The bad run was not published.
+
+## Demo video (week 12)
+
+**Remotion, fed by a tracked export.** `aerotrack demo-export configs/demo/video.yaml` runs
+the reference pipeline (YOLO26n @ 1280 + ByteTrack, week 6 tuned thresholds) through
+`TrackingPipeline.timed_step` on four clips, in a tracked run, and writes the tracks, the
+per-frame stage times and the headline numbers read from `reports/*/results.json` (with
+run ids) to `demo/public/demo.json`; `demo/` (Remotion, React) only animates that file.
+Rejected: a design tool producing the video from a brief, whose overlays and numbers would
+be typed or invented; and burning the overlays into frames with OpenCV, which leaves no
+room for motion design (trails, zoom, animated charts) without re-implementing it.
+
+**Clips.** Four sequences of VisDrone-MOT test-dev whose video the detector never saw
+(checked against `configs/data/visdrone_det_videos.txt`, the export refuses a seen one),
+chosen for variety: night intersection, dense pedestrian street, roundabout, high
+altitude. The tracker starts at frame 1 of each sequence; a 30-frame warm-up runs first
+and is then discarded (`reset`). Played at 25 FPS: the dataset does not publish the
+capture rate, so the video claims none, and 25 is the project budget.
+
+**Latency shown.** The HUD shows the times measured during the export on the Mac that ran
+it (device, power state, torch version on screen; the export refuses a throttled Mac, as
+evaluations do), averaged over the last 8 frames because per-frame values flicker
+unreadably; the stage bar is the current frame. Medians are 32-38 ms per clip, above the
+22.4 ms of `reports/w6-bytetrack-tuned/` for the same model on the same Mac: NMS grows with
+the number of candidate boxes, 2.1 ms for 29 detections on the parking-lot sequence that
+report times against 13.3 ms for 345 on the pedestrian street (detector threshold 0.05,
+which ByteTrack's second association needs). The dense clip is shown at 24 FPS, below
+budget, as measured. The closing slide's T4 numbers are the week 10 ones, labelled.
+
+**Rendering.** The chrome-headless-shell Remotion downloads aborts at start-up on this
+Mac (macOS 26, `icu_util.cc: Check failed`); `demo/remotion.config.ts` uses the installed
+Google Chrome when present. Frames and renders stay out of git (VisDrone images,
+non-commercial licence); the MP4 is attached to the README through GitHub's uploads.

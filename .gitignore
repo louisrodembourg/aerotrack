@@ -35,3 +35,8 @@ wandb/
 
 # C++ runtime build
 /cpp/build/
+
+# Demo video: exported frames (VisDrone images), Remotion deps and renders
+/demo/node_modules/
+/demo/public/
+/demo/out/

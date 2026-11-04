@@ -25,6 +25,7 @@ uv run aerotrack kaggle push configs/eval/w8_tensorrt.yaml --slug aerotrack-w8-t
 uv run aerotrack build-cpp   # C++ runtime -> cpp/build/ (host stages only on the Mac)
 uv run aerotrack kaggle push configs/eval/w9_cpp.yaml --slug aerotrack-w9-cpp      # C++ vs Python, T4
 uv run aerotrack kaggle push configs/eval/w10_cpp_tracking.yaml --slug aerotrack-w10-cpp-track  # + tracking
+make demo          # README video: aerotrack demo-export + Remotion render (demo/)
 uv run aerotrack data download <dataset> --split <split>   # only some splits (Kaggle jobs do this)
 uv run aerotrack kaggle mirror <dataset> --split <split>   # private mirror when Google Drive refuses
 uv run aerotrack kaggle status|pull <slug>                           # Kaggle 2 x T4
@@ -71,6 +72,7 @@ src/aerotrack/
   track/      Kalman filter (from scratch), ByteTrack, TrackingPipeline (keyframe mode)
   train.py    Ultralytics training with masked dataset + tracked run
   experiments.py, runtime/ (device, env fingerprint, git, seed), ultra.py
+demo/         Remotion project for the README video (reads demo/public/demo.json)
 cpp/          C++ runtime: letterbox (host or GPU), TensorRT, NMS, ByteTrack (pybind11
               module aerotrack_cpp); TensorRT parts build on Linux + NVIDIA only
 docker/       Dockerfile.cuda
