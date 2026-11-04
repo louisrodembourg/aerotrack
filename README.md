@@ -4,6 +4,12 @@ Real-time vehicle and pedestrian **detection + tracking on drone video**, optimi
 embedded hardware. The deliverable is not a model but an analysis: **how much accuracy
 does each optimisation cost or buy, under a fixed latency budget on a given device?**
 
+https://github.com/user-attachments/assets/7ec07dcf-b21e-43b1-808b-7e57c6d5f282
+
+45 s demo: YOLO26n @ 1280 + ByteTrack on four VisDrone-MOT test-dev clips the detector
+never saw, with the per-frame latency measured on an Apple M3 Pro (MPS), then the headline
+numbers from [`reports/`](reports). Rendered by `make demo` ([DECISIONS.md](DECISIONS.md#demo-video-week-12)).
+
 ## Reference constraint
 
 Every variant is judged against one budget (`configs/project.yaml`):
