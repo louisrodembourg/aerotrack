@@ -93,24 +93,54 @@ def predictions_to_coco(
     return dets
 
 
-def coco_metrics(coco_gt: dict, dets: list[dict], max_det: int = 500) -> dict:
+def coco_metrics(coco_gt: dict, dets: list[dict], max_det: int = 500,
+                 groups: dict[str, set] | None = None) -> dict:
+    """COCO metrics; with `groups` (label -> image ids), also per group, from the SAME
+    per-image matching: pycocotools matches each image once (`evaluate`, the slow part),
+    then a group only re-accumulates its own images' records."""
+    import copy  # noqa: PLC0415
+
     from pycocotools.coco import COCO  # noqa: PLC0415
     from pycocotools.cocoeval import COCOeval  # noqa: PLC0415
 
     names = {c["id"]: c["name"] for c in coco_gt["categories"]}
-    n_gt = {n: sum(a["category_id"] == i for a in coco_gt["annotations"]) for i, n in names.items()}
+
+    def counts(image_ids: set | None) -> tuple[dict, int, int]:
+        anns = [a for a in coco_gt["annotations"] if image_ids is None or a["image_id"] in image_ids]
+        n_gt = {n: sum(a["category_id"] == i for a in anns) for i, n in names.items()}
+        n_img = len(coco_gt["images"]) if image_ids is None else len(image_ids)
+        n_det = len(dets) if image_ids is None else sum(d["image_id"] in image_ids for d in dets)
+        return n_gt, n_img, n_det
+
+    n_gt, n_img, n_det = counts(None)
     with contextlib.redirect_stdout(io.StringIO()):
         gt = COCO()
         gt.dataset = coco_gt
         gt.createIndex()
         if not dets:
-            return _empty(names, n_gt, len(coco_gt["images"]))
+            out = _empty(names, n_gt, n_img)
+            if groups:
+                out["groups"] = {g: _empty(names, *counts(ids)[:2]) for g, ids in groups.items()}
+            return out
         dt = gt.loadRes(dets)
         ev = COCOeval(gt, dt, iouType="bbox")
         ev.params.maxDets = [1, 10, 100, max_det]
         ev.evaluate()
         ev.accumulate()
+        out = _read(ev, names, n_gt, n_img, n_det, max_det)
+        if groups:
+            out["groups"] = {}
+            for label, ids in groups.items():
+                # Records of other images become None, which accumulate() skips.
+                sub = copy.copy(ev)
+                sub.evalImgs = [e if e is not None and e["image_id"] in ids else None
+                                for e in ev.evalImgs]
+                sub.accumulate()
+                out["groups"][label] = _read(sub, names, *counts(ids), max_det)
+    return out
 
+
+def _read(ev, names: dict, n_gt: dict, n_images: int, n_dets: int, max_det: int) -> dict:
     precision = ev.eval["precision"]  # [T iou, R recall, K class, A area, M maxdet]
     recall = ev.eval["recall"]  # [T, K, A, M]
     iou_thrs = ev.params.iouThrs
@@ -138,9 +168,9 @@ def coco_metrics(coco_gt: dict, dets: list[dict], max_det: int = 500) -> dict:
         "AP_large": ap("large"),
         f"AR{max_det}": float(r[r > -1].mean()) if (r > -1).any() else float("nan"),
         "max_det": max_det,
-        "n_images": len(coco_gt["images"]),
+        "n_images": n_images,
         "n_gt": int(sum(n_gt.values())),
-        "n_dets": len(dets),
+        "n_dets": n_dets,
         "per_class": per_class,
     }
 
@@ -172,14 +202,10 @@ def evaluate_detection(
     mapping = prediction_class_map(model_names, cmap)
     dets = predictions_to_coco(gt, masks, detect, mapping, progress,
                                merge_iou=iou if cmap.merge_nms else None)
-    metrics = coco_metrics(coco_gt, dets, max_det=max_det)
-    if groups:
-        metrics["groups"] = {}
-        for label, ids in groups.items():
-            sub_gt, sub_dets = subset_coco(coco_gt, dets, ids)
-            m = coco_metrics(sub_gt, sub_dets, max_det=max_det)
-            metrics["groups"][label] = {k: m[k] for k in ("mAP50-95", "mAP50", "mAP70",
-                                                          "n_images", "n_gt")}
+    metrics = coco_metrics(coco_gt, dets, max_det=max_det, groups=groups)
+    for label, m in metrics.get("groups", {}).items():
+        metrics["groups"][label] = {k: m[k] for k in ("mAP50-95", "mAP50", "mAP70",
+                                                      "n_images", "n_gt")}
     metrics["class_map"] = cmap.name
     metrics["model_class_to_target"] = {model_names[k]: cmap.targets[v - 1]
                                         for k, v in sorted(mapping.items())}

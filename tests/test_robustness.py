@@ -80,3 +80,30 @@ def test_degradations_are_deterministic_and_change_the_frame(kind):
     assert np.abs(a.astype(int) - img.astype(int)).mean() > 1
     if kind == "low_light":
         assert a.mean() < 0.5 * img.mean()
+
+
+def test_group_scores_equal_a_separate_evaluation_of_the_group():
+    """Groups reuse one per-image matching; that must equal scoring the group alone."""
+    from aerotrack.eval.detection import coco_metrics, subset_coco
+
+    rng = np.random.default_rng(0)
+    images, anns, dets = [], [], []
+    for i in range(1, 31):
+        images.append({"id": i, "width": 400, "height": 400})
+        for _ in range(rng.integers(1, 6)):
+            x, y, w, h = *rng.uniform(0, 300, 2), *rng.uniform(8, 80, 2)
+            anns.append({"id": len(anns) + 1, "image_id": i, "category_id": 1,
+                         "bbox": [x, y, w, h], "area": w * h, "iscrowd": 0})
+            if rng.random() < 0.8:  # a jittered true positive
+                dets.append({"image_id": i, "category_id": 1, "score": float(rng.random()),
+                             "bbox": [x + rng.normal(0, 4), y + rng.normal(0, 4), w, h]})
+        for _ in range(rng.integers(0, 4)):  # false positives
+            dets.append({"image_id": i, "category_id": 1, "score": float(rng.random()),
+                         "bbox": [*rng.uniform(0, 300, 2), *rng.uniform(8, 80, 2)]})
+    coco = {"images": images, "annotations": anns, "categories": [{"id": 1, "name": "vehicle"}]}
+    groups = {"a": set(range(1, 11)), "b": set(range(5, 31, 3))}
+    shared = coco_metrics(coco, dets, groups=groups)["groups"]
+    for label, ids in groups.items():
+        alone = coco_metrics(*subset_coco(coco, dets, ids))
+        for k in ("mAP50-95", "mAP50", "mAP70", "AP_small", "n_gt", "n_images", "n_dets"):
+            assert shared[label][k] == pytest.approx(alone[k], nan_ok=True), (label, k)
